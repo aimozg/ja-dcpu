@@ -53,6 +53,7 @@ public class InstreamPeripheral extends Dcpu.Peripheral {
 
     public InstreamPeripheral(InputStream input, int bufsize) {
         this.input = input;
+        if (bufsize < 2) bufsize = 2;
         buffer = new short[bufsize];
         this.bufsize = bufsize;
         ro = 0;
