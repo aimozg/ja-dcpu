@@ -11,7 +11,7 @@ import static dcpu.Dcpu.*;
 /**
  * DCPU Assembler
  */
-public class DcpuAssembler {
+public class Assembler {
 
     private StreamTokenizer stokizer;
     private String token;
@@ -250,7 +250,7 @@ public class DcpuAssembler {
     }
 
     private void macro() {
-        throw new UnsupportedOperationException(); // TODO write DcpuAssembler.macro method body
+        throw new UnsupportedOperationException(); // TODO write Assembler.macro method body
     }
 
     private void append(short s) {
