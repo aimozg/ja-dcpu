@@ -219,6 +219,15 @@ public class Dcpu {
     }
 
     /**
+     * Executes specified number of steps
+     */
+    public void run(int nsteps) {
+        while (nsteps-- > 0) {
+            step(false);
+        }
+    }
+
+    /**
      * Execute one operation (skip = false) or skip one operation.
      */
     public void step(boolean skip) {
