@@ -85,8 +85,7 @@ public class StdinoutDemo {
                         ":name"
         ));
 
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        OutstreamPeripheral stdout = new OutstreamPeripheral(byteArrayOutputStream);
+        OutstreamPeripheral stdout = new OutstreamPeripheral(System.out);
         cpu.attach(stdout, 0x8);
         InstreamPeripheral stdin = new InstreamPeripheral(System.in, 100);
         cpu.attach(stdin, 0x9);
