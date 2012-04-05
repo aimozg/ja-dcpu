@@ -6,7 +6,7 @@ import java.io.StringReader;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static dcpu.NotchDcpu.*;
+import static dcpu.Dcpu.*;
 
 /**
  * DCPU Assempler compiler
@@ -51,7 +51,7 @@ public class DcpuCompiler {
     }
 
     boolean acceptIgnoreCase(String s) throws IOException {
-        if (nexttok.equalsIgnoreCase(s)){
+        if (nexttok.equalsIgnoreCase(s)) {
             next();
             return true;
         }
@@ -70,7 +70,7 @@ public class DcpuCompiler {
         token = nexttok;
         itoken = stokizer.nextToken();
         nexttok = stokizer.sval;
-        if (itoken == '\'' || itoken == '\"') nexttok = ((char)itoken)+nexttok+((char)itoken);
+        if (itoken == '\'' || itoken == '\"') nexttok = ((char) itoken) + nexttok + ((char) itoken);
         else if (itoken >= 0) nexttok = String.valueOf((char) itoken);
     }
 
@@ -79,7 +79,7 @@ public class DcpuCompiler {
     private static final Pattern hexPattern = Pattern.compile("0x[0-9a-fA-F]+");
     private static final Pattern binPattern = Pattern.compile("0b\\d+");
     private static final Pattern decPattern = Pattern.compile("\\d+");
-    private static final Pattern numPattern = Pattern.compile("("+hexPattern.pattern()+")|("+binPattern.pattern()+")|("+decPattern.pattern()+")");
+    private static final Pattern numPattern = Pattern.compile("(" + hexPattern.pattern() + ")|(" + binPattern.pattern() + ")|(" + decPattern.pattern() + ")");
 
     private void require(Pattern pattern, String descr) throws IOException {
         if (!accept(pattern)) {
@@ -98,7 +98,7 @@ public class DcpuCompiler {
     }
 
 
-    void reset(){
+    void reset() {
         references.clear();
         symbols.clear();
         buffer = new short[256];
@@ -128,10 +128,10 @@ public class DcpuCompiler {
                     }
                 } else if (accept(":")) {
                     label();
-                } else if (acceptIgnoreCase("dat")){
+                } else if (acceptIgnoreCase("dat")) {
                     dat();
-                } else if (acceptIgnoreCase("hlt")){
-                    append((short) 0);
+                } else if (acceptIgnoreCase("hlt")) {
+                    append(gencmd_nbi(O__RESVD, 0));
                 } else {
                     oper();
                 }
@@ -147,47 +147,59 @@ public class DcpuCompiler {
         for (Reference reference : references) {
             //System.out.printf("ref to %s @ %04x\n",reference.name,reference.position);
             Short value = symbols.get(reference.name);
-            if (value == null) fail("Unresolved reference to "+reference.name+" at ["+reference.lineat+"]");
+            if (value == null) fail("Unresolved reference to " + reference.name + " at [" + reference.lineat + "]");
             buffer[reference.position] = value;
         }
-        if (buffer.length>counter){
-            buffer = Arrays.copyOf(buffer,counter);
+        if (buffer.length > counter) {
+            buffer = Arrays.copyOf(buffer, counter);
         }
         return buffer;
     }
 
     private void dat() throws IOException {
         boolean cm = false;
-        while(true){
+        while (true) {
             if (cm && !accept(",")) break;
             cm = true;
-            if (accept(strPattern)){
-                for (char c : token.substring(1,token.length()-2).toCharArray()){
-                    append((short)c);
+            if (accept(strPattern)) {
+                for (char c : token.substring(1, token.length() - 2).toCharArray()) {
+                    append((short) c);
                 }
-            } else if (accept(numPattern)){
+            } else if (accept(numPattern)) {
                 append((short) tokenToInt());
-            } else if (accept(idPattern)){
-                append((short)0);
-                references.add(new Reference(token, (short) (counter-1), stokizer.lineno()));
+            } else if (accept(idPattern)) {
+                append((short) 0);
+                references.add(new Reference(token, (short) (counter - 1), stokizer.lineno()));
             }
         }
     }
 
     private void oper() throws IOException {
+        boolean nbi = false;
         require(idPattern, "operation");
         int opcode = opcodeByName(token);
-        if (opcode == -1)fail("Bad operation "+token);
+        if (opcode == -1) {
+            opcode = opcodeNbiByName(token);
+            if (opcode == -1) {
+                fail("Bad operation " + token);
+            } else {
+                nbi = true;
+            }
+        }
         int op_pc = counter;
         append((short) 0);
         Param pa = param();
-        require(",", "comma");
-        Param pb = param();
         int a = pa.acode();
-        int b = pb.acode();
         if (a == -1) fail("Bad operand a");
-        if (b == -1) fail("Bad operand b");
-        buffer[op_pc] = gencmd(opcode, a, b);
+        if (!nbi) {
+            require(",", "comma");
+            Param pb = param();
+            int b = pb.acode();
+            if (b == -1) fail("Bad operand b");
+            buffer[op_pc] = gencmd(opcode, a, b);
+        } else {
+            buffer[op_pc] = gencmd_nbi(opcode, a);
+        }
     }
 
     private Param param() throws IOException {
@@ -211,7 +223,7 @@ public class DcpuCompiler {
             int regidx = registerByName(token);
             if (regidx >= 0) return new SimpleRegisterParam(regidx);
             append((short) 0);
-            Reference ref = new Reference(token, (short) (counter-1), stokizer.lineno());
+            Reference ref = new Reference(token, (short) (counter - 1), stokizer.lineno());
             references.add(ref);
             return new SimpleSymbolParam(token);
         } else if (accept(numPattern)) {
@@ -248,37 +260,53 @@ public class DcpuCompiler {
         buffer[counter++] = s;
     }
 
-    private static final String[] op2names =
+    private static final String[] instr_names =
             {
                     "add", "sub", "mul",
                     "div", "mod", "shl", "shr",
                     "and", "bor", "xor", "set",
                     "ifb", "ife", "ifg", "ifn"};
-    private static final int[] op2codes =
+    private static final int[] instr_codes =
             {
                     O_ADD, O_SUB, O_MUL,
                     O_DIV, O_MOD, O_SHL, O_SHR,
                     O_AND, O_BOR, O_XOR, O_SET,
                     O_IFB, O_IFE, O_IFG, O_IFN};
-    private static final String[] regnames =
+    public static final String[] nbinstr_names =
+            {
+                    "jsr"
+            };
+    public static final int[] nbinstr_codes =
+            {
+                    O__JSR
+            };
+    private static final String[] reg_names =
             {"A", "B", "C", "X", "Y", "Z", "I", "J", "SP", "PC", "O", "POP", "PEEK", "PUSH"};
-    private static final int[] regoffsets =
-            {0, 1, 2, 3, 4, 5, 6, 7, -1, -1, -1,-1,-1,-1};
-    private static final int[] regselfcodes =
-            {0, 1, 2, 3, 4, 5, 6, 7, 27, 28, 29,24,25,26};
+    private static final int[] reg_offsets =
+            {0, 1, 2, 3, 4, 5, 6, 7, -1, -1, -1, -1, -1, -1};
+    private static final int[] reg_selfcodes =
+            {0, 1, 2, 3, 4, 5, 6, 7, 27, 28, 29, 24, 25, 26};
 
     private int opcodeByName(String name) {
         name = name.toLowerCase();
-        for (int i = 0; i < op2names.length; i++) {
-            if (op2names[i].equals(name)) return op2codes[i];
+        for (int i = 0; i < instr_names.length; i++) {
+            if (instr_names[i].equals(name)) return instr_codes[i];
+        }
+        return -1;
+    }
+
+    private int opcodeNbiByName(String name) {
+        name = name.toLowerCase();
+        for (int i = 0; i < nbinstr_names.length; i++) {
+            if (nbinstr_names[i].equals(name)) return nbinstr_codes[i];
         }
         return -1;
     }
 
     private int registerByName(String name) {
         name = name.toUpperCase();
-        for (int i = 0; i < regnames.length; i++) {
-            if (regnames[i].equals(name)) return i;
+        for (int i = 0; i < reg_names.length; i++) {
+            if (reg_names[i].equals(name)) return i;
         }
         return -1;
     }
@@ -362,16 +390,16 @@ public class DcpuCompiler {
         }
 
         public boolean isGP() {
-            return regoffsets[idx] >= 0;
+            return reg_offsets[idx] >= 0;
         }
 
         public int offset() {
-            return regoffsets[idx];
+            return reg_offsets[idx];
         }
 
         @Override
         int acode() {
-            return regselfcodes[idx];
+            return reg_selfcodes[idx];
         }
     }
 

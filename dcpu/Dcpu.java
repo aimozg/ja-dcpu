@@ -4,30 +4,25 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Notch's DCPU(tm)(c)(R)(ftw) specs v3 implementation.
- *
+ * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.1 implementation.
+ * <p/>
  * Created by IntelliJ IDEA.
  * Author: aimozg
  * Date: 28.03.12
  * Time: 19:15
  */
 @SuppressWarnings({"UnusedDeclaration", "PointlessBitwiseExpression", "PointlessArithmeticExpression"})
-public class NotchDcpu {
+public class Dcpu {
 
     ////////////////
     // NOTES
     ////////////////
     // * Registers are mapped to memory after addressable space for convenience (so operations take something from one
     //   mem cell and put something into another)
-    // * Register O stores following values:
-    //   * In ADD and SUB: 1 if were over/under-flow
-    //   * In MUL : high word
-    //   * In DIV : 1 if div by zero ('a' not modified)
-    //   * In SHL : high word, leftmost 'b' bits of 'a'
-    //   * In SHR : rightmost 'b' bits of 'a'
-    // * NW is commonly used for 'Next Word in ram'
+    // * Some magic about PPC, PSP, and getaddr explained in getaddr comment
+    // * NW is commonly used for 'Next Word in ram', NBI - non-basic-instruction
     // * Peripherals can be attached to monitor CPU ticks and writes to 4096-word memory lines (determined by highest nibble)
-    // * Opcode 0 is commonly treated as "Halt"
+    // * TODO: peripherals to monitor reads
 
     ////////////////
     /// CONSTANTS
@@ -35,7 +30,7 @@ public class NotchDcpu {
 
     //////
     // Opcode constants
-    public static final int O_HLT = 0;
+    public static final int O_NBI = 0;
     public static final int O_SET = 1;
     public static final int O_ADD = 2;
     public static final int O_SUB = 3;
@@ -51,11 +46,23 @@ public class NotchDcpu {
     public static final int O_IFN = 13;
     public static final int O_IFG = 14;
     public static final int O_IFB = 15;
+    public static final int O__RESVD = 0; // reserved
+    public static final int O__JSR = 1;//NBI
     public static final String[] OPCODE_NAMES = {
-            "HLT","SET","ADD","SUB",
-            "MUL","DIV","MOD","SHL",
-            "SHR","AND","BOR","XOR",
-            "IFE","IFN","IFG","IFB"
+            "", "SET", "ADD", "SUB",
+            "MUL", "DIV", "MOD", "SHL",
+            "SHR", "AND", "BOR", "XOR",
+            "IFE", "IFN", "IFG", "IFB"
+    };
+    public static final String[] OPCODE0_NAMES = {
+            "", "JSR", "", "", "", "", "", "", //0x00-0x07
+            "", "", "", "", "", "", "", "",//0x08-0x0f
+            "", "", "", "", "", "", "", "",//0x10-0x17
+            "", "", "", "", "", "", "", "",//0x18-0x1f
+            "", "", "", "", "", "", "", "",//0x20-0x27
+            "", "", "", "", "", "", "", "",//0x28-0x2f
+            "", "", "", "", "", "", "", "",//0x30-0x37
+            "", "", "", "", "", "", "", ""//0x38-0x3f
     };
     // operations that place their result into memory cell
     public static final boolean[] OPCODE_MODMEM = {
@@ -63,6 +70,16 @@ public class NotchDcpu {
             true, true, true, true,
             true, true, true, true,
             false, false, false, false
+    };
+    public static final boolean[] OPCODE0_MODMEM = {
+            false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false
     };
     // Register constants
     public static final int REG_A = 0;
@@ -79,6 +96,10 @@ public class NotchDcpu {
     public static final int C_B_MASK = 0xFC00;
     public static final int C_A_SHIFT = 4;
     public static final int C_B_SHIFT = 10;
+    public static final int C_NBI_A_MASK = C_B_MASK;
+    public static final int C_NBI_A_SHIFT = C_B_SHIFT;
+    public static final int C_NBI_O_MASK = C_A_MASK;
+    public static final int C_NBI_O_SHIFT = C_A_SHIFT;
     // Command address types (take one and shift with C_x_SHIFT)
     //   Plain register
     public static final int A_REG = 0;// | with REG_x
@@ -121,38 +142,38 @@ public class NotchDcpu {
     public static final int A_NW = 31; // NW
     //  Constant values
     public static final int A_CONST = 32; // + with const
-    public static final int A_0 = A_CONST+0;
-    public static final int A_1 = A_CONST+1;
-    public static final int A_2 = A_CONST+2;
-    public static final int A_3 = A_CONST+3;
-    public static final int A_4 = A_CONST+4;
-    public static final int A_5 = A_CONST+5;
-    public static final int A_6 = A_CONST+6;
-    public static final int A_7 = A_CONST+7;
-    public static final int A_8 = A_CONST+8;
-    public static final int A_9 = A_CONST+9;
-    public static final int A_10 = A_CONST+10;
-    public static final int A_11 = A_CONST+11;
-    public static final int A_12 = A_CONST+12;
-    public static final int A_13 = A_CONST+13;
-    public static final int A_14 = A_CONST+14;
-    public static final int A_15 = A_CONST+15;
-    public static final int A_16 = A_CONST+16;
-    public static final int A_17 = A_CONST+17;
-    public static final int A_18 = A_CONST+18;
-    public static final int A_19 = A_CONST+19;
-    public static final int A_20 = A_CONST+20;
-    public static final int A_21 = A_CONST+21;
-    public static final int A_22 = A_CONST+22;
-    public static final int A_23 = A_CONST+23;
-    public static final int A_24 = A_CONST+24;
-    public static final int A_25 = A_CONST+25;
-    public static final int A_26 = A_CONST+26;
-    public static final int A_27 = A_CONST+27;
-    public static final int A_28 = A_CONST+28;
-    public static final int A_29 = A_CONST+29;
-    public static final int A_30 = A_CONST+30;
-    public static final int A_31 = A_CONST+31;
+    public static final int A_0 = A_CONST + 0;
+    public static final int A_1 = A_CONST + 1;
+    public static final int A_2 = A_CONST + 2;
+    public static final int A_3 = A_CONST + 3;
+    public static final int A_4 = A_CONST + 4;
+    public static final int A_5 = A_CONST + 5;
+    public static final int A_6 = A_CONST + 6;
+    public static final int A_7 = A_CONST + 7;
+    public static final int A_8 = A_CONST + 8;
+    public static final int A_9 = A_CONST + 9;
+    public static final int A_10 = A_CONST + 10;
+    public static final int A_11 = A_CONST + 11;
+    public static final int A_12 = A_CONST + 12;
+    public static final int A_13 = A_CONST + 13;
+    public static final int A_14 = A_CONST + 14;
+    public static final int A_15 = A_CONST + 15;
+    public static final int A_16 = A_CONST + 16;
+    public static final int A_17 = A_CONST + 17;
+    public static final int A_18 = A_CONST + 18;
+    public static final int A_19 = A_CONST + 19;
+    public static final int A_20 = A_CONST + 20;
+    public static final int A_21 = A_CONST + 21;
+    public static final int A_22 = A_CONST + 22;
+    public static final int A_23 = A_CONST + 23;
+    public static final int A_24 = A_CONST + 24;
+    public static final int A_25 = A_CONST + 25;
+    public static final int A_26 = A_CONST + 26;
+    public static final int A_27 = A_CONST + 27;
+    public static final int A_28 = A_CONST + 28;
+    public static final int A_29 = A_CONST + 29;
+    public static final int A_30 = A_CONST + 30;
+    public static final int A_31 = A_CONST + 31;
 
     //////
     // Register addresses
@@ -164,18 +185,20 @@ public class NotchDcpu {
     public static final int M_Z = 0x10005;
     public static final int M_I = 0x10006;
     public static final int M_J = 0x10007;
-    public static final int M_PC= 0x10008;
-    public static final int M_SP= 0x10009;
+    public static final int M_PC = 0x10008;
+    public static final int M_SP = 0x10009;
     public static final int M_O = 0x1000a;
-    public static final int M_CV= 0x1000b; // constant value
+    public static final int M_PPC = 0x1000b; // prev PC (PC before execution)
+    public static final int M_PSP = 0x1000c; // prev SP (SP before execution)
+    public static final int M_CV = 0x1000d; // constant value
     // Memory cell names
     public static final String[] MEM_NAMES = {
-            "A","B","C","X","Y","Z","I","J",
-            "PC","SP","O",
-            "0","1","2","3","4","5","6","7",
-            "8","9","10","11","12","13","14","15",
-            "16","17","18","19","20","21","22","23",
-            "24","25","26","27","28","29","30","31"
+            "A", "B", "C", "X", "Y", "Z", "I", "J",
+            "PC", "SP", "O", "PPC", "PSP",
+            "0", "1", "2", "3", "4", "5", "6", "7",
+            "8", "9", "10", "11", "12", "13", "14", "15",
+            "16", "17", "18", "19", "20", "21", "22", "23",
+            "24", "25", "26", "27", "28", "29", "30", "31"
     };
 
     ///////////////////////////////////////////////////////////////
@@ -183,14 +206,14 @@ public class NotchDcpu {
     ///////////////////////////////////////////////////////////////
 
     // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + O + 32 constants
-    public final short[] mem = new short[0x10000+8+3+32];
-    public boolean reserved = false; // true if operation 0 executed
+    public final short[] mem = new short[M_CV + 32];
+    public boolean reserved = false; // true if reserved operation executed
 
     /**
      * Runs until hitting Opcode 0
      */
-    public void run(){
-        while (!reserved){
+    public void run() {
+        while (!reserved) {
             step(false);
         }
     }
@@ -198,72 +221,93 @@ public class NotchDcpu {
     /**
      * Execute one operation (skip = false) or skip one operation.
      */
-    public void step(boolean skip){
-        short sp0 = mem[M_SP]; // save SP
-        int cmd = mem[(mem[M_PC]++)&0xffff]; // command value
-        int opcode = cmd& C_O_MASK;
+    public void step(boolean skip) {
+        // save prev PC and prev SP
+        mem[M_PPC] = mem[M_PC];
+        mem[M_PSP] = mem[M_SP];
+
+        int cmd = mem[(mem[M_PC]++) & 0xffff] & 0xffff; // command value
+        int opcode = cmd & C_O_MASK;
         // a,b: raw codes, addresses, values
-        int a = (cmd& C_A_MASK)>> C_A_SHIFT;
-        int b = (cmd& C_B_MASK)>> C_B_SHIFT;
-        int aa = getaddr(a)&0x1ffff;
-        int ba = getaddr(b)&0x1ffff;
-        int av = mem[aa]&0xffff;
-        int bv = mem[ba]&0xffff;
+        // in NBI: b stores NBO
+        int a, b, aa, ba, av, bv;
+        if (opcode != O_NBI) {
+            a = (cmd & C_A_MASK) >> C_A_SHIFT;
+            b = (cmd & C_B_MASK) >> C_B_SHIFT;
+            aa = getaddr(a, OPCODE_MODMEM[opcode]) & 0x1ffff;
+            ba = getaddr(b, false) & 0x1ffff;
+            av = mem[aa] & 0xffff;
+            bv = mem[ba] & 0xffff;
+        } else {
+            a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
+            b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
+            aa = getaddr(a, OPCODE0_MODMEM[b]) & 0x1ffff;
+            ba = 0;
+            av = mem[aa] & 0xffff;
+            bv = 0;
+        }
 
         // debug
         //_dstep(skip, opcode, aa, ba, av, bv);
 
-        if (skip){
-            mem[M_SP] = sp0; // restore SP that could be modified in getaddr()
+        if (skip) {
             return;
         }
         int rslt = mem[aa]; // new 'a' value
         int oreg = mem[M_O]; // new 'O' value
-        switch(opcode){
-            case O_HLT:
-                reserved = true;
+        switch (opcode) {
+            case O_NBI:
+                switch (b) {
+                    case O__JSR:
+                        mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
+                        mem[M_PC] = (short) av;
+                        break;
+                    default:
+                        reserved = true;
+                        break;
+                }
                 break;
             case O_SET:
                 rslt = mem[ba];
                 break;
             case O_ADD:
-                rslt =  av+bv;
-                oreg = (rslt>0xffff)?1:0;
+                rslt = av + bv;
+                oreg = (rslt > 0xffff) ? 1 : 0;
                 break;
             case O_SUB:
-                rslt = av-bv;
-                oreg = (rslt<0)?1:0;
+                rslt = av - bv;
+                oreg = (rslt < 0) ? 1 : 0;
                 break;
             case O_MUL:
-                rslt = av*bv;
-                oreg = rslt>>16;
+                rslt = av * bv;
+                oreg = rslt >> 16;
                 break;
             case O_DIV:
-                if (bv == 0){
+                if (bv == 0) {
                     oreg = 1;
                 } else {
-                    rslt = (short) (av/bv);
+                    rslt = (short) (av / bv);
                 }
                 break;
             case O_MOD:
-                rslt = (short) (av%bv);
+                rslt = (short) (av % bv);
                 break;
             case O_SHL:
-                rslt = av<<bv;
-                oreg = rslt>>16;
+                rslt = av << bv;
+                oreg = rslt >> 16;
                 break;
             case O_SHR:
-                rslt = av>>bv;
-                oreg = av-(rslt<<bv);
+                rslt = av >> bv;
+                oreg = av - (rslt << bv);
                 break;
             case O_AND:
-                rslt = av&bv;
+                rslt = av & bv;
                 break;
             case O_BOR:
-                rslt = av|bv;
+                rslt = av | bv;
                 break;
             case O_XOR:
-                rslt = av^bv;
+                rslt = av ^ bv;
                 break;
             case O_IFE:
                 if (av != bv) step(true);
@@ -275,11 +319,11 @@ public class NotchDcpu {
                 if (av <= bv) step(true);
                 break;
             case O_IFB:
-                if ((av & bv)==0) step(true);
+                if ((av & bv) == 0) step(true);
                 break;
         }
         // overwrite 'a' unless it is constant
-        if (aa<M_CV && OPCODE_MODMEM[opcode]) memset(aa, (short) rslt);
+        if (aa < M_CV && OPCODE_MODMEM[opcode]) memset(aa, (short) rslt);
         mem[M_O] = (short) oreg;
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
@@ -291,30 +335,30 @@ public class NotchDcpu {
      */
     public void memset(int addr, short value) {
         short oldval = mem[addr];
-        int line = addr>>12;
+        int line = addr >> 12;
         mem[addr] = value;
-        if (line>=0 && line<memlines.length && memlines[line] != null){
-            memlines[line].onMemset(addr,value,oldval);
+        if (line >= 0 && line < memlines.length && memlines[line] != null) {
+            memlines[line].onMemset(addr, value, oldval);
         }
     }
 
     /**
      * Sets memory[addr] to value, *without* calling peripheral hook
      */
-    public void memset_raw(int addr, short value){
+    public void memset_raw(int addr, short value) {
         mem[addr] = value;
     }
 
 
-    public void reset(){
+    public void reset() {
         reserved = false;
-        for (int i = 0; i<8+3; i++) mem[M_A+i] = 0;
-        for (int i = 0; i<32; i++){
-            mem[M_CV+i]=(short)i;
+        for (int i = 0; i < 8 + 3; i++) mem[M_A + i] = 0;
+        for (int i = 0; i < 32; i++) {
+            mem[M_CV + i] = (short) i;
         }
     }
 
-    public NotchDcpu() {
+    public Dcpu() {
         reset();
     }
 
@@ -323,75 +367,90 @@ public class NotchDcpu {
 
     /**
      * Generates command code for specified opcode, 'a', and 'b'.
-     *
+     * <p/>
      * Example: gencmd(O_SET, A_PC, A_NW) for "set PC, next_word_of_ram"
      */
-    public static short gencmd(int opcode,int a,int b){
-        return (short) (opcode | a<<C_A_SHIFT | b<<C_B_SHIFT);
+    public static short gencmd(int opcode, int a, int b) {
+        return (short) (opcode | a << C_A_SHIFT | b << C_B_SHIFT);
+    }
+
+    /**
+     * Generates command code for non-basic instruction
+     */
+    public static short gencmd_nbi(int opcode, int a) {
+        return (short) (opcode << C_NBI_O_SHIFT | a << C_NBI_A_SHIFT);
     }
 
     // debug
-    private void _d(String ln,Object... args){
+    private void _d(String ln, Object... args) {
         System.out.printf(ln, args);
     }
 
     /**
      * List of all registers with their hex values
      */
-    public String _dregs(){
+    public String _dregs() {
         return String.format("R A=%04x B=%04x C=%04x X=%04x Y=%04x Z=%04x I=%04x J=%04x  PC=%04x SP=%04x O=%04x",
                 mem[M_A], mem[M_B], mem[M_C], mem[M_X], mem[M_Y], mem[M_Z], mem[M_I], mem[M_J],
                 mem[M_PC], mem[M_SP], mem[M_O]);
     }
-    private String _dmem(int addr){
-        return (addr<M_A)?String.format("(%04x)",addr):MEM_NAMES[addr-M_A];
+
+    private String _dmem(int addr) {
+        return (addr < M_A) ? String.format("(%04x)", addr) : MEM_NAMES[addr - M_A];
     }
+
     private void _dstep(boolean skip, int opcode, int aa, int ba, int av, int bv) {
-        _d("%s%s %s=%04x %s=%04x\n",skip?"; ":"> ",OPCODE_NAMES[opcode],_dmem(aa),av,_dmem(ba),bv);
+        _d("%s%s %s=%04x %s=%04x\n", skip ? "; " : "> ", OPCODE_NAMES[opcode], _dmem(aa), av, _dmem(ba), bv);
     }
 
     /**
      * Returns memory address for operand code. 0 returns address of register A and so on.
      * May modify values of PC (in case of "next word of ram") and SP (when PUSH, POP)
+     * <p/>
+     * Ok, so here is the black magic:
+     * SET [PC+20], PC
+     * when parsing [PC+20] it modifies PC, but when parsing PC, it should return previous, unmodified value.
+     * that's what "write" is for.
      */
-    private int getaddr(int cmd){
-        if (cmd<=7){
-            return M_A+cmd;
-        } else if (cmd<=15){
-            return mem[M_A+cmd-8]&0xffff;
-        } else if (cmd<=23){
-            return (mem[M_A+cmd-16]+mem[mem[M_PC]++])&0xffff;
-        } else if (cmd>=32){
-            return M_CV+cmd-32;
-        } else switch (cmd){
+    private int getaddr(int cmd, boolean write) {
+        if (cmd <= 7) {
+            return M_A + cmd;
+        } else if (cmd <= 15) {
+            return mem[M_A + cmd - 8] & 0xffff;
+        } else if (cmd <= 23) {
+            return (mem[M_A + cmd - 16] + mem[mem[M_PC]++]) & 0xffff;
+        } else if (cmd >= 32) {
+            return M_CV + cmd - 32;
+        } else switch (cmd) {
             case 24:
-                return (mem[M_SP]++)&0xffff;
+                return (mem[M_SP]++) & 0xffff;
             case 25:
-                return mem[M_SP]&0xffff;
+                return mem[M_SP] & 0xffff;
             case 26:
-                return (--mem[M_SP])&0xffff;
+                return (--mem[M_SP]) & 0xffff;
             case 27:
-                return M_SP;
+                return write ? M_SP : M_PSP;
             case 28:
-                return M_PC;
+                return write ? M_PC : M_PPC;
             case 29:
                 return M_O;
             case 30:
-                return mem[mem[M_PC]++]&0xffff;
+                return mem[mem[M_PC]++] & 0xffff;
             case 31:
-                return mem[M_PC]++&0xffff;
+                return mem[M_PC]++ & 0xffff;
             default:
                 throw new RuntimeException("THIS SHOULD NEVER HAPPEN");
         }
     }
 
     public void upload(short[] buffer, int srcoff, int len, int dstoff) {
-        if (srcoff>=0x10000 || srcoff<0 || len<0 || srcoff+len>=0x10000) throw new IllegalArgumentException("Bad offset/length");
-        System.arraycopy(buffer,srcoff,mem,dstoff,len);
+        if (srcoff >= 0x10000 || srcoff < 0 || len < 0 || srcoff + len >= 0x10000)
+            throw new IllegalArgumentException("Bad offset/length");
+        System.arraycopy(buffer, srcoff, mem, dstoff, len);
     }
 
     public void upload(short[] buffer) {
-        upload(buffer,0,buffer.length,0);
+        upload(buffer, 0, buffer.length, 0);
     }
 
 
@@ -400,18 +459,18 @@ public class NotchDcpu {
 
     /**
      * Peripheral to DCPU.
-     *
+     * <p/>
      * Communication
      */
     public abstract static class Peripheral {
 
-        public NotchDcpu cpu;
+        public Dcpu cpu;
         public int line;
 
         /**
          * This method is called every CPU cycle. cmd is last command code
          */
-        public void tick(int cmd){
+        public void tick(int cmd) {
 
         }
 
@@ -419,14 +478,14 @@ public class NotchDcpu {
          * This method is called when program or other peripheral writes "newval" to
          * memory address "addr". Method is called only for this
          */
-        public void onMemset(int addr,short newval,short oldval){
+        public void onMemset(int addr, short newval, short oldval) {
 
         }
 
         /**
          * Called when attached to cpu
          */
-        public void attachedTo(NotchDcpu cpu, int line) {
+        public void attachedTo(Dcpu cpu, int line) {
             this.cpu = cpu;
             this.line = line;
         }
@@ -442,19 +501,19 @@ public class NotchDcpu {
     final Peripheral[] memlines = new Peripheral[16];
     final List<Peripheral> peripherals = new LinkedList<Peripheral>();
 
-    public void attach(Peripheral peripheral,int line){
-        if (line != -1){
-            if (memlines[line] != null){
+    public void attach(Peripheral peripheral, int line) {
+        if (line != -1) {
+            if (memlines[line] != null) {
                 throw new IllegalStateException("Peripheral already attached to line");
             }
             memlines[line] = peripheral;
         }
         peripherals.add(peripheral);
-        peripheral.attachedTo(this,line);
+        peripheral.attachedTo(this, line);
     }
 
-    public void detach(Peripheral peripheral){
-        if (peripheral.line != -1){
+    public void detach(Peripheral peripheral) {
+        if (peripheral.line != -1) {
             memlines[peripheral.line] = null;
         }
         peripherals.remove(peripheral);

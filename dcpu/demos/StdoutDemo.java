@@ -1,36 +1,36 @@
 package dcpu.demos;
 
-import dcpu.NotchDcpu;
+import dcpu.Dcpu;
 import dcpu.Stdout;
 
-import static dcpu.NotchDcpu.*;
+import static dcpu.Dcpu.*;
 
 public class StdoutDemo {
     public static void main(String[] args) {
-        NotchDcpu cpu = new NotchDcpu();
+        Dcpu cpu = new Dcpu();
         Stdout stdout = new Stdout();
-        cpu.attach(stdout,0xe); // stdout gets writes to 0xe000-0xefff
+        cpu.attach(stdout, 0xe); // stdout gets writes to 0xe000-0xefff
 
         short data = 0x1000;
         short tgt = (short) 0xe123;
 
         // :loop
         // ife (data+i),0
-        //      hlt
+        //      hlt (reserved op)
         // set (tgt+i),(data+i)
         // add i,1
         // set pc,loop
-        cpu.mem[0] = gencmd(O_IFE,A_M_NW_I,A_0);
+        cpu.mem[0] = gencmd(O_IFE, A_M_NW_I, A_0);
         cpu.mem[1] = data;
-        cpu.mem[2] = O_HLT;
-        cpu.mem[3] = gencmd(O_SET,A_M_NW_I,A_M_NW_I);
+        cpu.mem[2] = gencmd_nbi(O__RESVD, 0);
+        cpu.mem[3] = gencmd(O_SET, A_M_NW_I, A_M_NW_I);
         cpu.mem[4] = tgt;
         cpu.mem[5] = data;
-        cpu.mem[6] = gencmd(O_ADD,A_I,A_1);
-        cpu.mem[7] = gencmd(O_SET,A_PC,0);
+        cpu.mem[6] = gencmd(O_ADD, A_I, A_1);
+        cpu.mem[7] = gencmd(O_SET, A_PC, 0);
 
         int i_tgt = data & 0xffff;
-        for (char c : "Hi universe!".toCharArray()){
+        for (char c : "Hi universe!".toCharArray()) {
             cpu.mem[i_tgt] = (short) c;
             i_tgt++;
         }

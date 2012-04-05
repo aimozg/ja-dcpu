@@ -1,7 +1,7 @@
 package dcpu.demos;
 
+import dcpu.Dcpu;
 import dcpu.DcpuCompiler;
-import dcpu.NotchDcpu;
 
 /**
  * Created by IntelliJ IDEA.
@@ -12,6 +12,9 @@ import dcpu.NotchDcpu;
 public class CompilerDemo {
     public static void main(String[] args) {
         DcpuCompiler compiler = new DcpuCompiler();
+        //////////////////////////////////
+        // Hello World test
+        System.out.println("\nHello World demo\n");
         short[] bytecode = compiler.compile(";1 Assembler test for DCPU\n" +
                 ";2 by Markus Persson\n" +
                 "\n" +
@@ -31,7 +34,7 @@ public class CompilerDemo {
                 "\n" +
                 ":end         hlt");
         printBytecode(bytecode);
-        NotchDcpu dcpu = new NotchDcpu();
+        Dcpu dcpu = new Dcpu();
         dcpu.upload(bytecode);
         dcpu.run();
         System.out.println("Video memory:");
@@ -40,7 +43,44 @@ public class CompilerDemo {
             System.out.print((char) dcpu.mem[v]);
             v++;
         }
+        System.out.println();
+        ///////////////////////////////////////////////
+        //// Example from 1.1 docs
+        System.out.println("\n1.1 demo\n");
+        bytecode = compiler.compile("        ; Try some basic stuff\n" +
+                "                      SET A, 0x30              ; 7c01 0030\n" +
+                "                      SET [0x1000], 0x20       ; 7de1 1000 0020\n" +
+                "                      SUB A, [0x1000]          ; 7803 1000\n" +
+                "                      IFN A, 0x10              ; c00d \n" +
+                "                         SET PC, crash         ; 7dc1 001a [*]\n" +
+                "                      \n" +
+                "        ; Do a loopy thing\n" +
+                "                      SET I, 10                ; a861\n" +
+                "                      SET A, 0x2000            ; 7c01 2000\n" +
+                "        :loop         SET [0x2000+I], [A]      ; 2161 2000\n" +
+                "                      SUB I, 1                 ; 8463\n" +
+                "                      IFN I, 0                 ; 806d\n" +
+                "                         SET PC, loop          ; 7dc1 000d [*]\n" +
+                "        \n" +
+                "        ; Call a subroutine\n" +
+                "                      SET X, 0x4               ; 9031\n" +
+                "                      JSR testsub              ; 7c10 0018 [*]\n" +
+                "                      SET PC, crash            ; 7dc1 001a [*]\n" +
+                "        \n" +
+                "        :testsub      SHL X, 4                 ; 9037\n" +
+                "                      SET PC, POP              ; 61c1\n" +
+                "                        \n" +
+                "        ; Stop DCPU.\n" +
+                "        :crash        HLT            ; 0000 0000\n" +
+                "        ");
+        dcpu.reset();
+        dcpu.upload(bytecode);
+        dcpu.run();
+        System.out.printf("X = %04x\n", dcpu.mem[Dcpu.M_X]);
+
         ///////////////////////////////////////////////////////////////////////////////////
+        // Macros - not supported yet
+        System.out.println("\nMacro and keyboard demo\n");
         bytecode = compiler.compile("; Reading characters from the keyboard\n" +
                 "; by Markus Persson\n" +
                 "\n" +
