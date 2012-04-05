@@ -1,7 +1,7 @@
 package dcpu.demos;
 
+import dcpu.Assembler;
 import dcpu.Dcpu;
-import dcpu.DcpuAssembler;
 import dcpu.Tracer;
 import dcpu.io.InstreamPeripheral;
 import dcpu.io.OutstreamPeripheral;
@@ -12,7 +12,7 @@ import dcpu.io.OutstreamPeripheral;
 public class StdinoutDemo {
     public static void main(String[] args) {
         Dcpu cpu = new Dcpu();
-        DcpuAssembler assembler = new DcpuAssembler();
+        Assembler assembler = new Assembler();
         cpu.upload(assembler.assemble(
                 ":main\n" +
                         "     SET A,0x8000 ; stdout\n" +
@@ -73,11 +73,11 @@ public class StdinoutDemo {
                         "       SET PC,readln\n" +
                         "\n" +
                         ":greet1\n" +
-                        "       dat \"Hello, what's your name?\",0\n" +
+                        "       dat \"Hello, what's your name?\",0xa,0\n" +
                         ":greet2\n" +
                         "       dat \"Hello, \",0\n" +
                         ":greet3\n" +
-                        "       dat \" !\",0\n" +
+                        "       dat \"!\",0xa,0\n" +
                         ":end\n" +
                         "    dat 0\n" +
                         ":name"

@@ -162,7 +162,7 @@ public class Assembler {
             if (cm && !accept(",")) break;
             cm = true;
             if (accept(strPattern)) {
-                for (char c : token.substring(1, token.length() - 2).toCharArray()) {
+                for (char c : token.substring(1, token.length() - 1).toCharArray()) {
                     append((short) c);
                 }
             } else if (accept(numPattern)) {
