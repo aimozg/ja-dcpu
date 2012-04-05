@@ -99,11 +99,19 @@ public class Assembler {
 
 
     void reset() {
+        asmmap = new AsmMap();
         references.clear();
         symbols.clear();
         buffer = new short[256];
         counter = 0;
     }
+
+    /**
+     * Generate AsmMap
+     */
+    public boolean genMap = false;
+
+    public AsmMap asmmap;
 
     public short[] assemble(String s) {
         reset();
@@ -131,7 +139,7 @@ public class Assembler {
                 } else if (acceptIgnoreCase("dat")) {
                     dat();
                 } else if (acceptIgnoreCase("hlt")) {
-                    append(gencmd_nbi(O__RESVD, 0));
+                    append(gencmd_nbi(O__RESVD, 0), false);
                 } else {
                     oper();
                 }
@@ -163,12 +171,12 @@ public class Assembler {
             cm = true;
             if (accept(strPattern)) {
                 for (char c : token.substring(1, token.length() - 1).toCharArray()) {
-                    append((short) c);
+                    append((short) c, false);
                 }
             } else if (accept(numPattern)) {
-                append((short) tokenToInt());
+                append((short) tokenToInt(), false);
             } else if (accept(idPattern)) {
-                append((short) 0);
+                append((short) 0, false);
                 references.add(new Reference(token, (short) (counter - 1), stokizer.lineno()));
             }
         }
@@ -187,7 +195,7 @@ public class Assembler {
             }
         }
         int op_pc = counter;
-        append((short) 0);
+        append((short) 0, true);
         Param pa = param();
         int a = pa.acode();
         if (a == -1) fail("Bad operand a");
@@ -222,13 +230,13 @@ public class Assembler {
         if (accept(idPattern)) {
             int regidx = registerByName(token);
             if (regidx >= 0) return new SimpleRegisterParam(regidx);
-            append((short) 0);
+            append((short) 0, true);
             Reference ref = new Reference(token, (short) (counter - 1), stokizer.lineno());
             references.add(ref);
             return new SimpleSymbolParam(token);
         } else if (accept(numPattern)) {
             int val = tokenToInt();
-            if (val >= 32 || val < 0) append((short) val);
+            if (val >= 32 || val < 0) append((short) val, true);
             return new SimpleConstParam((short) val);
         } else {
             return null;
@@ -247,15 +255,24 @@ public class Assembler {
     private void label() throws IOException {
         require(idPattern, "label name");
         symbols.put(token, (short) counter);
+        if (genMap) asmmap.symbolMap.put(token, (short) counter);
     }
 
     private void macro() {
         throw new UnsupportedOperationException(); // TODO write Assembler.macro method body
     }
 
-    private void append(short s) {
+    private void append(short s, boolean code) {
         if (counter == buffer.length) {
             buffer = Arrays.copyOf(buffer, buffer.length * 3 / 2);
+        }
+        if (genMap) {
+            int line = stokizer.lineno();
+            asmmap.binMap.put((short) counter, line);
+            if (code) asmmap.code.set(counter);
+            if (!asmmap.srcMap.containsKey(line)) {
+                asmmap.srcMap.put(line, (short) counter);
+            }
         }
         buffer[counter++] = s;
     }

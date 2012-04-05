@@ -1,7 +1,7 @@
 package dcpu.demos;
 
-import dcpu.Dcpu;
 import dcpu.Assembler;
+import dcpu.Dcpu;
 
 /**
  * Created by IntelliJ IDEA.
@@ -12,6 +12,7 @@ import dcpu.Assembler;
 public class AssemblerDemo {
     public static void main(String[] args) {
         Assembler assembler = new Assembler();
+        assembler.genMap = true;
         //////////////////////////////////
         // Hello World test
         System.out.println("\nHello World demo\n");
