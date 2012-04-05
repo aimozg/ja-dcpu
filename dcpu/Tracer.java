@@ -1,5 +1,7 @@
 package dcpu;
 
+import static dcpu.Dcpu.*;
+
 /**
  * Prints executed commands to stdout
  */
@@ -7,6 +9,8 @@ public class Tracer implements Listener<Short> {
 
     Dcpu dcpu;
     Disassembler disassembler;
+    private boolean printRegisters = false;
+    private int printStack = 0;
 
     public void install(Dcpu dcpu) {
         this.dcpu = dcpu;
@@ -18,5 +22,28 @@ public class Tracer implements Listener<Short> {
     public void event(Short pc) {
         disassembler.setAddress(pc & 0xffff);
         System.out.printf("%04x: %s\n", pc, disassembler.next());
+        if (printRegisters)
+            System.out.printf("  R:  A=%04x B=%04x C=%04x X=%04x Y=%04x Z=%04x I=%04x J=%04x  SP=%04x O=%04x\n",
+                    dcpu.mem[M_A], dcpu.mem[M_B], dcpu.mem[M_C],
+                    dcpu.mem[M_X], dcpu.mem[M_Y], dcpu.mem[M_Z],
+                    dcpu.mem[M_I], dcpu.mem[M_J],
+                    dcpu.mem[M_SP], dcpu.mem[M_O]);
+        if (printStack > 0) {
+            int sp = dcpu.mem[M_SP] & 0xffff;
+            System.out.printf("  S: ");
+            for (int i = 0; i < printStack; i++) {
+                System.out.printf(" %04x", dcpu.mem[sp]);
+                sp = (sp + 0x10000 - 1) % 0x10000;
+            }
+            System.out.println();
+        }
+    }
+
+    public void printRegisters(boolean b) {
+        this.printRegisters = b;
+    }
+
+    public void printStack(int i) {
+        this.printStack = i;
     }
 }
