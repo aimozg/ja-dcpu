@@ -23,7 +23,7 @@ public class Disassembler {
     }
 
     public String next() {
-        int instr = mem[address++];
+        int instr = mem[address++] & 0xffff;
         int opcode = instr & C_O_MASK;
         if (opcode != O_NBI) {
             int a = (instr & C_A_MASK) >> C_A_SHIFT;
@@ -31,6 +31,8 @@ public class Disassembler {
             return OPCODE_NAMES[opcode] + " " + operand(a) + ", " + operand(b);
         } else {
             int a = (instr & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
+            opcode = (instr & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
+            ;
             return OPCODE0_NAMES[opcode] + " " + operand(a);
         }
     }
