@@ -383,7 +383,6 @@ public class Dcpu {
         for (int i = 0; i < 32; i++) {
             mem[M_CV + i] = (short) i;
         }
-        mem[M_SP] = (short) 0xffff;
     }
 
     public Dcpu() {
@@ -428,7 +427,7 @@ public class Dcpu {
     }
 
     @SuppressWarnings("unused")
-	private void _dstep(boolean skip, int opcode, int aa, int ba, int av, int bv) {
+    private void _dstep(boolean skip, int opcode, int aa, int ba, int av, int bv) {
         _d("%s%s %s=%04x %s=%04x\n", skip ? "; " : "> ", OPCODE_NAMES[opcode], _dmem(aa), av, _dmem(ba), bv);
     }
 
