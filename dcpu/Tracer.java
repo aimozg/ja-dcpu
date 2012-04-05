@@ -11,6 +11,7 @@ public class Tracer implements Listener<Short> {
     Disassembler disassembler;
     private boolean printRegisters = false;
     private int printStack = 0;
+    private boolean printMemAtReg = false;
 
     public void install(Dcpu dcpu) {
         this.dcpu = dcpu;
@@ -28,6 +29,12 @@ public class Tracer implements Listener<Short> {
                     dcpu.mem[M_X], dcpu.mem[M_Y], dcpu.mem[M_Z],
                     dcpu.mem[M_I], dcpu.mem[M_J],
                     dcpu.mem[M_SP], dcpu.mem[M_O]);
+        if (printMemAtReg)
+            System.out.printf("  M:  A*%04x B*%04x C*%04x X*%04x Y*%04x Z*%04x I*%04x J*%04x  SP*%04x O*%04x\n",
+                    dcpu.mem[0xffff & dcpu.mem[M_A]], dcpu.mem[0xffff & dcpu.mem[M_B]], dcpu.mem[0xffff & dcpu.mem[M_C]],
+                    dcpu.mem[0xffff & dcpu.mem[M_X]], dcpu.mem[0xffff & dcpu.mem[M_Y]], dcpu.mem[0xffff & dcpu.mem[M_Z]],
+                    dcpu.mem[0xffff & dcpu.mem[M_I]], dcpu.mem[0xffff & dcpu.mem[M_J]],
+                    dcpu.mem[0xffff & dcpu.mem[M_SP]], dcpu.mem[0xffff & dcpu.mem[M_O]]);
         if (printStack > 0) {
             int sp = dcpu.mem[M_SP] & 0xffff;
             System.out.printf("  S: ");
@@ -45,5 +52,9 @@ public class Tracer implements Listener<Short> {
 
     public void printStack(int i) {
         this.printStack = i;
+    }
+
+    public void printMemAtReg(boolean b) {
+        this.printMemAtReg = b;
     }
 }

@@ -12,18 +12,19 @@ import java.io.InputStream;
 public class InstreamPeripheral extends Dcpu.Peripheral {
 
     volatile boolean attached = false;
+    private int bufsize;
 
     @Override
     public void attachedTo(Dcpu cpu, int baseaddr) {
         attached = true;
-        new Thread(new Runnable() {
+        Thread t = new Thread(new Runnable() {
             public void run() {
                 try {
                     while (attached) {
                         int c = input.read();
-                        if (c != -1 && ro != wo) synchronized (buffer) {
+                        if (c != -1 && (wo + 1) % bufsize != ro) synchronized (buffer) {
                             buffer[wo] = (short) c;
-                            wo = (wo + 1) % buffer.length;
+                            wo = (wo + 1) % bufsize;
                         }
                     }
                 } catch (IOException e) {
@@ -34,7 +35,9 @@ public class InstreamPeripheral extends Dcpu.Peripheral {
                     }
                 }
             }
-        }, "StdinPeripheralReader").start();
+        }, "StdinPeripheralReader");
+        t.setDaemon(true);
+        t.start();
     }
 
     @Override
@@ -51,6 +54,9 @@ public class InstreamPeripheral extends Dcpu.Peripheral {
     public InstreamPeripheral(InputStream input, int bufsize) {
         this.input = input;
         buffer = new short[bufsize];
+        this.bufsize = bufsize;
+        ro = 0;
+        wo = 0;
     }
 
     int ro, wo;
@@ -61,7 +67,7 @@ public class InstreamPeripheral extends Dcpu.Peripheral {
     public short onMemget(int offset) {
         if (ro != wo) synchronized (buffer) {
             short result = buffer[ro];
-            ro = (ro + 1) % buffer.length;
+            ro = (ro + 1) % bufsize;
             return result;
         }
         else return (short) 0xffff;

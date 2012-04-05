@@ -247,12 +247,20 @@ public class Dcpu {
             b = (cmd & C_B_MASK) >> C_B_SHIFT;
             aa = getaddr(a, OPCODE_MODMEM[opcode]) & 0x1ffff;
             ba = getaddr(b, false) & 0x1ffff;
+            if (skip) {
+                mem[M_SP] = mem[M_PSP];
+                return;
+            }
             av = memget(aa) & 0xffff;
             bv = memget(ba) & 0xffff;
         } else {
             a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
             aa = getaddr(a, OPCODE0_MODMEM[b]) & 0x1ffff;
+            if (skip) {
+                mem[M_SP] = mem[M_PSP];
+                return;
+            }
             ba = 0;
             av = memget(aa) & 0xffff;
             bv = 0;
@@ -261,10 +269,6 @@ public class Dcpu {
         // debug
         //_dstep(skip, opcode, aa, ba, av, bv);
 
-        if (skip) {
-            mem[M_SP] = mem[M_PSP];
-            return;
-        }
         int rslt = mem[aa]; // new 'a' value
         int oreg = mem[M_O]; // new 'O' value
         switch (opcode) {
@@ -280,7 +284,7 @@ public class Dcpu {
                 }
                 break;
             case O_SET:
-                rslt = mem[ba];
+                rslt = bv;
                 break;
             case O_ADD:
                 rslt = av + bv;

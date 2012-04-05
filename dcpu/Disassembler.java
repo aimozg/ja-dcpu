@@ -32,7 +32,6 @@ public class Disassembler {
         } else {
             int a = (instr & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             opcode = (instr & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
-            ;
             return OPCODE0_NAMES[opcode] + " " + operand(a);
         }
     }
