@@ -6,6 +6,8 @@ import dcpu.Tracer;
 import dcpu.io.InstreamPeripheral;
 import dcpu.io.OutstreamPeripheral;
 
+import java.io.ByteArrayOutputStream;
+
 /**
  * Asks user's name and greets him.
  */
@@ -73,17 +75,18 @@ public class StdinoutDemo {
                         "       SET PC,readln\n" +
                         "\n" +
                         ":greet1\n" +
-                        "       dat \"Hello, what's your name?\",0xa,0\n" +
+                        "       dat \"Hello, what's your name?\",0xd,0xa,0\n" +
                         ":greet2\n" +
                         "       dat \"Hello, \",0\n" +
                         ":greet3\n" +
-                        "       dat \"!\",0xa,0\n" +
+                        "       dat \"!\",0xd,0xa,0\n" +
                         ":end\n" +
                         "    dat 0\n" +
                         ":name"
         ));
 
-        OutstreamPeripheral stdout = new OutstreamPeripheral(System.out);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        OutstreamPeripheral stdout = new OutstreamPeripheral(byteArrayOutputStream);
         cpu.attach(stdout, 0x8);
         InstreamPeripheral stdin = new InstreamPeripheral(System.in, 100);
         cpu.attach(stdin, 0x9);
