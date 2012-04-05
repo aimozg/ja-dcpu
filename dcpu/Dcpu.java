@@ -262,6 +262,7 @@ public class Dcpu {
         //_dstep(skip, opcode, aa, ba, av, bv);
 
         if (skip) {
+            mem[M_SP] = mem[M_PSP];
             return;
         }
         int rslt = mem[aa]; // new 'a' value
@@ -365,10 +366,11 @@ public class Dcpu {
 
     public void reset() {
         reserved = false;
-        for (int i = 0; i < 8 + 3; i++) mem[M_A + i] = 0;
+        for (int i = 0; i < M_CV - M_A; i++) mem[M_A + i] = 0;
         for (int i = 0; i < 32; i++) {
             mem[M_CV + i] = (short) i;
         }
+        mem[M_SP] = (short) 0xffff;
     }
 
     public Dcpu() {
