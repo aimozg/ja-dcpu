@@ -1,10 +1,10 @@
 package dcpu.io;
 
-import dcpu.Dcpu;
-import dcpu.Listener;
-
 import java.io.IOException;
 import java.io.OutputStream;
+
+import dcpu.Dcpu;
+import dcpu.Listener;
 
 /**
  * Simple peripheral that outputs all characters written to its line

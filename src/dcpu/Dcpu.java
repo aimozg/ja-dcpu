@@ -11,7 +11,6 @@ import java.util.List;
  * Date: 28.03.12
  * Time: 19:15
  */
-@SuppressWarnings({"UnusedDeclaration", "PointlessBitwiseExpression", "PointlessArithmeticExpression"})
 public class Dcpu {
 
     ////////////////
@@ -428,7 +427,8 @@ public class Dcpu {
         return (addr < M_A) ? String.format("(%04x)", addr) : MEM_NAMES[addr - M_A];
     }
 
-    private void _dstep(boolean skip, int opcode, int aa, int ba, int av, int bv) {
+    @SuppressWarnings("unused")
+	private void _dstep(boolean skip, int opcode, int aa, int ba, int av, int bv) {
         _d("%s%s %s=%04x %s=%04x\n", skip ? "; " : "> ", OPCODE_NAMES[opcode], _dmem(aa), av, _dmem(ba), bv);
     }
 
