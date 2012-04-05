@@ -126,3 +126,20 @@ Framework supports flexible peripherals. ja-dcpu-demo uses two hard-coded periph
 ## Example code
 
 See downloads section
+
+## TO-DO
+
+1. Utilize mapfiles in tracing
+1. Configurable peripherals
+2. More peripherals
+  1. Network access
+  2. Display
+  3. Sound
+3. IDE
+  1. Syntax highlighting
+  2. Debugger:
+    1. Step
+    2. Show source
+    3. Monitor/modify registers and memory
+    4. Breakpoints
+  3. Peripheral constructor
