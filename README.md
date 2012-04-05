@@ -131,10 +131,12 @@ See downloads section
 
 1. Utilize mapfiles in tracing
 1. Configurable peripherals
+1. Proper instruction cost in cycles
 2. More peripherals
   1. Network access
   2. Display
   3. Sound
+  4. Clock
 3. IDE
   1. Syntax highlighting
   2. Debugger:
