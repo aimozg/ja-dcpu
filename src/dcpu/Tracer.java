@@ -1,8 +1,17 @@
 package dcpu;
 
-import java.io.PrintStream;
+import static dcpu.Dcpu.M_A;
+import static dcpu.Dcpu.M_B;
+import static dcpu.Dcpu.M_C;
+import static dcpu.Dcpu.M_I;
+import static dcpu.Dcpu.M_J;
+import static dcpu.Dcpu.M_O;
+import static dcpu.Dcpu.M_SP;
+import static dcpu.Dcpu.M_X;
+import static dcpu.Dcpu.M_Y;
+import static dcpu.Dcpu.M_Z;
 
-import static dcpu.Dcpu.*;
+import java.io.PrintStream;
 
 /**
  * Prints executed commands to PrintStream
