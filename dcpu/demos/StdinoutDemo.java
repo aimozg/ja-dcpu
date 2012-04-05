@@ -2,11 +2,8 @@ package dcpu.demos;
 
 import dcpu.Assembler;
 import dcpu.Dcpu;
-import dcpu.Tracer;
 import dcpu.io.InstreamPeripheral;
 import dcpu.io.OutstreamPeripheral;
-
-import java.io.ByteArrayOutputStream;
 
 /**
  * Asks user's name and greets him.
@@ -89,12 +86,6 @@ public class StdinoutDemo {
         cpu.attach(stdout, 0x8);
         InstreamPeripheral stdin = new InstreamPeripheral(System.in, 100);
         cpu.attach(stdin, 0x9);
-
-        Tracer tracer = new Tracer();
-        tracer.printRegisters(true);
-        tracer.printMemAtReg(true);
-        tracer.printStack(4);
-        //tracer.install(cpu);
 
         cpu.reset();
         cpu.run();
