@@ -16,7 +16,7 @@ public class Tracer implements Listener<Short> {
     private boolean printMemAtReg = false;
     PrintStream out;
 
-    Tracer(PrintStream out) {
+    public Tracer(PrintStream out) {
         this.out = out;
     }
 
@@ -46,7 +46,7 @@ public class Tracer implements Listener<Short> {
             int sp = dcpu.mem[M_SP] & 0xffff;
             out.printf("  S: ");
             for (int i = 0; i < printStack; i++) {
-                System.out.printf(" %04x", dcpu.mem[sp]);
+                out.printf(" %04x", dcpu.mem[sp]);
                 sp = (sp + 0x10000 - 1) % 0x10000;
             }
             out.println();

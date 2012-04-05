@@ -3,13 +3,11 @@ package dcpu.demos;
 import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Disassembler;
+import dcpu.Tracer;
 import dcpu.io.InstreamPeripheral;
 import dcpu.io.OutstreamPeripheral;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.ShortBuffer;
-import java.util.Arrays;
 
 /**
  * Assembles and executes external asm file
@@ -21,6 +19,10 @@ public class ExtAsmDemo {
         String outbin = null;
         boolean exec = true;
         String outsrc = null;
+        boolean trace = false;
+        boolean traceregs = false;
+        boolean tracemem = false;
+        boolean tracestack = false;
         int ai = 0;
         while (ai < args.length) {
             String arg = args[ai++];
@@ -36,8 +38,26 @@ public class ExtAsmDemo {
                     outsrc = args[ai++];
                 } else if (arg.equals("-x")) {
                     exec = false;
+                } else if (arg.startsWith("-T")) {
+                    trace = true;
+                    for (char c : arg.substring(2).toCharArray()) {
+                        switch (c) {
+                            case 'r':
+                                traceregs = true;
+                                break;
+                            case 'm':
+                                tracemem = true;
+                                break;
+                            case 's':
+                                tracestack = true;
+                                break;
+                            default:
+                                fail("Unknown trace param " + c);
+                                break;
+                        }
+                    }
                 } else {
-                    // TODO options: run binary, decompile binary, trace, run some cycles
+                    // TODO options: run some cycles
                     fail("Unrecognized option `%s` . Aborting\n", arg);
                 }
             } else {
@@ -57,6 +77,11 @@ public class ExtAsmDemo {
                     "\t-I BININ         load binary image and exec this instead of source\n" +
                     "\t-D SRCOUT        disassemble binary image and save to SRCOUT\n" +
                     "\t-x               do not execute code, just disassemble/save\n" +
+                    "\t-T[TRACEOPTS]    trace executed instructions to stderr\n" +
+                    "\t\tTRACEOPTS might include (no separators):\n" +
+                    "\t\tr              print registers value\n" +
+                    "\t\tm              print memory at registers addresses\n" +
+                    "\t\ts              print stack (8 words)\n" +
                     "\n" +
                     "Hard-coded peripherals:\n" +
                     "\t0x8000-0x8fff    Stdout. Anything written comes to stdout\n" +
@@ -119,6 +144,14 @@ public class ExtAsmDemo {
                 cpu.attach(stdout, 0x8);
                 InstreamPeripheral stdin = new InstreamPeripheral(System.in, 100);
                 cpu.attach(stdin, 0x9);
+
+                if (trace) {
+                    Tracer tracer = new Tracer(System.err);
+                    tracer.printMemAtReg(tracemem);
+                    tracer.printRegisters(traceregs);
+                    tracer.printStack(tracestack ? 8 : 0);
+                    tracer.install(cpu);
+                }
 
                 cpu.run();
             }
