@@ -63,6 +63,16 @@ public class Dcpu {
             "?", "?", "?", "?", "?", "?", "?", "?",//0x30-0x37
             "?", "?", "?", "?", "?", "?", "?", "?"//0x38-0x3f
     };
+    public static final boolean[] OPCODE0_RESERVED = {
+            true, false, true, true, true, true, true, true,
+            true, true, true, true, true, true, true, true,
+            true, true, true, true, true, true, true, true,
+            true, true, true, true, true, true, true, true,
+            true, true, true, true, true, true, true, true,
+            true, true, true, true, true, true, true, true,
+            true, true, true, true, true, true, true, true,
+            true, true, true, true, true, true, true, true
+    };
     // operations that place their result into memory cell
     public static final boolean[] OPCODE_MODMEM = {
             false, true, true, true,
