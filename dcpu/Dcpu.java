@@ -21,8 +21,7 @@ public class Dcpu {
     //   mem cell and put something into another)
     // * Some magic about PPC, PSP, and getaddr explained in getaddr comment
     // * NW is commonly used for 'Next Word in ram', NBI - non-basic-instruction
-    // * Peripherals can be attached to monitor CPU ticks and writes to 4096-word memory lines (determined by highest nibble)
-    // * TODO: peripherals to monitor reads
+    // * Peripherals can be attached to monitor CPU ticks and read/writes to 4096-word memory lines (determined by highest nibble)
 
     ////////////////
     /// CONSTANTS
@@ -245,14 +244,14 @@ public class Dcpu {
             b = (cmd & C_B_MASK) >> C_B_SHIFT;
             aa = getaddr(a, OPCODE_MODMEM[opcode]) & 0x1ffff;
             ba = getaddr(b, false) & 0x1ffff;
-            av = mem[aa] & 0xffff;
-            bv = mem[ba] & 0xffff;
+            av = memget(aa) & 0xffff;
+            bv = memget(ba) & 0xffff;
         } else {
             a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
             aa = getaddr(a, OPCODE0_MODMEM[b]) & 0x1ffff;
             ba = 0;
-            av = mem[aa] & 0xffff;
+            av = memget(aa) & 0xffff;
             bv = 0;
         }
 
@@ -345,18 +344,19 @@ public class Dcpu {
      */
     public void memset(int addr, short value) {
         short oldval = mem[addr];
-        int line = addr >> 12;
+        int line = addr >>> 12;
         mem[addr] = value;
-        if (line >= 0 && line < memlines.length && memlines[line] != null) {
-            memlines[line].onMemset(addr, value, oldval);
+        if (line < memlines.length && memlines[line] != null) {
+            memlines[line].onMemset(addr & 0x0fff, value, oldval);
         }
     }
 
-    /**
-     * Sets memory[addr] to value, *without* calling peripheral hook
-     */
-    public void memset_raw(int addr, short value) {
-        mem[addr] = value;
+    public short memget(int addr) {
+        int line = addr >>> 12;
+        if (line < memlines.length && memlines[line] != null) {
+            return memlines[line].onMemget(addr & 0x0fff);
+        }
+        return mem[addr];
     }
 
 
@@ -475,7 +475,7 @@ public class Dcpu {
     public abstract static class Peripheral {
 
         public Dcpu cpu;
-        public int line;
+        public int baseaddr;
 
         /**
          * This method is called every CPU cycle. cmd is last command code
@@ -486,18 +486,26 @@ public class Dcpu {
 
         /**
          * This method is called when program or other peripheral writes "newval" to
-         * memory address "addr". Method is called only for this
+         * memory address "baseaddr"+"offset". Note that cpu.mem[baseaddr+offset] already contains newval
          */
-        public void onMemset(int addr, short newval, short oldval) {
+        public void onMemset(int offset, short newval, short oldval) {
 
+        }
+
+        /**
+         * This method is called when program or other peripheral reads value from
+         * memory address "baseaddr"+"offset".
+         */
+        public short onMemget(int offset) {
+            return cpu.mem[baseaddr + offset];
         }
 
         /**
          * Called when attached to cpu
          */
-        public void attachedTo(Dcpu cpu, int line) {
+        public void attachedTo(Dcpu cpu, int baseaddr) {
             this.cpu = cpu;
-            this.line = line;
+            this.baseaddr = baseaddr;
         }
 
         /**
@@ -519,12 +527,12 @@ public class Dcpu {
             memlines[line] = peripheral;
         }
         peripherals.add(peripheral);
-        peripheral.attachedTo(this, line);
+        peripheral.attachedTo(this, line << 12);
     }
 
     public void detach(Peripheral peripheral) {
-        if (peripheral.line != -1) {
-            memlines[peripheral.line] = null;
+        if (peripheral.baseaddr != -1) {
+            memlines[peripheral.baseaddr >> 12] = null;
         }
         peripherals.remove(peripheral);
         peripheral.detached();

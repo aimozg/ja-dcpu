@@ -1,14 +1,14 @@
 package dcpu.demos;
 
 import dcpu.Dcpu;
-import dcpu.Stdout;
+import dcpu.io.OutstreamPeripheral;
 
 import static dcpu.Dcpu.*;
 
 public class StdoutDemo {
     public static void main(String[] args) {
         Dcpu cpu = new Dcpu();
-        Stdout stdout = new Stdout();
+        OutstreamPeripheral stdout = new OutstreamPeripheral(System.out);
         cpu.attach(stdout, 0xe); // stdout gets writes to 0xe000-0xefff
 
         short data = 0x1000;
