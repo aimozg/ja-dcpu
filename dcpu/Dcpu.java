@@ -284,9 +284,10 @@ public class Dcpu {
                 break;
             case O_DIV:
                 if (bv == 0) {
-                    oreg = 1;
+                    oreg = 0;
                 } else {
                     rslt = (short) (av / bv);
+                    oreg = (short) ((av << 16) / bv);
                 }
                 break;
             case O_MOD:
