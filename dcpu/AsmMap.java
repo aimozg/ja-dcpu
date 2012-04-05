@@ -1,16 +1,16 @@
 package dcpu;
 
 import java.util.BitSet;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Assembler map, which contains label-address and line-address maps, and also code/data bitmap
  */
 public class AsmMap {
-    public final Map<String, Short> symbolMap = new HashMap<String, Short>();
-    public final Map<Integer, Short> srcMap = new HashMap<Integer, Short>();
-    public final Map<Short, Integer> binMap = new HashMap<Short, Integer>();
+    public final Map<String, Short> symbolMap = new TreeMap<String, Short>();
+    public final Map<Integer, Short> srcMap = new TreeMap<Integer, Short>();
+    public final Map<Short, Integer> binMap = new TreeMap<Short, Integer>();
     public final BitSet code = new BitSet();
 
     /**

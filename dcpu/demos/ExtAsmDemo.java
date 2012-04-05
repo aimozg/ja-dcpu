@@ -8,17 +8,19 @@ import dcpu.io.InstreamPeripheral;
 import dcpu.io.OutstreamPeripheral;
 
 import java.io.*;
+import java.util.Map;
 
 /**
  * Assembles and executes external asm file
  */
 public class ExtAsmDemo {
     public static void main(String[] args) {
-        String insrc = null;
-        String inbin = null;
-        String outbin = null;
+        String srcin = null;
+        String binin = null;
+        String binout = null;
         boolean exec = true;
-        String outsrc = null;
+        String srcout = null;
+        String mapout = null;
         boolean trace = false;
         boolean traceregs = false;
         boolean tracemem = false;
@@ -29,15 +31,18 @@ public class ExtAsmDemo {
             if (arg.startsWith("-")) {
                 if (arg.equals("-O")) {
                     if (ai == args.length) fail("Missing argument");
-                    outbin = args[ai++];
+                    binout = args[ai++];
                 } else if (arg.equals("-I")) {
                     if (ai == args.length) fail("Missing argument");
-                    inbin = args[ai++];
+                    binin = args[ai++];
                 } else if (arg.equals("-D")) {
                     if (ai == args.length) fail("Missing argument");
-                    outsrc = args[ai++];
+                    srcout = args[ai++];
                 } else if (arg.equals("-x")) {
                     exec = false;
+                } else if (arg.equals("-M")) {
+                    if (ai == args.length) fail("Missing argument");
+                    mapout = args[ai++];
                 } else if (arg.startsWith("-T")) {
                     trace = true;
                     for (char c : arg.substring(2).toCharArray()) {
@@ -61,27 +66,28 @@ public class ExtAsmDemo {
                     fail("Unrecognized option `%s` . Aborting\n", arg);
                 }
             } else {
-                if (insrc != null) {
-                    fail("Multiple filenames (%s and %s). Aborting\n", insrc, args);
+                if (srcin != null) {
+                    fail("Multiple filenames (%s and %s). Aborting\n", srcin, args);
                 }
-                insrc = arg;
+                srcin = arg;
             }
         }
-        if (insrc == null && inbin == null) {
+        if (srcin == null && binin == null) {
             fail("DCPU-16 Assembler and Emulator demo.\n" +
                     "Usage:\n" +
                     "\tjava -jar ja-dcpu-demo.jar [OPTIONS] [SRCIN]\n" +
                     "Will assemble and execute specified source file\n" +
                     "OPTIONS:\n" +
-                    "\t-O BINOUT        save compiled binary to BINOUT file\n" +
+                    "\t-O BINOUT        save compiled binary to file BINOUT\n" +
                     "\t-I BININ         load binary image and exec this instead of source\n" +
-                    "\t-D SRCOUT        disassemble binary image and save to SRCOUT\n" +
+                    "\t-D SRCOUT        disassemble binary image and save to file SRCOUT\n" +
                     "\t-x               do not execute code, just disassemble/save\n" +
                     "\t-T[TRACEOPTS]    trace executed instructions to stderr\n" +
                     "\t\tTRACEOPTS might include (no separators):\n" +
                     "\t\tr              print registers value\n" +
                     "\t\tm              print memory at registers addresses\n" +
                     "\t\ts              print stack (8 words)\n" +
+                    "\t-M MAPOUT        print compilation map to file (requires SOURCE)\n" +
                     "\n" +
                     "Hard-coded peripherals:\n" +
                     "\t0x8000-0x8fff    Stdout. Anything written comes to stdout\n" +
@@ -90,15 +96,48 @@ public class ExtAsmDemo {
         ////////////////////////////////
         try {
             short[] bytecode;
-            if (insrc != null) {
-                FileInputStream insrcf = new FileInputStream(insrc);
+            if (srcin != null) {
+                FileInputStream insrcf = new FileInputStream(srcin);
                 char[] csources = new char[insrcf.available()];
                 new InputStreamReader(insrcf).read(csources, 0, csources.length);
-
                 Assembler assembler = new Assembler();
-                bytecode = assembler.assemble(new String(csources));
-            } else if (inbin != null) {
-                FileInputStream inbinf = new FileInputStream(inbin);
+                if (mapout != null) assembler.genMap = true;
+                String ssources = new String(csources);
+                bytecode = assembler.assemble(ssources);
+
+                if (mapout != null) {
+                    /*ArrayList<String> lines = new ArrayList<String>();
+                    BufferedReader brdr = new BufferedReader(new StringReader(ssources));
+                    while(true){
+                        String line = brdr.readLine();
+                        if (line == null) break;
+                        lines.add(line);
+                    }*/
+                    PrintStream mapoutf = new PrintStream(mapout);
+                    mapoutf.println(";;;;MAPSTART");
+                    mapoutf.println(";;;;SYMBOLS");
+                    for (Map.Entry<String, Short> symbol : assembler.asmmap.symbolMap.entrySet()) {
+                        mapoutf.printf(";; \"%s\"=0x%04x", symbol.getKey(), symbol.getValue());
+                        mapoutf.println();
+                    }
+                    mapoutf.println(";;;;SRCMAP");
+                    for (Map.Entry<Integer, Short> line : assembler.asmmap.srcMap.entrySet()) {
+                        mapoutf.printf(";; %d=0x%04x", line.getKey(), line.getValue());
+                        mapoutf.println();
+                    }
+                    mapoutf.println(";;;;CODE");
+                    int one = assembler.asmmap.code.nextSetBit(0);
+                    while (one != -1) {
+                        int zero = assembler.asmmap.code.nextClearBit(one);
+                        mapoutf.printf(";; code 0x%04x-0x%04x", one, zero - 1);
+                        mapoutf.println();
+                        one = assembler.asmmap.code.nextSetBit(zero);
+                    }
+                    mapoutf.println(";;;;MAPEND");
+                }
+
+            } else if (binin != null) {
+                FileInputStream inbinf = new FileInputStream(binin);
                 int len = inbinf.available();
                 if (len % 2 == 1) fail("Odd file size (0x%x)\n", len);
                 len /= 2;
@@ -112,8 +151,8 @@ public class ExtAsmDemo {
                 }
             } else bytecode = new short[1];
 
-            if (outbin != null) {
-                FileOutputStream outfile = new FileOutputStream(outbin);
+            if (binout != null) {
+                FileOutputStream outfile = new FileOutputStream(binout);
                 for (short i : bytecode) {
                     outfile.write(i & 0xff);
                     outfile.write((i >> 8) & 0xff);
@@ -121,8 +160,8 @@ public class ExtAsmDemo {
                 outfile.close();
             }
 
-            if (outsrc != null) {
-                PrintStream outsrcf = new PrintStream(outsrc);
+            if (srcout != null) {
+                PrintStream outsrcf = new PrintStream(srcout);
                 Disassembler das = new Disassembler();
                 das.init(bytecode);
                 while (das.getAddress() < bytecode.length) {
