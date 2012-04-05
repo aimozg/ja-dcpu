@@ -1,9 +1,18 @@
 package dcpu.demos;
 
+import static dcpu.Dcpu.A_0;
+import static dcpu.Dcpu.A_1;
+import static dcpu.Dcpu.A_I;
+import static dcpu.Dcpu.A_M_NW_I;
+import static dcpu.Dcpu.A_PC;
+import static dcpu.Dcpu.O_ADD;
+import static dcpu.Dcpu.O_IFE;
+import static dcpu.Dcpu.O_SET;
+import static dcpu.Dcpu.O__RESVD;
+import static dcpu.Dcpu.gencmd;
+import static dcpu.Dcpu.gencmd_nbi;
 import dcpu.Dcpu;
 import dcpu.io.OutstreamPeripheral;
-
-import static dcpu.Dcpu.*;
 
 public class StdoutDemo {
     public static void main(String[] args) {

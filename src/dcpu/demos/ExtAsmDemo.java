@@ -1,5 +1,11 @@
 package dcpu.demos;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+
 import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Disassembler;
@@ -201,7 +207,8 @@ public class ExtAsmDemo {
         }
     }
 
-    private static void print(String s) {
+    @SuppressWarnings("unused")
+	private static void print(String s) {
         System.out.print(s);
     }
 

@@ -1,10 +1,10 @@
 package dcpu.io;
 
-import dcpu.Dcpu;
-import dcpu.Listener;
-
 import java.io.IOException;
 import java.io.InputStream;
+
+import dcpu.Dcpu;
+import dcpu.Listener;
 
 /**
  * Returns characters from standard input (non-blocking) when read at any offset.
