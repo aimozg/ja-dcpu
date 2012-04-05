@@ -48,20 +48,20 @@ public class Dcpu {
     public static final int O__RESVD = 0; // reserved
     public static final int O__JSR = 1;//NBI
     public static final String[] OPCODE_NAMES = {
-            "", "SET", "ADD", "SUB",
+            "?", "SET", "ADD", "SUB",
             "MUL", "DIV", "MOD", "SHL",
             "SHR", "AND", "BOR", "XOR",
             "IFE", "IFN", "IFG", "IFB"
     };
     public static final String[] OPCODE0_NAMES = {
-            "", "JSR", "", "", "", "", "", "", //0x00-0x07
-            "", "", "", "", "", "", "", "",//0x08-0x0f
-            "", "", "", "", "", "", "", "",//0x10-0x17
-            "", "", "", "", "", "", "", "",//0x18-0x1f
-            "", "", "", "", "", "", "", "",//0x20-0x27
-            "", "", "", "", "", "", "", "",//0x28-0x2f
-            "", "", "", "", "", "", "", "",//0x30-0x37
-            "", "", "", "", "", "", "", ""//0x38-0x3f
+            "?", "JSR", "?", "?", "?", "?", "?", "?", //0x00-0x07
+            "?", "?", "?", "?", "?", "?", "?", "?",//0x08-0x0f
+            "?", "?", "?", "?", "?", "?", "?", "?",//0x10-0x17
+            "?", "?", "?", "?", "?", "?", "?", "?",//0x18-0x1f
+            "?", "?", "?", "?", "?", "?", "?", "?",//0x20-0x27
+            "?", "?", "?", "?", "?", "?", "?", "?",//0x28-0x2f
+            "?", "?", "?", "?", "?", "?", "?", "?",//0x30-0x37
+            "?", "?", "?", "?", "?", "?", "?", "?"//0x38-0x3f
     };
     // operations that place their result into memory cell
     public static final boolean[] OPCODE_MODMEM = {
@@ -226,10 +226,13 @@ public class Dcpu {
         }
     }
 
+    public Listener<Short> stepListener;
+
     /**
      * Execute one operation (skip = false) or skip one operation.
      */
     public void step(boolean skip) {
+        if (!skip && stepListener != null) stepListener.event(mem[M_PC]);
         // save prev PC and prev SP
         mem[M_PPC] = mem[M_PC];
         mem[M_PSP] = mem[M_SP];

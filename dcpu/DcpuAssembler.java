@@ -346,7 +346,7 @@ public class DcpuAssembler {
 
         @Override
         int acode() {
-            if (value < 32) return A_CONST + value;
+            if ((value & 0xffff) < 32) return A_CONST + value;
             return A_NW;
         }
     }
