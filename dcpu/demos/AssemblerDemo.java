@@ -1,7 +1,7 @@
 package dcpu.demos;
 
 import dcpu.Dcpu;
-import dcpu.DcpuCompiler;
+import dcpu.DcpuAssembler;
 
 /**
  * Created by IntelliJ IDEA.
@@ -9,13 +9,13 @@ import dcpu.DcpuCompiler;
  * Date: 03.04.12
  * Time: 0:59
  */
-public class CompilerDemo {
+public class AssemblerDemo {
     public static void main(String[] args) {
-        DcpuCompiler compiler = new DcpuCompiler();
+        DcpuAssembler assembler = new DcpuAssembler();
         //////////////////////////////////
         // Hello World test
         System.out.println("\nHello World demo\n");
-        short[] bytecode = compiler.compile(";1 Assembler test for DCPU\n" +
+        short[] bytecode = assembler.assemble(";1 Assembler test for DCPU\n" +
                 ";2 by Markus Persson\n" +
                 "\n" +
                 "             set a, 0xbeef                        ;4 Assign 0xbeef to register a\n" +
@@ -47,7 +47,7 @@ public class CompilerDemo {
         ///////////////////////////////////////////////
         //// Example from 1.1 docs
         System.out.println("\n1.1 demo\n");
-        bytecode = compiler.compile("        ; Try some basic stuff\n" +
+        bytecode = assembler.assemble("        ; Try some basic stuff\n" +
                 "                      SET A, 0x30              ; 7c01 0030\n" +
                 "                      SET [0x1000], 0x20       ; 7de1 1000 0020\n" +
                 "                      SUB A, [0x1000]          ; 7803 1000\n" +
@@ -81,7 +81,7 @@ public class CompilerDemo {
         ///////////////////////////////////////////////////////////////////////////////////
         // Macros - not supported yet
         System.out.println("\nMacro and keyboard demo\n");
-        bytecode = compiler.compile("; Reading characters from the keyboard\n" +
+        bytecode = assembler.assemble("; Reading characters from the keyboard\n" +
                 "; by Markus Persson\n" +
                 "\n" +
                 "#macro push(x){\n" +

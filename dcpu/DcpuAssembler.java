@@ -9,9 +9,9 @@ import java.util.regex.Pattern;
 import static dcpu.Dcpu.*;
 
 /**
- * DCPU Assempler compiler
+ * DCPU Assembler
  */
-public class DcpuCompiler {
+public class DcpuAssembler {
 
     private StreamTokenizer stokizer;
     private String token;
@@ -105,7 +105,7 @@ public class DcpuCompiler {
         counter = 0;
     }
 
-    public short[] compile(String s) {
+    public short[] assemble(String s) {
         reset();
         stokizer = new StreamTokenizer(new StringReader(s));
         stokizer.commentChar(';');
@@ -250,7 +250,7 @@ public class DcpuCompiler {
     }
 
     private void macro() {
-        throw new UnsupportedOperationException(); // TODO write DcpuCompiler.macro method body
+        throw new UnsupportedOperationException(); // TODO write DcpuAssembler.macro method body
     }
 
     private void append(short s) {
