@@ -1,17 +1,8 @@
 package dcpu;
 
-import static dcpu.Dcpu.M_A;
-import static dcpu.Dcpu.M_B;
-import static dcpu.Dcpu.M_C;
-import static dcpu.Dcpu.M_I;
-import static dcpu.Dcpu.M_J;
-import static dcpu.Dcpu.M_O;
-import static dcpu.Dcpu.M_SP;
-import static dcpu.Dcpu.M_X;
-import static dcpu.Dcpu.M_Y;
-import static dcpu.Dcpu.M_Z;
-
 import java.io.PrintStream;
+
+import static dcpu.Dcpu.*;
 
 /**
  * Prints executed commands to PrintStream
@@ -56,7 +47,7 @@ public class Tracer implements Listener<Short> {
             out.printf("  S: ");
             for (int i = 0; i < printStack; i++) {
                 out.printf(" %04x", dcpu.mem[sp]);
-                sp = (sp + 0x10000 - 1) % 0x10000;
+                sp = (sp + 1) % 0x10000;
             }
             out.println();
         }
