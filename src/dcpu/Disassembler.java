@@ -1,19 +1,6 @@
 package dcpu;
 
-import static dcpu.Dcpu.C_A_MASK;
-import static dcpu.Dcpu.C_A_SHIFT;
-import static dcpu.Dcpu.C_B_MASK;
-import static dcpu.Dcpu.C_B_SHIFT;
-import static dcpu.Dcpu.C_NBI_A_MASK;
-import static dcpu.Dcpu.C_NBI_A_SHIFT;
-import static dcpu.Dcpu.C_NBI_O_MASK;
-import static dcpu.Dcpu.C_NBI_O_SHIFT;
-import static dcpu.Dcpu.C_O_MASK;
-import static dcpu.Dcpu.MEM_NAMES;
-import static dcpu.Dcpu.OPCODE0_NAMES;
-import static dcpu.Dcpu.OPCODE0_RESERVED;
-import static dcpu.Dcpu.OPCODE_NAMES;
-import static dcpu.Dcpu.O_NBI;
+import static dcpu.Dcpu.*;
 
 /**
  * Converts opcodes to strings
@@ -66,7 +53,7 @@ public class Disassembler {
             case 24:
                 return "POP";
             case 25:
-                return "SP";
+                return "PEEK";
             case 26:
                 return "PUSH";
             case 27:
