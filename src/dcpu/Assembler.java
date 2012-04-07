@@ -1,39 +1,12 @@
 package dcpu;
 
-import static dcpu.Dcpu.A_CONST;
-import static dcpu.Dcpu.A_M_NW;
-import static dcpu.Dcpu.A_M_NW_REG;
-import static dcpu.Dcpu.A_M_REG;
-import static dcpu.Dcpu.A_NW;
-import static dcpu.Dcpu.O_ADD;
-import static dcpu.Dcpu.O_AND;
-import static dcpu.Dcpu.O_BOR;
-import static dcpu.Dcpu.O_DIV;
-import static dcpu.Dcpu.O_IFB;
-import static dcpu.Dcpu.O_IFE;
-import static dcpu.Dcpu.O_IFG;
-import static dcpu.Dcpu.O_IFN;
-import static dcpu.Dcpu.O_MOD;
-import static dcpu.Dcpu.O_MUL;
-import static dcpu.Dcpu.O_SET;
-import static dcpu.Dcpu.O_SHL;
-import static dcpu.Dcpu.O_SHR;
-import static dcpu.Dcpu.O_SUB;
-import static dcpu.Dcpu.O_XOR;
-import static dcpu.Dcpu.O__JSR;
-import static dcpu.Dcpu.O__RESVD;
-import static dcpu.Dcpu.gencmd;
-import static dcpu.Dcpu.gencmd_nbi;
-
 import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
+
+import static dcpu.Dcpu.*;
 
 /**
  * DCPU Assembler
@@ -70,6 +43,7 @@ public class Assembler {
     }
 
     boolean accept(String s) throws IOException {
+        if (nexttok == null) return false;
         if (nexttok.equals(s)) {
             next();
             return true;
@@ -78,6 +52,7 @@ public class Assembler {
     }
 
     boolean acceptIgnoreCase(String s) throws IOException {
+        if (nexttok == null) return false;
         if (nexttok.equalsIgnoreCase(s)) {
             next();
             return true;
@@ -86,6 +61,7 @@ public class Assembler {
     }
 
     boolean accept(Pattern p) throws IOException {
+        if (nexttok == null) return false;
         if (p.matcher(nexttok).matches()) {
             next();
             return true;
@@ -102,7 +78,7 @@ public class Assembler {
     }
 
     private static final Pattern strPattern = Pattern.compile("(\'[^\']*\')|(\"[^\"]*\")");
-    private static final Pattern idPattern = Pattern.compile("\\p{Alpha}\\p{Alnum}*");
+    private static final Pattern idPattern = Pattern.compile("[a-zA-Z_][a-zA-Z_0-9]*");
     private static final Pattern hexPattern = Pattern.compile("0x[0-9a-fA-F]+");
     private static final Pattern binPattern = Pattern.compile("0b\\d+");
     private static final Pattern decPattern = Pattern.compile("\\d+");
@@ -149,6 +125,7 @@ public class Assembler {
         //stokizer.wordChars('#', '#');
         stokizer.ordinaryChars('0', '9');
         stokizer.wordChars('0', '9');
+        stokizer.wordChars('_', '_');
         stokizer.slashSlashComments(false);
         stokizer.slashStarComments(false);
         stokizer.eolIsSignificant(false);
@@ -415,7 +392,7 @@ public class Assembler {
 
     private static class SimpleSymbolParam extends SimpleParam {
         @SuppressWarnings("unused")
-		final String name;
+        final String name;
 
         private SimpleSymbolParam(String name) {
             this.name = name;
