@@ -90,6 +90,7 @@ public class Dcpu {
             false, false, false, false, false, false, false
     };
     // Register constants
+    public static final int REGS_COUNT = 8 + 1 + 1 + 1; ///< Register count: 8 GP, PC, SP, O
     public static final int REG_A = 0;
     public static final int REG_B = 1;
     public static final int REG_C = 2;
@@ -216,12 +217,14 @@ public class Dcpu {
     // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + O + 32 constants
     public final short[] mem = new short[M_CV + 32];
     public boolean reserved = false; // true if reserved operation executed
+    public boolean halt = false;// halt execution
 
     /**
      * Runs until hitting Opcode 0
      */
     public void run() {
-        while (!reserved) {
+        halt = false;
+        while (!halt) {
             step(false);
         }
     }
@@ -241,7 +244,6 @@ public class Dcpu {
      * Execute one operation (skip = false) or skip one operation.
      */
     public void step(boolean skip) {
-        if (!skip && stepListener != null) stepListener.event(mem[M_PC]);
         // save prev PC and prev SP
         mem[M_PPC] = mem[M_PC];
         mem[M_PSP] = mem[M_SP];
@@ -289,6 +291,7 @@ public class Dcpu {
                         break;
                     default:
                         reserved = true;
+                        halt = true;
                         break;
                 }
                 break;
@@ -354,6 +357,7 @@ public class Dcpu {
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
+        if (!skip && stepListener != null) stepListener.event(mem[M_PC]);
     }
 
     /**
@@ -379,6 +383,7 @@ public class Dcpu {
 
     public void reset() {
         reserved = false;
+        halt = false;
         for (int i = 0; i < M_CV - M_A; i++) mem[M_A + i] = 0;
         for (int i = 0; i < 32; i++) {
             mem[M_CV + i] = (short) i;
