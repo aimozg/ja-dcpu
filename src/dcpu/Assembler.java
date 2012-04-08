@@ -123,6 +123,7 @@ public class Assembler {
         stokizer.quoteChar('"');
         stokizer.quoteChar('\'');
         //stokizer.wordChars('#', '#');
+        stokizer.ordinaryChar('-');
         stokizer.ordinaryChars('0', '9');
         stokizer.wordChars('0', '9');
         stokizer.wordChars('_', '_');
@@ -215,14 +216,17 @@ public class Assembler {
     }
 
     private Param param() throws IOException {
-        SimpleParam p = simpleParam();
+        SimpleParam p = simpleParam(true);
         if (p != null) return p;
         require("[", "parameter");
-        p = simpleParam();
+        p = simpleParam(true);
         if (p == null) fail("Bad parameter1");
-        if (accept("+")) {
-            SimpleParam p2 = simpleParam();
+        if (accept("+") || accept("-")) {
+            // maybe bad solution for handling "-literal", but no better idea yet
+            boolean neg = token.equals("-");
+            SimpleParam p2 = simpleParam(false);
             if (p2 == null) fail("Bad parameter2");
+            if (neg) buffer[counter - 1] = (short) (0x10000 - buffer[counter - 1]);
             require("]", "parameter");
             return new ParamSum(p, p2);
         }
@@ -230,7 +234,7 @@ public class Assembler {
         return new ParamMem(p);
     }
 
-    private SimpleParam simpleParam() throws IOException {
+    private SimpleParam simpleParam(boolean canBeShort) throws IOException {
         if (accept(idPattern)) {
             int regidx = registerByName(token);
             if (regidx >= 0) return new SimpleRegisterParam(regidx);
@@ -238,12 +242,15 @@ public class Assembler {
             Reference ref = new Reference(token, (short) (counter - 1), stokizer.lineno());
             references.add(ref);
             return new SimpleSymbolParam(token);
-        } else if (accept(numPattern)) {
-            int val = tokenToInt();
-            if (val >= 32 || val < 0) append((short) val, true);
-            return new SimpleConstParam((short) val);
         } else {
-            return null;
+            int sgn = accept("-") ? -1 : 1;
+            if (accept(numPattern)) {
+                int val = sgn * tokenToInt();
+                if (!canBeShort || val >= 32 || val < 0) append((short) val, true);
+                return new SimpleConstParam((short) val);
+            } else {
+                return null;
+            }
         }
     }
 
