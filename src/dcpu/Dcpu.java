@@ -90,6 +90,7 @@ public class Dcpu {
             false, false, false, false, false, false, false
     };
     // Register constants
+    public static final int REGS_COUNT = 8 + 1 + 1 + 1; ///< Register count: 8 GP, PC, SP, O
     public static final int REG_A = 0;
     public static final int REG_B = 1;
     public static final int REG_C = 2;
@@ -243,7 +244,6 @@ public class Dcpu {
      * Execute one operation (skip = false) or skip one operation.
      */
     public void step(boolean skip) {
-        if (!skip && stepListener != null) stepListener.event(mem[M_PC]);
         // save prev PC and prev SP
         mem[M_PPC] = mem[M_PC];
         mem[M_PSP] = mem[M_SP];
@@ -357,6 +357,7 @@ public class Dcpu {
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
+        if (!skip && stepListener != null) stepListener.event(mem[M_PC]);
     }
 
     /**
