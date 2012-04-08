@@ -216,12 +216,14 @@ public class Dcpu {
     // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + O + 32 constants
     public final short[] mem = new short[M_CV + 32];
     public boolean reserved = false; // true if reserved operation executed
+    public boolean halt = false;// halt execution
 
     /**
      * Runs until hitting Opcode 0
      */
     public void run() {
-        while (!reserved) {
+        halt = false;
+        while (!halt) {
             step(false);
         }
     }
@@ -289,6 +291,7 @@ public class Dcpu {
                         break;
                     default:
                         reserved = true;
+                        halt = true;
                         break;
                 }
                 break;
@@ -379,6 +382,7 @@ public class Dcpu {
 
     public void reset() {
         reserved = false;
+        halt = false;
         for (int i = 0; i < M_CV - M_A; i++) mem[M_A + i] = 0;
         for (int i = 0; i < 32; i++) {
             mem[M_CV + i] = (short) i;
