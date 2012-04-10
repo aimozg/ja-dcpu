@@ -13,10 +13,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 
 /**
  * Created by IntelliJ IDEA.
@@ -95,11 +92,43 @@ public class IdeMain {
                 assemble();
             }
         });
+        saveSrcButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                saveSrc();
+            }
+        });
+    }
+
+    private void saveSrc() {
+        fileChooser.resetChoosableFileFilters();
+        fileChooser.addChoosableFileFilter(asmFilter);
+        fileChooser.setFileFilter(asmFilter);
+        if (fileChooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
+            try {
+                File file = fileChooser.getSelectedFile();
+                if (fileChooser.getFileFilter() == asmFilter && !asmFilter.accept(file)) {
+                    file = new File(file.getAbsolutePath() + asmFilter.getExtensions()[0]);
+                }
+                if (file.exists()) {
+                    if (JOptionPane.showConfirmDialog(frame, "File exists. Overwrite?", "Confirm", JOptionPane.YES_NO_OPTION)
+                            != JOptionPane.YES_OPTION) {
+                        return;
+                    }
+                }
+                PrintStream output = new PrintStream(file);
+                output.print(sourceTextarea.getText());
+                output.close();
+            } catch (IOException e1) {
+                JOptionPane.showMessageDialog(frame, "Unable to open file", "Error", JOptionPane.ERROR_MESSAGE);
+                e1.printStackTrace();
+            }
+        }
     }
 
     private void openSrc() {
         fileChooser.resetChoosableFileFilters();
         fileChooser.addChoosableFileFilter(asmFilter);
+        fileChooser.setFileFilter(asmFilter);
         if (fileChooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
             try {
                 FileInputStream input = new FileInputStream(fileChooser.getSelectedFile());
@@ -151,14 +180,17 @@ public class IdeMain {
         openSrcButton.setToolTipText("Open source file");
         toolBar1.add(openSrcButton);
         openBinButton = new JButton();
+        openBinButton.setEnabled(false);
         openBinButton.setText("Open Bin");
         openBinButton.setToolTipText("Open and disassemble binaries");
         toolBar1.add(openBinButton);
         saveSrcButton = new JButton();
+        saveSrcButton.setEnabled(true);
         saveSrcButton.setText("Save Src");
         saveSrcButton.setToolTipText("Save sources");
         toolBar1.add(saveSrcButton);
         saveBinButton = new JButton();
+        saveBinButton.setEnabled(false);
         saveBinButton.setText("Save Bin");
         saveBinButton.setToolTipText("Save assembled binary");
         toolBar1.add(saveBinButton);
@@ -171,28 +203,34 @@ public class IdeMain {
         final JToolBar.Separator toolBar$Separator2 = new JToolBar.Separator();
         toolBar1.add(toolBar$Separator2);
         resetButton = new JButton();
+        resetButton.setEnabled(false);
         resetButton.setText("Reset");
         resetButton.setToolTipText("Reset CPU");
         toolBar1.add(resetButton);
         execButton = new JButton();
+        execButton.setEnabled(false);
         execButton.setText("Exec");
         execButton.setToolTipText("Run forever");
         toolBar1.add(execButton);
         pauseButton = new JButton();
+        pauseButton.setEnabled(false);
         pauseButton.setText("Pause");
         pauseButton.setToolTipText("Pause execution");
         toolBar1.add(pauseButton);
         runButton = new JButton();
+        runButton.setEnabled(false);
         runButton.setText("Run");
         runButton.setToolTipText("Run until breakpoint/reserved");
         toolBar1.add(runButton);
         stepButton = new JButton();
+        stepButton.setEnabled(false);
         stepButton.setText("Step");
         stepButton.setToolTipText("Execute one instruction");
         toolBar1.add(stepButton);
         final JToolBar.Separator toolBar$Separator3 = new JToolBar.Separator();
         toolBar1.add(toolBar$Separator3);
         breakpointButton = new JButton();
+        breakpointButton.setEnabled(false);
         breakpointButton.setText("Breakpoint");
         breakpointButton.setToolTipText("Toggle breakpoint on instruction address");
         toolBar1.add(breakpointButton);
@@ -220,6 +258,7 @@ public class IdeMain {
         panel1.add(scrollPane2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(400, 400), null, 0, false));
         sourceTextarea = new JTextArea();
         sourceTextarea.setFont(new Font("Courier New", sourceTextarea.getFont().getStyle(), 12));
+        sourceTextarea.setText("; Input your proram here\n:main \n\tSET DAT,0");
         scrollPane2.setViewportView(sourceTextarea);
         final JPanel panel2 = new JPanel();
         panel2.setLayout(new GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));

@@ -35,7 +35,7 @@
           <component id="fa68d" class="javax.swing.JButton" binding="saveSrcButton" default-binding="true">
             <constraints/>
             <properties>
-              <enabled value="false"/>
+              <enabled value="true"/>
               <text value="Save Src"/>
               <toolTipText value="Save sources"/>
             </properties>
