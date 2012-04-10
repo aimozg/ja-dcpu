@@ -6,10 +6,8 @@ import java.util.List;
 /**
  * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.1 implementation.
  * <p/>
- * Created by IntelliJ IDEA.
- * Author: aimozg
- * Date: 28.03.12
- * Time: 19:15
+ * <p/>
+ * TODO Register enum, with getter/setter, getName, getMemIndex etc
  */
 public class Dcpu {
 
@@ -362,6 +360,9 @@ public class Dcpu {
 
     /**
      * Sets memory[addr] to value, calling peripheral hook, if installed
+     * <p/>
+     * TODO add "debugger" parameter, which also passed to peripheral,
+     * so its state is not changed (e.g. key buffer not erased when debugger views memory)
      */
     public void memset(int addr, short value) {
         short oldval = mem[addr];
