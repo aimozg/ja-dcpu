@@ -3,11 +3,20 @@ package dcpu.ide;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import dcpu.AsmMap;
+import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Debugger;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 /**
  * Created by IntelliJ IDEA.
@@ -38,9 +47,14 @@ public class IdeMain {
     private JFrame frame;
 
     private Dcpu cpu;
+    private AsmMap asmMap;
     private Debugger debugger;
     private RegistersModel registersModel;
     private MemoryModel memoryModel;
+
+    private JFileChooser fileChooser;
+    private FileNameExtensionFilter asmFilter = new FileNameExtensionFilter("Assembler source (.asm|.dasm)", "asm", "dasm");
+    private FileNameExtensionFilter binFilter = new FileNameExtensionFilter("Binary file (.bin)", "bin");
 
     public static void main(String[] args) {
         try {
@@ -55,6 +69,10 @@ public class IdeMain {
         cpu = new Dcpu();
         debugger = new Debugger();
         debugger.attachTo(cpu);
+        asmMap = new AsmMap();
+
+        fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(new File("."));
 
         registersModel = new RegistersModel(cpu, debugger);
         registersTable.setModel(registersModel);
@@ -66,6 +84,47 @@ public class IdeMain {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
+
+        openSrcButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                openSrc();
+            }
+        });
+        asmButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                assemble();
+            }
+        });
+    }
+
+    private void openSrc() {
+        fileChooser.resetChoosableFileFilters();
+        fileChooser.addChoosableFileFilter(asmFilter);
+        if (fileChooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+            try {
+                FileInputStream input = new FileInputStream(fileChooser.getSelectedFile());
+                char[] csources = new char[input.available()];
+                new InputStreamReader(input).read(csources, 0, csources.length);
+                sourceTextarea.setText(new String(csources));
+            } catch (IOException e1) {
+                JOptionPane.showMessageDialog(frame, "Unable to open file", "Error", JOptionPane.ERROR_MESSAGE);
+                e1.printStackTrace();
+            }
+        }
+    }
+
+    private void assemble() {
+        Assembler assembler = new Assembler();
+        assembler.genMap = true;
+        try {
+            short[] bin = assembler.assemble(sourceTextarea.getText());
+            cpu.upload(bin);
+            memoryModel.fireUpdate(0, bin.length);
+            asmMap = assembler.asmmap;
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(frame, "Compilation error " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
     }
 
     {
@@ -143,8 +202,6 @@ public class IdeMain {
         final JLabel label1 = new JLabel();
         label1.setText("Source");
         panel1.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        sourceTextarea = new JTextArea();
-        panel1.add(sourceTextarea, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(200, 400), null, 0, false));
         final JLabel label2 = new JLabel();
         label2.setText("Memory");
         panel1.add(label2, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
@@ -152,13 +209,18 @@ public class IdeMain {
         label3.setText("Registers");
         panel1.add(label3, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         memoryScrollPane = new JScrollPane();
-        panel1.add(memoryScrollPane, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(600, -1), null, 0, false));
+        panel1.add(memoryScrollPane, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(600, -1), null, 0, false));
         memoryTable = new JTable();
         memoryScrollPane.setViewportView(memoryTable);
         final JScrollPane scrollPane1 = new JScrollPane();
-        panel1.add(scrollPane1, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(100, -1), null, 0, false));
+        panel1.add(scrollPane1, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(100, -1), null, 0, false));
         registersTable = new JTable();
         scrollPane1.setViewportView(registersTable);
+        final JScrollPane scrollPane2 = new JScrollPane();
+        panel1.add(scrollPane2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(400, 400), null, 0, false));
+        sourceTextarea = new JTextArea();
+        sourceTextarea.setFont(new Font("Courier New", sourceTextarea.getFont().getStyle(), 12));
+        scrollPane2.setViewportView(sourceTextarea);
         final JPanel panel2 = new JPanel();
         panel2.setLayout(new GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
         rootPanel.add(panel2, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));

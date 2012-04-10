@@ -3,6 +3,7 @@ package dcpu.ide;
 import dcpu.Dcpu;
 import dcpu.Debugger;
 
+import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import java.util.LinkedList;
@@ -31,8 +32,8 @@ public class MemoryModel implements TableModel {
     }
 
     private static final String[] columnNames = {"Addr",
-            "-0", "-1", "-2", "-3", "-4", "-5", "6", "7",
-            "-8", "-9", "-a", "-b", "-c", "-d", "e", "f",
+            "---0", "---1", "---2", "---3", "---4", "---5", "---6", "---7",
+            "---8", "---9", "---a", "---b", "---c", "---d", "---e", "---f",
     };
 
     public String getColumnName(int columnIndex) {
@@ -49,7 +50,7 @@ public class MemoryModel implements TableModel {
 
     public Object getValueAt(int rowIndex, int columnIndex) {
         if (columnIndex == 0) return String.format("%04x-", rowIndex * 16);
-        return cpu.memget(rowIndex * 16 + columnIndex - 1);
+        return Integer.toHexString(cpu.memget(rowIndex * 16 + columnIndex - 1) & 0xffff);
     }
 
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
@@ -83,5 +84,11 @@ public class MemoryModel implements TableModel {
 
     public void removeTableModelListener(TableModelListener l) {
         tableModelListeners.remove(l);
+    }
+
+    public void fireUpdate(int firstAddr, int lastAddr) {
+        for (TableModelListener tableModelListener : tableModelListeners) {
+            tableModelListener.tableChanged(new TableModelEvent(this, firstAddr / 16, lastAddr / 16 + 1));
+        }
     }
 }
