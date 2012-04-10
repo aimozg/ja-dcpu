@@ -1,5 +1,6 @@
 package dcpu;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -390,6 +391,13 @@ public class Dcpu {
         for (int i = 0; i < 32; i++) {
             mem[M_CV + i] = (short) i;
         }
+    }
+
+    /**
+     * Zeroizes memory
+     */
+    public void memzero() {
+        Arrays.fill(mem, 0, RAM_SIZE, (short) 0);
     }
 
     public Dcpu() {

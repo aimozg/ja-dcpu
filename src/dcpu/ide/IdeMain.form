@@ -63,12 +63,20 @@
             <constraints/>
             <properties/>
           </component>
+          <component id="2b99" class="javax.swing.JButton" binding="hardResetButton" default-binding="true">
+            <constraints/>
+            <properties>
+              <enabled value="true"/>
+              <text value="Hard Reset"/>
+              <toolTipText value="Hard Reset - zeroize memory and reupload binary"/>
+            </properties>
+          </component>
           <component id="7433b" class="javax.swing.JButton" binding="resetButton" default-binding="true">
             <constraints/>
             <properties>
-              <enabled value="false"/>
+              <enabled value="true"/>
               <text value="Reset"/>
-              <toolTipText value="Reset CPU"/>
+              <toolTipText value="Reset CPU (registers to zero)"/>
             </properties>
           </component>
           <component id="abe09" class="javax.swing.JButton" binding="execButton" default-binding="true">

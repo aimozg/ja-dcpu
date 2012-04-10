@@ -3,6 +3,7 @@ package dcpu.ide;
 import dcpu.Dcpu;
 import dcpu.Debugger;
 
+import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import java.util.LinkedList;
@@ -87,5 +88,11 @@ public class RegistersModel implements TableModel {
 
     public void removeTableModelListener(TableModelListener l) {
         tableModelListeners.remove(l);
+    }
+
+    public void fireUpdate() {
+        for (TableModelListener tableModelListener : tableModelListeners) {
+            tableModelListener.tableChanged(new TableModelEvent(this, 0, REGS_COUNT));
+        }
     }
 }

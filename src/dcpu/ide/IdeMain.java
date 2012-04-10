@@ -40,12 +40,15 @@ public class IdeMain {
     private JButton clearButton;
     private JPanel rootPanel;
     private JScrollPane memoryScrollPane;
+    private JButton hardResetButton;
 
     private JFrame frame;
 
     private Dcpu cpu;
     private AsmMap asmMap;
     private Debugger debugger;
+    private short[] binary;
+
     private RegistersModel registersModel;
     private MemoryModel memoryModel;
 
@@ -97,6 +100,20 @@ public class IdeMain {
                 saveSrc();
             }
         });
+        hardResetButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                cpu.memzero();
+                memoryModel.fireUpdate(0, Dcpu.RAM_SIZE);
+                cpu.reset();
+                registersModel.fireUpdate();
+            }
+        });
+        resetButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                cpu.reset();
+                registersModel.fireUpdate();
+            }
+        });
     }
 
     private void saveSrc() {
@@ -146,9 +163,10 @@ public class IdeMain {
         Assembler assembler = new Assembler();
         assembler.genMap = true;
         try {
-            short[] bin = assembler.assemble(sourceTextarea.getText());
-            cpu.upload(bin);
-            memoryModel.fireUpdate(0, bin.length);
+            binary = new short[]{};
+            binary = assembler.assemble(sourceTextarea.getText());
+            cpu.upload(binary);
+            memoryModel.fireUpdate(0, binary.length);
             asmMap = assembler.asmmap;
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(frame, "Compilation error " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
