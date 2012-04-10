@@ -3,10 +3,7 @@ package dcpu.ide;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
-import dcpu.AsmMap;
-import dcpu.Assembler;
-import dcpu.Dcpu;
-import dcpu.Debugger;
+import dcpu.*;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -47,7 +44,7 @@ public class IdeMain {
     private Dcpu cpu;
     private AsmMap asmMap;
     private Debugger debugger;
-    private short[] binary;
+    private short[] binary = {};
 
     private RegistersModel registersModel;
     private MemoryModel memoryModel;
@@ -114,6 +111,86 @@ public class IdeMain {
                 registersModel.fireUpdate();
             }
         });
+        saveBinButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                saveBin();
+            }
+        });
+        openBinButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                openBin();
+            }
+        });
+    }
+
+    private void openBin() {
+        fileChooser.resetChoosableFileFilters();
+        fileChooser.addChoosableFileFilter(binFilter);
+        fileChooser.setFileFilter(binFilter);
+        if (fileChooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+            try {
+                FileInputStream inbinf = new FileInputStream(fileChooser.getSelectedFile());
+                int len = inbinf.available();
+                if (len % 2 == 1) throw new IOException(String.format("Odd file size (0x%x)\n", len));
+                len /= 2;
+                if (len > 0x10000) throw new IOException(String.format("Too large file (0x%x)\n", len));
+                binary = new short[len];
+                for (int i = 0; i < len; i++) {
+                    int lo = inbinf.read();
+                    int hi = inbinf.read();
+                    if (lo == -1 || hi == -1) throw new IOException("Unable to read\n");
+                    binary[i] = (short) ((hi << 8) | lo);
+                }
+                asmMap = new AsmMap();
+                Disassembler dasm = new Disassembler();
+                dasm.init(binary);
+                // TODO attach asmmap
+                StringBuilder sb = new StringBuilder();
+                while (dasm.getAddress() < binary.length) {
+                    int addr = dasm.getAddress();
+                    sb.append(String.format("%-26s ; [%04x] =", dasm.next(), addr));
+                    int addr2 = dasm.getAddress();
+                    while (addr < addr2) {
+                        short i = binary[addr++];
+                        sb.append(String.format(" %04x '%s'", i, (i >= 0x20 && i < 0x7f) ? (char) i : '.'));
+                    }
+                    sb.append("\n");
+                }
+                sourceTextarea.setText(sb.toString());
+            } catch (IOException e1) {
+                JOptionPane.showMessageDialog(frame, "Unable to open file: %s" + e1.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                e1.printStackTrace();
+            }
+        }
+    }
+
+    private void saveBin() {
+        fileChooser.resetChoosableFileFilters();
+        fileChooser.addChoosableFileFilter(binFilter);
+        fileChooser.setFileFilter(binFilter);
+        if (fileChooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
+            try {
+                File file = fileChooser.getSelectedFile();
+                if (fileChooser.getFileFilter() == binFilter && !binFilter.accept(file)) {
+                    file = new File(file.getAbsolutePath() + binFilter.getExtensions()[0]);
+                }
+                if (file.exists()) {
+                    if (JOptionPane.showConfirmDialog(frame, "File exists. Overwrite?", "Confirm", JOptionPane.YES_NO_OPTION)
+                            != JOptionPane.YES_OPTION) {
+                        return;
+                    }
+                }
+                FileOutputStream output = new FileOutputStream(file);
+                for (short i : binary) {
+                    output.write(i & 0xff);
+                    output.write((i >> 8) & 0xff);
+                }
+                output.close();
+            } catch (IOException e1) {
+                JOptionPane.showMessageDialog(frame, "Unable to open file", "Error", JOptionPane.ERROR_MESSAGE);
+                e1.printStackTrace();
+            }
+        }
     }
 
     private void saveSrc() {
@@ -152,6 +229,8 @@ public class IdeMain {
                 char[] csources = new char[input.available()];
                 new InputStreamReader(input).read(csources, 0, csources.length);
                 sourceTextarea.setText(new String(csources));
+                asmMap = new AsmMap();
+                binary = new short[0];
             } catch (IOException e1) {
                 JOptionPane.showMessageDialog(frame, "Unable to open file", "Error", JOptionPane.ERROR_MESSAGE);
                 e1.printStackTrace();
@@ -198,7 +277,7 @@ public class IdeMain {
         openSrcButton.setToolTipText("Open source file");
         toolBar1.add(openSrcButton);
         openBinButton = new JButton();
-        openBinButton.setEnabled(false);
+        openBinButton.setEnabled(true);
         openBinButton.setText("Open Bin");
         openBinButton.setToolTipText("Open and disassemble binaries");
         toolBar1.add(openBinButton);
@@ -208,7 +287,7 @@ public class IdeMain {
         saveSrcButton.setToolTipText("Save sources");
         toolBar1.add(saveSrcButton);
         saveBinButton = new JButton();
-        saveBinButton.setEnabled(false);
+        saveBinButton.setEnabled(true);
         saveBinButton.setText("Save Bin");
         saveBinButton.setToolTipText("Save assembled binary");
         toolBar1.add(saveBinButton);
@@ -220,10 +299,15 @@ public class IdeMain {
         toolBar1.add(asmButton);
         final JToolBar.Separator toolBar$Separator2 = new JToolBar.Separator();
         toolBar1.add(toolBar$Separator2);
+        hardResetButton = new JButton();
+        hardResetButton.setEnabled(true);
+        hardResetButton.setText("Hard Reset");
+        hardResetButton.setToolTipText("Hard Reset - zeroize memory and reupload binary");
+        toolBar1.add(hardResetButton);
         resetButton = new JButton();
-        resetButton.setEnabled(false);
+        resetButton.setEnabled(true);
         resetButton.setText("Reset");
-        resetButton.setToolTipText("Reset CPU");
+        resetButton.setToolTipText("Reset CPU (registers to zero)");
         toolBar1.add(resetButton);
         execButton = new JButton();
         execButton.setEnabled(false);
@@ -273,7 +357,7 @@ public class IdeMain {
         registersTable = new JTable();
         scrollPane1.setViewportView(registersTable);
         final JScrollPane scrollPane2 = new JScrollPane();
-        panel1.add(scrollPane2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(400, 400), null, 0, false));
+        panel1.add(scrollPane2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(500, 400), null, 0, false));
         sourceTextarea = new JTextArea();
         sourceTextarea.setFont(new Font("Courier New", sourceTextarea.getFont().getStyle(), 12));
         sourceTextarea.setText("; Input your proram here\n:main \n\tSET DAT,0");
