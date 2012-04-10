@@ -8,35 +8,32 @@ import javax.swing.table.TableModel;
 import java.util.LinkedList;
 import java.util.List;
 
-import static dcpu.Dcpu.*;
-
-
 /**
- * TableModel for registers
- * <p/>
- * TODO cycle count
- * TODO display mode switch
+ * TableModel for DCPU memory
  */
-public class RegistersModel implements TableModel {
+public class MemoryModel implements TableModel {
 
     private final Dcpu cpu;
     private final Debugger debugger;
 
-    public RegistersModel(Dcpu cpu, Debugger debugger) {
+    public MemoryModel(Dcpu cpu, Debugger debugger) {
         this.cpu = cpu;
         this.debugger = debugger;
-        // TODO add listener to debugger
+        // TODO add listeners
     }
 
     public int getRowCount() {
-        return REGS_COUNT;
+        return Dcpu.RAM_SIZE / 16;
     }
 
     public int getColumnCount() {
-        return 2;
+        return 16 + 1;
     }
 
-    private static String[] columnNames = {"Register", "Value"};
+    private static final String[] columnNames = {"Addr",
+            "-0", "-1", "-2", "-3", "-4", "-5", "6", "7",
+            "-8", "-9", "-a", "-b", "-c", "-d", "e", "f",
+    };
 
     public String getColumnName(int columnIndex) {
         return columnNames[columnIndex];
@@ -47,17 +44,16 @@ public class RegistersModel implements TableModel {
     }
 
     public boolean isCellEditable(int rowIndex, int columnIndex) {
-        return (columnIndex == 1);
+        return columnIndex != 0;
     }
 
     public Object getValueAt(int rowIndex, int columnIndex) {
-        // TODO use Register enum
-        if (columnIndex == 0) return MEM_NAMES[rowIndex];
-        return Integer.valueOf(cpu.memget(M_A + rowIndex));//TODO debugger flag
+        if (columnIndex == 0) return String.format("%04x-", rowIndex * 16);
+        return cpu.memget(rowIndex * 16 + columnIndex - 1);
     }
 
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-        if (columnIndex == 1 && aValue != null) {
+        if (columnIndex != 0 && aValue != null) {
             short value;
             if (aValue instanceof Number) {
                 value = ((Number) aValue).shortValue();
@@ -75,7 +71,7 @@ public class RegistersModel implements TableModel {
                     return;
                 }
             } else return;
-            cpu.memset(M_A + rowIndex, value); // TODO debugger flag
+            cpu.memset(rowIndex * 16 + columnIndex - 1, value); // TODO debugger flag
         }
     }
 

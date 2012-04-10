@@ -13,6 +13,17 @@
         <element id="module-output" name="DCPU" />
       </root>
     </artifact>
+    <artifact type="jar" name="IdeMain:jar">
+      <output-path>$PROJECT_DIR$/out/</output-path>
+      <root id="archive" name="DCPU.jar">
+        <element id="directory" name="META-INF">
+          <element id="file-copy" path="$PROJECT_DIR$/IdeMain.META-INF/META-INF/MANIFEST.MF" />
+        </element>
+        <element id="module-output" name="DCPU" />
+        <element id="extracted-dir" path="$APPLICATION_HOME_DIR$/lib/junit-4.8.jar" path-in-jar="/" />
+        <element id="extracted-dir" path="$APPLICATION_HOME_DIR$/redist/forms_rt.jar" path-in-jar="/" />
+      </root>
+    </artifact>
   </component>
   <component name="ClearCaseSharedConfig">
     <option name="myUseUcmModel" value="true" />

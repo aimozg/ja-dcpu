@@ -182,22 +182,23 @@ public class Dcpu {
     public static final int A_30 = A_CONST + 30;
     public static final int A_31 = A_CONST + 31;
 
+    public static final int RAM_SIZE = 0x10000;
     //////
     // Register addresses
-    public static final int M_A = 0x10000;
-    public static final int M_B = 0x10001;
-    public static final int M_C = 0x10002;
-    public static final int M_X = 0x10003;
-    public static final int M_Y = 0x10004;
-    public static final int M_Z = 0x10005;
-    public static final int M_I = 0x10006;
-    public static final int M_J = 0x10007;
-    public static final int M_PC = 0x10008;
-    public static final int M_SP = 0x10009;
-    public static final int M_O = 0x1000a;
-    public static final int M_PPC = 0x1000b; // prev PC (PC before execution)
-    public static final int M_PSP = 0x1000c; // prev SP (SP before execution)
-    public static final int M_CV = 0x1000d; // constant value
+    public static final int M_A = RAM_SIZE;
+    public static final int M_B = M_A + 1;
+    public static final int M_C = M_A + 2;
+    public static final int M_X = M_A + 3;
+    public static final int M_Y = M_A + 4;
+    public static final int M_Z = M_A + 5;
+    public static final int M_I = M_A + 6;
+    public static final int M_J = M_A + 7;
+    public static final int M_PC = M_A + 8;
+    public static final int M_SP = M_A + 9;
+    public static final int M_O = M_A + 10;
+    public static final int M_PPC = M_A + 11; // prev PC (PC before execution)
+    public static final int M_PSP = M_A + 12; // prev SP (SP before execution)
+    public static final int M_CV = M_A + 13; // constant value
     // Memory cell names
     public static final String[] MEM_NAMES = {
             "A", "B", "C", "X", "Y", "Z", "I", "J",
@@ -478,7 +479,7 @@ public class Dcpu {
     }
 
     public void upload(short[] buffer, int srcoff, int len, int dstoff) {
-        if (srcoff >= 0x10000 || srcoff < 0 || len < 0 || srcoff + len >= 0x10000)
+        if (srcoff < 0 || len < 0 || srcoff + len >= RAM_SIZE)
             throw new IllegalArgumentException("Bad offset/length");
         System.arraycopy(buffer, srcoff, mem, dstoff, len);
     }

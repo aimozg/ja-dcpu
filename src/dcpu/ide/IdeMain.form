@@ -126,7 +126,7 @@
           </component>
           <component id="89546" class="javax.swing.JTextArea" binding="sourceTextarea">
             <constraints>
-              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="6" anchor="0" fill="3" indent="0" use-parent-layout="false">
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
                 <preferred-size width="200" height="400"/>
               </grid>
             </constraints>
@@ -148,22 +148,36 @@
               <text value="Registers"/>
             </properties>
           </component>
-          <component id="c1735" class="javax.swing.JTable" binding="registersTable">
+          <scrollpane id="11cb5" binding="memoryScrollPane">
             <constraints>
-              <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="6" hsize-policy="6" anchor="0" fill="3" indent="0" use-parent-layout="false">
-                <preferred-size width="150" height="50"/>
+              <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="7" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                <preferred-size width="600" height="-1"/>
               </grid>
             </constraints>
             <properties/>
-          </component>
-          <component id="68464" class="javax.swing.JTable" binding="memoryTable">
+            <border type="none"/>
+            <children>
+              <component id="68464" class="javax.swing.JTable" binding="memoryTable">
+                <constraints/>
+                <properties/>
+              </component>
+            </children>
+          </scrollpane>
+          <scrollpane id="cf20d">
             <constraints>
-              <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="6" hsize-policy="6" anchor="0" fill="3" indent="0" use-parent-layout="false">
-                <preferred-size width="150" height="50"/>
+              <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="7" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                <preferred-size width="100" height="-1"/>
               </grid>
             </constraints>
             <properties/>
-          </component>
+            <border type="none"/>
+            <children>
+              <component id="c1735" class="javax.swing.JTable" binding="registersTable">
+                <constraints/>
+                <properties/>
+              </component>
+            </children>
+          </scrollpane>
         </children>
       </grid>
       <grid id="3810f" layout-manager="GridLayoutManager" row-count="2" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
