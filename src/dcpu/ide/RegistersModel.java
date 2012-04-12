@@ -54,7 +54,7 @@ public class RegistersModel implements TableModel {
     public Object getValueAt(int rowIndex, int columnIndex) {
         // TODO use Register enum
         if (columnIndex == 0) return MEM_NAMES[rowIndex];
-        return Integer.valueOf(cpu.memget(M_A + rowIndex));//TODO debugger flag
+        return Integer.toHexString(cpu.memget(M_A + rowIndex) & 0xffff);//TODO debugger flag
     }
 
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {

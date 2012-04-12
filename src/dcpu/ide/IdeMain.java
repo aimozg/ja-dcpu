@@ -12,6 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 
+import static dcpu.Dcpu.RAM_SIZE;
+
 /**
  * Created by IntelliJ IDEA.
  * User: aimozg
@@ -100,7 +102,7 @@ public class IdeMain {
         hardResetButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 cpu.memzero();
-                memoryModel.fireUpdate(0, Dcpu.RAM_SIZE);
+                memoryModel.fireUpdate(0, RAM_SIZE);
                 cpu.reset();
                 registersModel.fireUpdate();
             }
@@ -121,6 +123,19 @@ public class IdeMain {
                 openBin();
             }
         });
+        stepButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                step();
+            }
+        });
+    }
+
+    private void step() {
+        debugger.breakpointsHalt = false;
+        debugger.step();
+        registersModel.fireUpdate();
+        memoryModel.fireUpdate(0, RAM_SIZE - 1);//TODO optimize
+        debugger.breakpointsHalt = true;
     }
 
     private void openBin() {
@@ -325,7 +340,7 @@ public class IdeMain {
         runButton.setToolTipText("Run until breakpoint/reserved");
         toolBar1.add(runButton);
         stepButton = new JButton();
-        stepButton.setEnabled(false);
+        stepButton.setEnabled(true);
         stepButton.setText("Step");
         stepButton.setToolTipText("Execute one instruction");
         toolBar1.add(stepButton);

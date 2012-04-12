@@ -8,9 +8,9 @@ import java.util.List;
  * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.1 implementation.
  * <p/>
  * <p/>
- * TODO Register enum, with getter/setter, getName, getMemIndex etc
+ * TODO Maybe Register enum, with getter/setter, getName, getMemIndex etc. Probably same for Operation and Operand.
  */
-public class Dcpu {
+public final class Dcpu {
 
     ////////////////
     // NOTES
@@ -182,6 +182,32 @@ public class Dcpu {
     public static final int A_29 = A_CONST + 29;
     public static final int A_30 = A_CONST + 30;
     public static final int A_31 = A_CONST + 31;
+    // Additional instruction length from operand (1 if has NW, 0 otherwise)
+    public static final int[] OPERAND_LENGTH = {
+            // Register
+            0, 0, 0, 0, 0, 0, 0, 0,
+            // [Register]
+            0, 0, 0, 0, 0, 0, 0, 0,
+            // [NW+register]
+            1, 1, 1, 1, 1, 1, 1, 1,
+            // POP PUSH PEEK SP PC O [NW] NW
+            0, 0, 0, 0, 0, 0, 1, 1,
+            // literal
+            0, 0, 0, 0, 0, 0, 0, 0
+    };
+    // True if instruction accesses memory (false for literals and registers)
+    public static final boolean[] OPERAND_MEMACCESS = {
+            // Register
+            false, false, false, false, false, false, false, false,
+            // [Register]
+            true, true, true, true, true, true, true, true, true,
+            // [NW+register]
+            true, true, true, true, true, true, true, true, true,
+            // POP PUSH PEEK SP PC O [NW] NW
+            true, true, true, false, false, false, true, true, true,
+            // literal
+            false, false, false, false, false, false, false, false
+    };
 
     public static final int RAM_SIZE = 0x10000;
     //////
@@ -494,6 +520,14 @@ public class Dcpu {
 
     public void upload(short[] buffer) {
         upload(buffer, 0, buffer.length, 0);
+    }
+
+    public int pc() {
+        return mem[M_PC] & 0xffff;
+    }
+
+    public int sp() {
+        return mem[M_SP] & 0xffff;
     }
 
 

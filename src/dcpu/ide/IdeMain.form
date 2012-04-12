@@ -106,7 +106,7 @@
           <component id="de9ff" class="javax.swing.JButton" binding="stepButton" default-binding="true">
             <constraints/>
             <properties>
-              <enabled value="false"/>
+              <enabled value="true"/>
               <text value="Step"/>
               <toolTipText value="Execute one instruction"/>
             </properties>
@@ -200,7 +200,7 @@
                 <constraints/>
                 <properties>
                   <font name="Courier New" size="12"/>
-                  <text value="; Input your proram here&#10;:main &#10;&#9;SET DAT,0" noi18n="true"/>
+                  <text value="; Input your proram here &#10;:main&#10;  &#9;DAT,0" noi18n="true"/>
                 </properties>
               </component>
             </children>
