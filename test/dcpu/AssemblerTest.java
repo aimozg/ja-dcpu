@@ -108,6 +108,22 @@ public class AssemblerTest {
     }
 
     @Test
+    public void testPlusShortable() throws Exception {
+        // Test assemblint [REG+LITERAL] and [LITERAL+REG] where REG<32
+        short[] bin = assembler.assemble(
+                "SET A,[B+1]\n" +
+                        "SET B,[2+C]\n" +
+                        "DAT 0\n"
+        );
+        assertEquals(5, bin.length);
+        assertEquals(Dcpu.gencmd(Dcpu.O_SET, Dcpu.A_A, Dcpu.A_M_NW_B), bin[0]);
+        assertEquals(bin[1], 1);
+        assertEquals(Dcpu.gencmd(Dcpu.O_SET, Dcpu.A_B, Dcpu.A_M_NW_C), bin[2]);
+        assertEquals(bin[3], 2);
+        assertEquals(bin[4], 0);
+    }
+
+    @Test
     public void testOpcodes() throws Exception {
         // Test every OP command except NBI for every A,B combination.
         // We also test every upper and lower case variation of both op command and codes and literals
