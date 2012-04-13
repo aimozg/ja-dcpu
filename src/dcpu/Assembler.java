@@ -219,13 +219,14 @@ public class Assembler {
         SimpleParam p = simpleParam(true);
         if (p != null) return p;
         require("[", "parameter");
-        p = simpleParam(true);
+        p = simpleParam(false);
         if (p == null) fail("Bad parameter1");
         if (accept("+") || accept("-")) {
             // maybe bad solution for handling "-literal", but no better idea yet
             boolean neg = token.equals("-");
             SimpleParam p2 = simpleParam(false);
             if (p2 == null) fail("Bad parameter2");
+            if (neg && !(p2 instanceof SimpleConstParam)) fail("Bad parameter2");
             if (neg) buffer[counter - 1] = (short) (0x10000 - buffer[counter - 1]);
             require("]", "parameter");
             return new ParamSum(p, p2);
