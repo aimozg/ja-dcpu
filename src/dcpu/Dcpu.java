@@ -1,7 +1,10 @@
 package dcpu;
 
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.1 implementation.
@@ -25,6 +28,36 @@ public class Dcpu {
     ////////////////
     /// CONSTANTS
     ////////////////
+
+    public enum Reg {
+        A("A", 0), B("B", 1), C("C", 2),
+        X("X", 3), Y("Y", 4), Z("Z", 5),
+        I("I", 6), J("J", 7),
+        PC("PC", 8), SP("SP", 9), O("O", 10),
+        PPC("PPC", 11), PSP("PSP", 12);
+        
+        public static final int BASE_ADDRESS = 0x10000;
+        
+        public final String name;
+        public final int offset;
+        public final int address;
+        
+        // reverse map for looking up the Enum from the code, and convenience function
+        private static final Map<Integer, Reg> LOOKUP = new HashMap<Integer, Reg>();
+        public static Reg l(int offset) { return Reg.LOOKUP.get(offset); }
+
+        static {
+            for(Reg r : EnumSet.allOf(Reg.class)) {
+                 LOOKUP.put(r.offset, r);
+            }
+        }
+
+        Reg(String name, int offset) {
+            this.name = name;
+            this.offset = offset;
+            this.address = BASE_ADDRESS + offset; 
+        }
+    }
 
     //////
     // Opcode constants
@@ -91,14 +124,7 @@ public class Dcpu {
     };
     // Register constants
     public static final int REGS_COUNT = 8 + 1 + 1 + 1; ///< Register count: 8 GP, PC, SP, O
-    public static final int REG_A = 0;
-    public static final int REG_B = 1;
-    public static final int REG_C = 2;
-    public static final int REG_X = 3;
-    public static final int REG_Y = 4;
-    public static final int REG_Z = 5;
-    public static final int REG_I = 6;
-    public static final int REG_J = 7;
+
     // Command parts (opcode, A, B)
     public static final int C_O_MASK = 0x000F;
     public static final int C_A_MASK = 0x03F0;
@@ -112,34 +138,34 @@ public class Dcpu {
     // Command address types (take one and shift with C_x_SHIFT)
     //   Plain register
     public static final int A_REG = 0;// | with REG_x
-    public static final int A_A = A_REG | REG_A;
-    public static final int A_B = A_REG | REG_B;
-    public static final int A_C = A_REG | REG_C;
-    public static final int A_X = A_REG | REG_X;
-    public static final int A_Y = A_REG | REG_Y;
-    public static final int A_Z = A_REG | REG_Z;
-    public static final int A_I = A_REG | REG_I;
-    public static final int A_J = A_REG | REG_J;
+    public static final int A_A = A_REG | Reg.A.offset;
+    public static final int A_B = A_REG | Reg.B.offset;
+    public static final int A_C = A_REG | Reg.C.offset;
+    public static final int A_X = A_REG | Reg.X.offset;
+    public static final int A_Y = A_REG | Reg.Y.offset;
+    public static final int A_Z = A_REG | Reg.Z.offset;
+    public static final int A_I = A_REG | Reg.I.offset;
+    public static final int A_J = A_REG | Reg.J.offset;
     //   (Register)
     public static final int A_M_REG = 8; // or with REG_x
-    public static final int A_M_A = A_M_REG | REG_A;
-    public static final int A_M_B = A_M_REG | REG_B;
-    public static final int A_M_C = A_M_REG | REG_C;
-    public static final int A_M_X = A_M_REG | REG_X;
-    public static final int A_M_Y = A_M_REG | REG_Y;
-    public static final int A_M_Z = A_M_REG | REG_Z;
-    public static final int A_M_I = A_M_REG | REG_I;
-    public static final int A_M_J = A_M_REG | REG_J;
+    public static final int A_M_A = A_M_REG | Reg.A.offset;
+    public static final int A_M_B = A_M_REG | Reg.B.offset;
+    public static final int A_M_C = A_M_REG | Reg.C.offset;
+    public static final int A_M_X = A_M_REG | Reg.X.offset;
+    public static final int A_M_Y = A_M_REG | Reg.Y.offset;
+    public static final int A_M_Z = A_M_REG | Reg.Z.offset;
+    public static final int A_M_I = A_M_REG | Reg.I.offset;
+    public static final int A_M_J = A_M_REG | Reg.J.offset;
     //  (Register+NW)
     public static final int A_M_NW_REG = 16; // or with REG_x
-    public static final int A_M_NW_A = A_M_NW_REG | REG_A;
-    public static final int A_M_NW_B = A_M_NW_REG | REG_B;
-    public static final int A_M_NW_C = A_M_NW_REG | REG_C;
-    public static final int A_M_NW_X = A_M_NW_REG | REG_X;
-    public static final int A_M_NW_Y = A_M_NW_REG | REG_Y;
-    public static final int A_M_NW_Z = A_M_NW_REG | REG_Z;
-    public static final int A_M_NW_I = A_M_NW_REG | REG_I;
-    public static final int A_M_NW_J = A_M_NW_REG | REG_J;
+    public static final int A_M_NW_A = A_M_NW_REG | Reg.A.offset;
+    public static final int A_M_NW_B = A_M_NW_REG | Reg.B.offset;
+    public static final int A_M_NW_C = A_M_NW_REG | Reg.C.offset;
+    public static final int A_M_NW_X = A_M_NW_REG | Reg.X.offset;
+    public static final int A_M_NW_Y = A_M_NW_REG | Reg.Y.offset;
+    public static final int A_M_NW_Z = A_M_NW_REG | Reg.Z.offset;
+    public static final int A_M_NW_I = A_M_NW_REG | Reg.I.offset;
+    public static final int A_M_NW_J = A_M_NW_REG | Reg.J.offset;
     //   Special registers and stack
     public static final int A_POP = 24;
     public static final int A_PEEK = 25;
@@ -186,35 +212,35 @@ public class Dcpu {
 
     //////
     // Register addresses
-    public static final int M_A = 0x10000;
-    public static final int M_B = 0x10001;
-    public static final int M_C = 0x10002;
-    public static final int M_X = 0x10003;
-    public static final int M_Y = 0x10004;
-    public static final int M_Z = 0x10005;
-    public static final int M_I = 0x10006;
-    public static final int M_J = 0x10007;
-    public static final int M_PC = 0x10008;
-    public static final int M_SP = 0x10009;
-    public static final int M_O = 0x1000a;
-    public static final int M_PPC = 0x1000b; // prev PC (PC before execution)
-    public static final int M_PSP = 0x1000c; // prev SP (SP before execution)
-    public static final int M_CV = 0x1000d; // constant value
+    public static final int M_A = Reg.BASE_ADDRESS;
+    public static final int M_B = Reg.B.address;
+    public static final int M_C = Reg.C.address;
+    public static final int M_X = Reg.X.address;
+    public static final int M_Y = Reg.Y.address;
+    public static final int M_Z = Reg.Z.address;
+    public static final int M_I = Reg.I.address;
+    public static final int M_J = Reg.J.address;
+    public static final int M_PC = Reg.PC.address;
+    public static final int M_SP = Reg.SP.address;
+    public static final int M_O = Reg.O.address;
+    public static final int M_PPC = Reg.PPC.address; // prev PC (PC before execution)
+    public static final int M_PSP = Reg.PSP.address; // prev SP (SP before execution)
+    public static final int M_CV = Reg.PSP.address + 1; // constant value
     // Memory cell names
     public static final String[] MEM_NAMES = {
-            "A", "B", "C", "X", "Y", "Z", "I", "J",
-            "PC", "SP", "O", "PPC", "PSP",
+            Reg.A.name, Reg.B.name, Reg.C.name, Reg.X.name, Reg.Y.name, Reg.Z.name, Reg.I.name, Reg.J.name,
+            Reg.PC.name, Reg.SP.name, Reg.O.name, Reg.PPC.name, Reg.PSP.name,
             "0", "1", "2", "3", "4", "5", "6", "7",
             "8", "9", "10", "11", "12", "13", "14", "15",
             "16", "17", "18", "19", "20", "21", "22", "23",
             "24", "25", "26", "27", "28", "29", "30", "31"
     };
-
+    
     ///////////////////////////////////////////////////////////////
     // CORE CPU FUNCTIONS
     ///////////////////////////////////////////////////////////////
 
-    // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + O + 32 constants
+    // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + O + PPC + PSP + 32 constants
     public final short[] mem = new short[M_CV + 32];
     public boolean reserved = false; // true if reserved operation executed
     public boolean halt = false;// halt execution
@@ -446,34 +472,50 @@ public class Dcpu {
      * that's what "write" is for.
      */
     private int getaddr(int cmd, boolean write) {
-        if (cmd <= 7) {
+        if (cmd <= 0x07) {
+            // register
             return M_A + cmd;
-        } else if (cmd <= 15) {
+        } else if (cmd <= 0x0f) {
+            // [register]
             return mem[M_A + cmd - 8] & 0xffff;
-        } else if (cmd <= 23) {
+        } else if (cmd <= 0x17) {
+            // [next word + register]
             return (mem[M_A + cmd - 16] + mem[mem[M_PC]++]) & 0xffff;
-        } else if (cmd >= 32) {
-            return M_CV + cmd - 32;
+        } else if (cmd >= 0x20 && cmd <= 0x3f) {
+            // literal value
+            return M_CV + cmd - 0x20;
         } else switch (cmd) {
-            case 24:
+            case 0x18:
+                // POP
                 return (mem[M_SP]++) & 0xffff;
-            case 25:
+            case 0x19:
+                // PEEK
                 return mem[M_SP] & 0xffff;
-            case 26:
+            case 0x1a:
+                // PUSH
                 return (--mem[M_SP]) & 0xffff;
-            case 27:
+            case 0x1b:
+                // SP
                 return write ? M_SP : M_PSP;
-            case 28:
+            case 0x1c:
+                // PC
                 return write ? M_PC : M_PPC;
-            case 29:
+            case 0x1d:
+                // O
                 return M_O;
-            case 30:
+            case 0x1e:
+                // [next word]
                 return mem[mem[M_PC]++] & 0xffff;
-            case 31:
+            case 0x1f:
+                // next word (literal)
                 return mem[M_PC]++ & 0xffff;
             default:
-                throw new RuntimeException("THIS SHOULD NEVER HAPPEN");
+                throw new RuntimeException("Unknown cmd value: " + cmd);
         }
+    }
+
+    public short getreg(Reg reg) {
+        return (short) (mem[reg.address] & 0xffff);
     }
 
     public void upload(short[] buffer, int srcoff, int len, int dstoff) {

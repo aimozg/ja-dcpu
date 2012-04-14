@@ -1,14 +1,15 @@
 package dcpu;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class AssemblerTest {
 
@@ -142,6 +143,36 @@ public class AssemblerTest {
         assertArrayEquals(expected, bin2);
     }
 
+    @Ignore("Needs support for parsing maths")
+    @Test
+    public void testMathsInOps() throws Exception {
+        short[] bin2 = assembler.assemble(
+                "SET A, 0x8041\n" +
+                "DAT 0\n"
+        );
+        short[] bin1 = assembler.assemble(
+                "SET A, 0x8000 + 32 * 2 + 1\n" +
+                "DAT 0\n"
+        );
+        assertArrayEquals(bin2, bin1);
+    }
+    
+    @Test
+    public void testReserve() throws Exception {
+        short[] bin = assembler.assemble(
+                "        SET A, 0\n" +
+                "        SET PC, jump\n" +
+                ":area   reserve 2 dat 0x00aa" +
+                ":jump   SET A, PC"
+        );
+        short[] expected = new short[] {
+                (short) 0x8001, 
+                        0x7dc1, 0x0005, 
+                        0x00aa, 0x00aa, 
+                        0x7001
+        };
+        assertArrayEquals("bin", expected, bin);
+    }
 
     @Test
     public void testOpcodes() throws Exception {
