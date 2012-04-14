@@ -4,12 +4,16 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import dcpu.*;
+import dcpu.io.InstreamPeripheral;
+import dcpu.io.OutstreamPeripheral;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.*;
 
 import static dcpu.Dcpu.RAM_SIZE;
@@ -47,6 +51,10 @@ public class IdeMain {
     private AsmMap asmMap;
     private Debugger debugger;
     private short[] binary = {};
+    private InstreamPeripheral stdin;
+    private OutstreamPeripheral stdout;
+    private PipedInputStream stdin_pipe;
+    private PipedOutputStream stdout_pipe;
 
     private RegistersModel registersModel;
     private MemoryModel memoryModel;
@@ -69,6 +77,16 @@ public class IdeMain {
         debugger = new Debugger();
         debugger.attachTo(cpu);
         asmMap = new AsmMap();
+        stdin_pipe = new PipedInputStream();
+        try {
+            stdout_pipe = new PipedOutputStream(stdin_pipe);
+        } catch (IOException e) {
+            throw new RuntimeException("Weird things happen here...", e);
+        }
+        stdin = new InstreamPeripheral(stdin_pipe, 16);
+        stdout = new OutstreamPeripheral(stdout_pipe);
+        cpu.attach(stdin, 0x7);
+        cpu.attach(stdout, 0x8);
 
         fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File("."));
@@ -126,6 +144,12 @@ public class IdeMain {
         stepButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 step();
+            }
+        });
+        consoleTextarea.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                throw new UnsupportedOperationException();// TODO write .keyTyped method body
             }
         });
     }
@@ -375,7 +399,7 @@ public class IdeMain {
         panel1.add(scrollPane2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(500, 400), null, 0, false));
         sourceTextarea = new JTextArea();
         sourceTextarea.setFont(new Font("Courier New", sourceTextarea.getFont().getStyle(), 12));
-        sourceTextarea.setText("; Input your proram here\n:main \n\tSET DAT,0");
+        sourceTextarea.setText("; Input your proram here \n:main\n  \tDAT,0");
         scrollPane2.setViewportView(sourceTextarea);
         final JPanel panel2 = new JPanel();
         panel2.setLayout(new GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));

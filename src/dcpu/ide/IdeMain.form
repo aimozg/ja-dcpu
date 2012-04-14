@@ -221,7 +221,9 @@
                 <preferred-size width="150" height="200"/>
               </grid>
             </constraints>
-            <properties/>
+            <properties>
+              <editable value="true"/>
+            </properties>
           </component>
           <component id="6bc71" class="javax.swing.JLabel">
             <constraints>
