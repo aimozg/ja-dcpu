@@ -35,6 +35,8 @@ public class AssemblerTest {
         for (int i = 0; i < REGISTERS.length; i++) {
             AVALUES.put("[0x" + A_BIG_LITERAL.toUpperCase() + " + " + REGISTERS[i].toUpperCase() + "]", 16 + i);
             BVALUES.put("[0x" + B_BIG_LITERAL.toUpperCase() + " + " + REGISTERS[i].toUpperCase() + "]", 16 + i);
+            AVALUES.put("[" + REGISTERS[i].toUpperCase() + " + 0x" + A_BIG_LITERAL.toUpperCase() + " ]", 16 + i);
+            BVALUES.put("[" + REGISTERS[i].toUpperCase() + " + 0x" + B_BIG_LITERAL.toUpperCase() + " ]", 16 + i);
         }
         for (int i = 0; i < VAL_COMMANDS.length; i++) {
             AVALUES.put(VAL_COMMANDS[i].toUpperCase(), 0x18 + i);
@@ -61,6 +63,8 @@ public class AssemblerTest {
         for (int i = 0; i < REGISTERS.length; i++) {
             AVALUES.put("[0x" + A_BIG_LITERAL.toLowerCase() + " + " + REGISTERS[i].toLowerCase() + "]", 16 + i);
             BVALUES.put("[0x" + B_BIG_LITERAL.toLowerCase() + " + " + REGISTERS[i].toLowerCase() + "]", 16 + i);
+            AVALUES.put("[" + REGISTERS[i].toLowerCase() + " + 0x" + A_BIG_LITERAL.toLowerCase() + " ]", 16 + i);
+            BVALUES.put("[" + REGISTERS[i].toLowerCase() + " + 0x" + B_BIG_LITERAL.toLowerCase() + " ]", 16 + i);
         }
         for (int i = 0; i < VAL_COMMANDS.length; i++) {
             AVALUES.put(VAL_COMMANDS[i].toLowerCase(), 0x18 + i);
@@ -109,7 +113,7 @@ public class AssemblerTest {
 
     @Test
     public void testPlusShortable() throws Exception {
-        // Test assemblint [REG+LITERAL] and [LITERAL+REG] where REG<32
+        // Test assembling [REG+LITERAL] and [LITERAL+REG] where REG<32
         short[] bin = assembler.assemble(
                 "SET A,[B+1]\n" +
                         "SET B,[2+C]\n" +
@@ -122,6 +126,22 @@ public class AssemblerTest {
         assertEquals(bin[3], 2);
         assertEquals(bin[4], 0);
     }
+
+    @Test
+    public void testRegisterPlusOffsetIsCommutativeAndDoesntSwallowNextCommand() throws Exception {
+        short[] bin1 = assembler.assemble(
+                "SET [0x1234 + J], A\n" +
+                "SET B, B\n"
+        );
+        short[] bin2 = assembler.assemble(
+                "SET [J + 0x1234], A\n" +
+                "SET B, B\n"
+        );
+        short[] expected = new short[] {0x0171, 0x1234, 0x0411};
+        assertArrayEquals(expected, bin1);
+        assertArrayEquals(expected, bin2);
+    }
+
 
     @Test
     public void testOpcodes() throws Exception {
