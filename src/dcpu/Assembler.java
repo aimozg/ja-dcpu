@@ -143,6 +143,8 @@ public class Assembler {
                     label();
                 } else if (acceptIgnoreCase("dat")) {
                     dat();
+                } else if (acceptIgnoreCase("reserve")) {
+                    reserve();
                 } else if (acceptIgnoreCase("hlt")) {
                     append(gencmd_nbi(O__RESVD, 0), false);
                 } else {
@@ -183,6 +185,22 @@ public class Assembler {
             } else if (accept(idPattern)) {
                 append((short) 0, false);
                 references.add(new Reference(token, (short) (counter - 1), stokizer.lineno()));
+            }
+        }
+    }
+
+    private void reserve() throws IOException {
+        // reserves a number of words
+        // (e.g) ":input_data reserve 32 dat 0x00"
+        if (accept(numPattern)) {
+            int numBytes = tokenToInt();
+            if (accept("dat")) {
+                if (accept(numPattern)) {
+                    short value = (short) tokenToInt();
+                    for (int i = 0; i < numBytes; i++) {
+                        append(value, false);
+                    }
+                }
             }
         }
     }

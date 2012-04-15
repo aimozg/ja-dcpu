@@ -1,6 +1,7 @@
 package dcpu;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;
@@ -35,6 +36,8 @@ public class AssemblerTest {
         for (int i = 0; i < REGISTERS.length; i++) {
             AVALUES.put("[0x" + A_BIG_LITERAL.toUpperCase() + " + " + REGISTERS[i].toUpperCase() + "]", 16 + i);
             BVALUES.put("[0x" + B_BIG_LITERAL.toUpperCase() + " + " + REGISTERS[i].toUpperCase() + "]", 16 + i);
+            AVALUES.put("[" + REGISTERS[i].toUpperCase() + " + 0x" + A_BIG_LITERAL.toUpperCase() + " ]", 16 + i);
+            BVALUES.put("[" + REGISTERS[i].toUpperCase() + " + 0x" + B_BIG_LITERAL.toUpperCase() + " ]", 16 + i);
         }
         for (int i = 0; i < VAL_COMMANDS.length; i++) {
             AVALUES.put(VAL_COMMANDS[i].toUpperCase(), 0x18 + i);
@@ -61,6 +64,8 @@ public class AssemblerTest {
         for (int i = 0; i < REGISTERS.length; i++) {
             AVALUES.put("[0x" + A_BIG_LITERAL.toLowerCase() + " + " + REGISTERS[i].toLowerCase() + "]", 16 + i);
             BVALUES.put("[0x" + B_BIG_LITERAL.toLowerCase() + " + " + REGISTERS[i].toLowerCase() + "]", 16 + i);
+            AVALUES.put("[" + REGISTERS[i].toLowerCase() + " + 0x" + A_BIG_LITERAL.toLowerCase() + " ]", 16 + i);
+            BVALUES.put("[" + REGISTERS[i].toLowerCase() + " + 0x" + B_BIG_LITERAL.toLowerCase() + " ]", 16 + i);
         }
         for (int i = 0; i < VAL_COMMANDS.length; i++) {
             AVALUES.put(VAL_COMMANDS[i].toLowerCase(), 0x18 + i);
@@ -109,7 +114,7 @@ public class AssemblerTest {
 
     @Test
     public void testPlusShortable() throws Exception {
-        // Test assemblint [REG+LITERAL] and [LITERAL+REG] where REG<32
+        // Test assembling [REG+LITERAL] and [LITERAL+REG] where REG<32
         short[] bin = assembler.assemble(
                 "SET A,[B+1]\n" +
                         "SET B,[2+C]\n" +
@@ -121,6 +126,52 @@ public class AssemblerTest {
         assertEquals(Dcpu.gencmd(Dcpu.O_SET, Dcpu.A_B, Dcpu.A_M_NW_C), bin[2]);
         assertEquals(bin[3], 2);
         assertEquals(bin[4], 0);
+    }
+
+    @Test
+    public void testRegisterPlusOffsetIsCommutativeAndDoesntSwallowNextCommand() throws Exception {
+        short[] bin1 = assembler.assemble(
+                "SET [0x1234 + J], A\n" +
+                        "SET B, B\n"
+        );
+        short[] bin2 = assembler.assemble(
+                "SET [J + 0x1234], A\n" +
+                        "SET B, B\n"
+        );
+        short[] expected = new short[]{0x0171, 0x1234, 0x0411};
+        assertArrayEquals(expected, bin1);
+        assertArrayEquals(expected, bin2);
+    }
+
+    @Ignore("Needs support for parsing maths")
+    @Test
+    public void testMathsInOps() throws Exception {
+        short[] bin2 = assembler.assemble(
+                "SET A, 0x8041\n" +
+                        "DAT 0\n"
+        );
+        short[] bin1 = assembler.assemble(
+                "SET A, 0x8000 + 32 * 2 + 1\n" +
+                        "DAT 0\n"
+        );
+        assertArrayEquals(bin2, bin1);
+    }
+
+    @Test
+    public void testReserve() throws Exception {
+        short[] bin = assembler.assemble(
+                "        SET A, 0\n" +
+                        "        SET PC, jump\n" +
+                        ":area   reserve 2 dat 0x00aa" +
+                        ":jump   SET A, PC"
+        );
+        short[] expected = new short[]{
+                (short) 0x8001,
+                0x7dc1, 0x0005,
+                0x00aa, 0x00aa,
+                0x7001
+        };
+        assertArrayEquals("bin", expected, bin);
     }
 
     @Test
