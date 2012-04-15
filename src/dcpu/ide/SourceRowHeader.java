@@ -59,4 +59,9 @@ public class SourceRowHeader extends JList<String> {
         model.set(line, nameFor(line));
     }
 
+    public void breakpointsChanged() {
+        for (int i = 0; i < sources.getLineCount(); i++) {
+            breakpointChanged(i);
+        }
+    }
 }

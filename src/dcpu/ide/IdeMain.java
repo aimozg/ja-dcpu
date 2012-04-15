@@ -226,6 +226,8 @@ public class IdeMain {
                     }
                     sb.append("\n");
                 }
+                srcBreakpoints.clear();
+                sourceRowHeader.breakpointsChanged();
                 sourceTextarea.setText(sb.toString());
             } catch (IOException e1) {
                 JOptionPane.showMessageDialog(frame, "Unable to open file: %s" + e1.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -298,6 +300,8 @@ public class IdeMain {
                 FileInputStream input = new FileInputStream(fileChooser.getSelectedFile());
                 char[] csources = new char[input.available()];
                 new InputStreamReader(input).read(csources, 0, csources.length);
+                srcBreakpoints.clear();
+                sourceRowHeader.breakpointsChanged();
                 sourceTextarea.setText(new String(csources));
                 asmMap = new AsmMap();
                 binary = new short[0];
