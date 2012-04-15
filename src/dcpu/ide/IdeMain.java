@@ -9,12 +9,15 @@ import dcpu.io.OutstreamPeripheral;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.*;
+import java.util.HashSet;
+import java.util.Set;
 
 import static dcpu.Dcpu.RAM_SIZE;
 
@@ -44,6 +47,7 @@ public class IdeMain {
     private JPanel rootPanel;
     private JScrollPane memoryScrollPane;
     private JButton hardResetButton;
+    private JScrollPane sourceScrollPane;
 
     private JFrame frame;
 
@@ -51,6 +55,8 @@ public class IdeMain {
     private AsmMap asmMap;
     private Debugger debugger;
     private short[] binary = {};
+    private Set<Integer> srcBreakpoints = new HashSet<Integer>();
+
     private InstreamPeripheral stdin;
     private OutstreamPeripheral stdout;
     private PipedInputStream stdin_pipe;
@@ -58,6 +64,8 @@ public class IdeMain {
 
     private RegistersModel registersModel;
     private MemoryModel memoryModel;
+
+    private SourceRowHeader sourceRowHeader;
 
     private JFileChooser fileChooser;
     private FileNameExtensionFilter asmFilter = new FileNameExtensionFilter("Assembler source (.asm|.dasm)", "asm", "dasm");
@@ -95,6 +103,10 @@ public class IdeMain {
         registersTable.setModel(registersModel);
         memoryModel = new MemoryModel(cpu, debugger);
         memoryTable.setModel(memoryModel);
+
+        sourceRowHeader = new SourceRowHeader(sourceTextarea, srcBreakpoints);
+        sourceRowHeader.setBackground(Color.LIGHT_GRAY);
+        sourceScrollPane.setRowHeaderView(sourceRowHeader);
 
         frame = new JFrame("JA-DCPU IDE");
         frame.setContentPane(rootPanel);
@@ -152,6 +164,25 @@ public class IdeMain {
                 throw new UnsupportedOperationException();// TODO write .keyTyped method body
             }
         });
+        breakpointButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                toggleBreakpoint();
+            }
+        });
+    }
+
+    private void toggleBreakpoint() {
+        try {
+            int lineno = sourceTextarea.getLineOfOffset(sourceTextarea.getCaretPosition());
+            if (srcBreakpoints.contains(lineno)) {
+                srcBreakpoints.remove(lineno);
+            } else {
+                srcBreakpoints.add(lineno);
+            }
+            sourceRowHeader.breakpointChanged(lineno);
+        } catch (BadLocationException e1) {
+            e1.printStackTrace();
+        }
     }
 
     private void step() {
@@ -286,6 +317,15 @@ public class IdeMain {
             cpu.upload(binary);
             memoryModel.fireUpdate(0, binary.length);
             asmMap = assembler.asmmap;
+            for (Short addr : debugger.getBreakpoints()) {
+                debugger.setBreakpoint(addr, false);
+            }
+            for (Integer breakpoint : srcBreakpoints) {
+                Short addr = asmMap.src2bin(breakpoint);
+                if (addr != null) {// TODO if null, mark breakpoint somehow
+                    debugger.setBreakpoint(addr, true);
+                }
+            }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(frame, "Compilation error " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -371,7 +411,7 @@ public class IdeMain {
         final JToolBar.Separator toolBar$Separator3 = new JToolBar.Separator();
         toolBar1.add(toolBar$Separator3);
         breakpointButton = new JButton();
-        breakpointButton.setEnabled(false);
+        breakpointButton.setEnabled(true);
         breakpointButton.setText("Breakpoint");
         breakpointButton.setToolTipText("Toggle breakpoint on instruction address");
         toolBar1.add(breakpointButton);
@@ -395,12 +435,12 @@ public class IdeMain {
         panel1.add(scrollPane1, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(100, -1), null, 0, false));
         registersTable = new JTable();
         scrollPane1.setViewportView(registersTable);
-        final JScrollPane scrollPane2 = new JScrollPane();
-        panel1.add(scrollPane2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(500, 400), null, 0, false));
+        sourceScrollPane = new JScrollPane();
+        panel1.add(sourceScrollPane, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(500, 400), null, 0, false));
         sourceTextarea = new JTextArea();
         sourceTextarea.setFont(new Font("Courier New", sourceTextarea.getFont().getStyle(), 12));
         sourceTextarea.setText("; Input your proram here \n:main\n  \tDAT,0");
-        scrollPane2.setViewportView(sourceTextarea);
+        sourceScrollPane.setViewportView(sourceTextarea);
         final JPanel panel2 = new JPanel();
         panel2.setLayout(new GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
         rootPanel.add(panel2, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));

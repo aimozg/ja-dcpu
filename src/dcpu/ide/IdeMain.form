@@ -118,7 +118,7 @@
           <component id="243e9" class="javax.swing.JButton" binding="breakpointButton" default-binding="true">
             <constraints/>
             <properties>
-              <enabled value="false"/>
+              <enabled value="true"/>
               <text value="Breakpoint"/>
               <toolTipText value="Toggle breakpoint on instruction address"/>
             </properties>
@@ -187,7 +187,7 @@
               </component>
             </children>
           </scrollpane>
-          <scrollpane id="f7eb5">
+          <scrollpane id="f7eb5" binding="sourceScrollPane">
             <constraints>
               <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
                 <preferred-size width="500" height="400"/>
