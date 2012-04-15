@@ -37,7 +37,7 @@ public class RegistersModel implements TableModel {
         return 2;
     }
 
-    private static String[] columnNames = {"Register", "Value"};
+    private static String[] columnNames = {"Register", "Value (hex)"};
 
     public String getColumnName(int columnIndex) {
         return columnNames[columnIndex];

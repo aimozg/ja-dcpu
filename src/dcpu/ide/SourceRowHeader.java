@@ -39,14 +39,14 @@ public class SourceRowHeader extends JList<String> {
         if (model.getSize() != sources.getLineCount()) {
             model.clear();
             for (int i = 0; i < sources.getLineCount(); i++) {
-                String s = nameFor(i);
+                String s = nameFor(i + 1);
                 model.addElement(s);
             }
         }
     }
 
     private String nameFor(int i) {
-        return String.valueOf(i + 1) + (breakpoints.contains(i) ? "!" : " ");
+        return String.valueOf(i) + (breakpoints.contains(i) ? "!" : " ");
     }
 
 
@@ -56,12 +56,12 @@ public class SourceRowHeader extends JList<String> {
         } else {
             breakpoints.remove(line);
         }
-        model.set(line, nameFor(line));
+        model.set(line - 1, nameFor(line));
     }
 
     public void breakpointsChanged() {
         for (int i = 0; i < sources.getLineCount(); i++) {
-            breakpointChanged(i);
+            breakpointChanged(i + 1);
         }
     }
 }

@@ -6,7 +6,6 @@ import java.util.*;
  * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.1 implementation.
  * <p/>
  * <p/>
- * TODO Maybe Register enum, with getter/setter, getName, getMemIndex etc. Probably same for Operation and Operand.
  */
 public final class Dcpu {
 
@@ -234,6 +233,8 @@ public final class Dcpu {
     };
 
     public static final int RAM_SIZE = 0x10000;
+    public static final long CPU_FREQUENCY = 100 * 1000;
+    public static final long NANO_TICK = 1000 * 1000 * 1000 / CPU_FREQUENCY;
     //////
     // Register addresses
     public static final int M_A = Reg.BASE_ADDRESS;
@@ -267,7 +268,7 @@ public final class Dcpu {
     // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + O + PPC + PSP + 32 constants
     public final short[] mem = new short[M_CV + 32];
     public boolean reserved = false; // true if reserved operation executed
-    public boolean halt = false;// halt execution
+    public volatile boolean halt = false;// halt execution
 
     /**
      * Runs until hitting Opcode 0
@@ -292,6 +293,8 @@ public final class Dcpu {
 
     /**
      * Execute one operation (skip = false) or skip one operation.
+     * <p/>
+     * TODO delay
      */
     public void step(boolean skip) {
         // save prev PC and prev SP

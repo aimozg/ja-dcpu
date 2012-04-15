@@ -55,12 +55,13 @@ public class IdeMain {
     private AsmMap asmMap;
     private Debugger debugger;
     private short[] binary = {};
-    private Set<Integer> srcBreakpoints = new HashSet<Integer>();
+    private Set<Integer> srcBreakpoints = new HashSet<Integer>(); // Line starts from 1
+    private Thread cpuThread;
 
     private InstreamPeripheral stdin;
     private OutstreamPeripheral stdout;
-    private PipedInputStream stdin_pipe;
-    private PipedOutputStream stdout_pipe;
+    private PipedInputStream stdin_in;
+    private PipedOutputStream stdin_out;
 
     private RegistersModel registersModel;
     private MemoryModel memoryModel;
@@ -83,17 +84,27 @@ public class IdeMain {
     public IdeMain() {
         cpu = new Dcpu();
         debugger = new Debugger();
+        debugger.breakpointListener = new Listener<Short>() {
+            public void event(Short arg) {
+                breakpointHit(arg);
+            }
+        };
         debugger.attachTo(cpu);
         asmMap = new AsmMap();
-        stdin_pipe = new PipedInputStream();
+        stdin_in = new PipedInputStream();
         try {
-            stdout_pipe = new PipedOutputStream(stdin_pipe);
+            stdin_out = new PipedOutputStream(stdin_in);
         } catch (IOException e) {
             throw new RuntimeException("Weird things happen here...", e);
         }
-        stdin = new InstreamPeripheral(stdin_pipe, 16);
-        stdout = new OutstreamPeripheral(stdout_pipe);
-        cpu.attach(stdin, 0x7);
+        stdin = new InstreamPeripheral(stdin_in, 16);
+        stdout = new OutstreamPeripheral(new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                consoleTextarea.append(String.valueOf((char) b));
+            }
+        });
+        cpu.attach(stdin, 0x9);
         cpu.attach(stdout, 0x8);
 
         fileChooser = new JFileChooser();
@@ -161,7 +172,12 @@ public class IdeMain {
         consoleTextarea.addKeyListener(new KeyAdapter() {
             @Override
             public void keyTyped(KeyEvent e) {
-                throw new UnsupportedOperationException();// TODO write .keyTyped method body
+                try {
+                    if (e.getKeyChar() != 0)
+                        stdin_out.write(e.getKeyChar());
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
             }
         });
         breakpointButton.addActionListener(new ActionListener() {
@@ -169,16 +185,73 @@ public class IdeMain {
                 toggleBreakpoint();
             }
         });
+        runButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                debugger.breakpointsHalt = true;
+                runCpu();
+            }
+        });
+        execButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                debugger.breakpointsHalt = false;
+                runCpu();
+            }
+        });
+        pauseButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                cpu.halt = true;
+            }
+        });
+    }
+
+    private void breakpointHit(Short pc) {
+        registersModel.fireUpdate();
+        memoryModel.fireUpdate(0, RAM_SIZE - 1);//TODO optimize
+        Integer srcline = asmMap.bin2src(pc);
+        if (srcline != null) {
+            try {
+                sourceTextarea.requestFocus();
+                sourceTextarea.setCaretPosition(sourceTextarea.getLineStartOffset(srcline - 1));
+            } catch (BadLocationException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void runCpu() {
+        if (cpuThread != null && cpuThread.isAlive()) return;
+        runButton.setEnabled(false);
+        execButton.setEnabled(false);
+        stepButton.setEnabled(false);
+        pauseButton.setEnabled(true);
+        cpuThread = new Thread(new Runnable() {
+            public void run() {
+                debugger.run();
+                // on halt
+                runButton.setEnabled(true);
+                execButton.setEnabled(true);
+                stepButton.setEnabled(true);
+                pauseButton.setEnabled(false);
+                registersModel.fireUpdate();
+                memoryModel.fireUpdate(0, RAM_SIZE - 1);//TODO optimize
+            }
+        }, "CpuThread");
+        cpuThread.setDaemon(true);
+        cpuThread.start();
     }
 
     private void toggleBreakpoint() {
         try {
-            int lineno = sourceTextarea.getLineOfOffset(sourceTextarea.getCaretPosition());
+            int lineno = sourceTextarea.getLineOfOffset(sourceTextarea.getCaretPosition()) + 1;
+            Short asmaddr = asmMap.src2bin(lineno);
             if (srcBreakpoints.contains(lineno)) {
                 srcBreakpoints.remove(lineno);
+                if (asmaddr != null) debugger.setBreakpoint(asmaddr, false);
             } else {
                 srcBreakpoints.add(lineno);
+                if (asmaddr != null) debugger.setBreakpoint(asmaddr, true);
             }
+
             sourceRowHeader.breakpointChanged(lineno);
         } catch (BadLocationException e1) {
             e1.printStackTrace();
@@ -190,7 +263,6 @@ public class IdeMain {
         debugger.step();
         registersModel.fireUpdate();
         memoryModel.fireUpdate(0, RAM_SIZE - 1);//TODO optimize
-        debugger.breakpointsHalt = true;
     }
 
     private void openBin() {
@@ -393,7 +465,7 @@ public class IdeMain {
         resetButton.setToolTipText("Reset CPU (registers to zero)");
         toolBar1.add(resetButton);
         execButton = new JButton();
-        execButton.setEnabled(false);
+        execButton.setEnabled(true);
         execButton.setText("Exec");
         execButton.setToolTipText("Run forever");
         toolBar1.add(execButton);
@@ -403,7 +475,7 @@ public class IdeMain {
         pauseButton.setToolTipText("Pause execution");
         toolBar1.add(pauseButton);
         runButton = new JButton();
-        runButton.setEnabled(false);
+        runButton.setEnabled(true);
         runButton.setText("Run");
         runButton.setToolTipText("Run until breakpoint/reserved");
         toolBar1.add(runButton);

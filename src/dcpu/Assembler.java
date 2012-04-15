@@ -17,6 +17,9 @@ public class Assembler {
     private String token;
     private String nexttok;
     private int itoken;
+    // current line number. Cannot use StringTokenizer's one because it switches to next line too early
+    // (since we are actually analyzing its previous token)
+    private int lineno;
 
     /**
      * Reference to label
@@ -133,6 +136,7 @@ public class Assembler {
         try {
             next();
             while (!eof()) {
+                lineno = stokizer.lineno();
                 if (accept("#")) {
                     if (accept("macro")) {
                         macro();
@@ -297,11 +301,10 @@ public class Assembler {
             buffer = Arrays.copyOf(buffer, buffer.length * 3 / 2);
         }
         if (genMap) {
-            int line = stokizer.lineno();
-            asmmap.binMap.put((short) counter, line);
+            asmmap.binMap.put((short) counter, lineno);
             if (code) asmmap.code.set(counter);
-            if (!asmmap.srcMap.containsKey(line)) {
-                asmmap.srcMap.put(line, (short) counter);
+            if (!asmmap.srcMap.containsKey(lineno)) {
+                asmmap.srcMap.put(lineno, (short) counter);
             }
         }
         buffer[counter++] = s;

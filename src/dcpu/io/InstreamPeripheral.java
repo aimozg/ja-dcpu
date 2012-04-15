@@ -1,13 +1,13 @@
 package dcpu.io;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import dcpu.Dcpu;
 import dcpu.Listener;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
- * Returns characters from standard input (non-blocking) when read at any offset.
+ * Returns characters from input stream (non-blocking) when read at any offset.
  */
 public class InstreamPeripheral extends Dcpu.Peripheral {
 

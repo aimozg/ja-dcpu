@@ -82,7 +82,7 @@
           <component id="abe09" class="javax.swing.JButton" binding="execButton" default-binding="true">
             <constraints/>
             <properties>
-              <enabled value="false"/>
+              <enabled value="true"/>
               <text value="Exec"/>
               <toolTipText value="Run forever"/>
             </properties>
@@ -98,7 +98,7 @@
           <component id="20385" class="javax.swing.JButton" binding="runButton" default-binding="true">
             <constraints/>
             <properties>
-              <enabled value="false"/>
+              <enabled value="true"/>
               <text value="Run"/>
               <toolTipText value="Run until breakpoint/reserved"/>
             </properties>
