@@ -19,7 +19,19 @@ As of 06.04.2012, contains:
 1. Reserved instructions halt the cpu.
 2. "Register value" as operand means value *before* instruction execution. If instruction modifies PC/SP, their unmodified values are used (so SET PUSH, SP saves stack position before PUSH; SET [0xbeef], PC saves this instruction address).
 
-## Usage
+## Using IDE
+
+Some unobvious notes:
+
+* Breakpoints are marked with ! sign in the line number and toggled by *Breakpoint* button.
+* You should manually click *Asm* after modifying or opening source file. If not, previous binary will be executed
+* You should manually click *Reset* or *Hard Reset* to re-run program from start.
+* *Hard Reset* clears memory and reuploads assembled binary. *Reset* just clears registers (and global variables might
+ be modified!)
+* As of IDE 0.1, breakpoints are not shifted when you insert/delete source lines. Sorry.
+
+
+## Using console toolchain
 
 To play with DCPU, take ja-dcpu-demo.jar from Downloads section, and run it from console
 
@@ -139,9 +151,8 @@ See downloads section
   4. Clock
 3. IDE
   1. Syntax highlighting
+  1. Hotkeys
   2. Debugger:
-    1. Step
     2. Show source
     3. Monitor/modify registers and memory
-    4. Breakpoints
   3. Peripheral constructor
