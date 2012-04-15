@@ -7,8 +7,7 @@ import java.util.BitSet;
 import java.util.LinkedList;
 
 import static dcpu.Debugger.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class DebuggerTest {
     private Dcpu cpu;

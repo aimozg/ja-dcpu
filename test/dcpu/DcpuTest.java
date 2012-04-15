@@ -1,12 +1,13 @@
 package dcpu;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class DcpuTest {
 
@@ -572,4 +573,34 @@ public class DcpuTest {
         assertEquals("y", 1, dcpu.getreg(Dcpu.Reg.Y));
     }
 
+    @Ignore("Need to rework how we do PC / SP reading")
+    @Test
+    public void test_PC_SP_Increminting() throws Exception {
+        dcpu.upload(assembler.assemble(
+                "SET A, 0xFF\n" +
+                "SET A, PC\n" +
+                "SET PUSH, A\n" +
+                "SET B, PEEK\n" +
+                "SET C, SP\n" +
+                "SET I, POP\n" +
+                "SET [0x0100], PC" +
+                "HLT"
+        ));
+        dcpu.run(2);
+        assertEquals("a", 3, dcpu.getreg(Dcpu.Reg.A));
+        assertEquals("pc", 3, dcpu.getreg(Dcpu.Reg.PC));
+        assertEquals("sp", 0, dcpu.getreg(Dcpu.Reg.SP));
+        dcpu.run(2);
+        assertEquals("sp", -1, dcpu.getreg(Dcpu.Reg.SP));
+        assertEquals("b", 3, dcpu.getreg(Dcpu.Reg.B));
+        dcpu.run(1);
+        assertEquals("c", -1, dcpu.getreg(Dcpu.Reg.C));
+        dcpu.run(1);
+        assertEquals("i", 3, dcpu.getreg(Dcpu.Reg.I));
+        assertEquals("sp", 0, dcpu.getreg(Dcpu.Reg.SP));
+        dcpu.run(1);
+        assertEquals("0x0100", 9, dcpu.mem[0x0100]);
+
+    }
+    
 }
