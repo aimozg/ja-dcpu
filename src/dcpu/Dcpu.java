@@ -8,7 +8,7 @@ import java.util.*;
  * <p/>
  */
 public final class Dcpu {
-
+    private boolean usePostFetchMode = true;
     ////////////////
     // NOTES
     ////////////////
@@ -310,7 +310,7 @@ public final class Dcpu {
             a = (cmd & C_A_MASK) >> C_A_SHIFT;
             b = (cmd & C_B_MASK) >> C_B_SHIFT;
             aa = getaddr(a, OPCODE_MODMEM[opcode]) & 0x1ffff;
-            ba = getaddr(b, false) & 0x1ffff;
+            ba = getaddr(b, usePostFetchMode) & 0x1ffff;
             if (skip) {
                 mem[M_SP] = mem[M_PSP];
                 return;
@@ -459,6 +459,7 @@ public final class Dcpu {
     }
 
     public Dcpu() {
+        usePostFetchMode = Boolean.parseBoolean(System.getProperty("dcpu.usePostFetchMode", "true"));
         reset();
     }
 

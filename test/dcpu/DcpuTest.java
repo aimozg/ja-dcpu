@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -573,7 +572,6 @@ public class DcpuTest {
         assertEquals("y", 1, dcpu.getreg(Dcpu.Reg.Y));
     }
 
-    @Ignore("Need to rework how we do PC / SP reading")
     @Test
     public void test_PC_SP_Increminting() throws Exception {
         dcpu.upload(assembler.assemble(
@@ -583,10 +581,13 @@ public class DcpuTest {
                 "SET B, PEEK\n" +
                 "SET C, SP\n" +
                 "SET I, POP\n" +
-                "SET [0x0100], PC" +
+                "SET [0x0100], PC\n" +
+                "SET PUSH, SP\n" +
+                "SET X, 1\n" +
                 "HLT"
         ));
-        dcpu.run(2);
+        dcpu.run(1);
+        dcpu.run(1);
         assertEquals("a", 3, dcpu.getreg(Dcpu.Reg.A));
         assertEquals("pc", 3, dcpu.getreg(Dcpu.Reg.PC));
         assertEquals("sp", 0, dcpu.getreg(Dcpu.Reg.SP));
@@ -600,6 +601,9 @@ public class DcpuTest {
         assertEquals("sp", 0, dcpu.getreg(Dcpu.Reg.SP));
         dcpu.run(1);
         assertEquals("0x0100", 9, dcpu.mem[0x0100]);
+        dcpu.run(1);
+        assertEquals("sp", -1, dcpu.getreg(Dcpu.Reg.SP));
+        assertEquals("stack[0]", -1, dcpu.mem[0xffff]);
 
     }
     
