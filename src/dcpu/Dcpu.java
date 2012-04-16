@@ -496,12 +496,11 @@ public final class Dcpu {
                 mem[M_PC], mem[M_SP], mem[M_O]);
     }
 
-    private String _dmem(int addr) {
+    public String _dmem(int addr) {
         return (addr < M_A) ? String.format("(%04x)", addr) : MEM_NAMES[addr - M_A];
     }
 
-    @SuppressWarnings("unused")
-    private void _dstep(boolean skip, int opcode, int aa, int ba, int av, int bv) {
+    public void _dstep(boolean skip, int opcode, int aa, int ba, int av, int bv) {
         _d("%s%s %s=%04x %s=%04x\n", skip ? "; " : "> ", OPCODE_NAMES[opcode], _dmem(aa), av, _dmem(ba), bv);
     }
 

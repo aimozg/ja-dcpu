@@ -1,12 +1,40 @@
 package dcpu;
 
+import static dcpu.Dcpu.A_CONST;
+import static dcpu.Dcpu.A_M_NW;
+import static dcpu.Dcpu.A_M_NW_REG;
+import static dcpu.Dcpu.A_M_REG;
+import static dcpu.Dcpu.A_NW;
+import static dcpu.Dcpu.O_ADD;
+import static dcpu.Dcpu.O_AND;
+import static dcpu.Dcpu.O_BOR;
+import static dcpu.Dcpu.O_DIV;
+import static dcpu.Dcpu.O_IFB;
+import static dcpu.Dcpu.O_IFE;
+import static dcpu.Dcpu.O_IFG;
+import static dcpu.Dcpu.O_IFN;
+import static dcpu.Dcpu.O_MOD;
+import static dcpu.Dcpu.O_MUL;
+import static dcpu.Dcpu.O_SET;
+import static dcpu.Dcpu.O_SHL;
+import static dcpu.Dcpu.O_SHR;
+import static dcpu.Dcpu.O_SUB;
+import static dcpu.Dcpu.O_XOR;
+import static dcpu.Dcpu.O__JSR;
+import static dcpu.Dcpu.O__RESVD;
+import static dcpu.Dcpu.gencmd;
+import static dcpu.Dcpu.gencmd_nbi;
+
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
-
-import static dcpu.Dcpu.*;
 
 /**
  * DCPU Assembler
@@ -85,7 +113,7 @@ public class Assembler {
     private static final Pattern hexPattern = Pattern.compile("0x[0-9a-fA-F]+");
     private static final Pattern binPattern = Pattern.compile("0b\\d+");
     private static final Pattern decPattern = Pattern.compile("\\d+");
-    private static final Pattern numPattern = Pattern.compile("(" + hexPattern.pattern() + ")|(" + binPattern.pattern() + ")|(" + decPattern.pattern() + ")");
+    public static final Pattern numPattern = Pattern.compile("(" + hexPattern.pattern() + ")|(" + binPattern.pattern() + ")|(" + decPattern.pattern() + ")");
 
     private void require(Pattern pattern, String descr) throws IOException {
         if (!accept(pattern)) {
@@ -120,8 +148,12 @@ public class Assembler {
     public AsmMap asmmap;
 
     public short[] assemble(String s) {
+        return assemble(new StringReader(s));
+    }
+    
+    public short[] assemble(Reader r) {
         reset();
-        stokizer = new StreamTokenizer(new StringReader(s));
+        stokizer = new StreamTokenizer(r);
         stokizer.commentChar(';');
         stokizer.quoteChar('"');
         stokizer.quoteChar('\'');
