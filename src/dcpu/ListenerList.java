@@ -7,9 +7,15 @@ public class ListenerList<T> implements Listener<T> {
 
     private final List<Listener<T>> listeners = new LinkedList<Listener<T>>();
 
-    public void event(T arg) {
+    @Override public void preExecute(T arg) {
         for (Listener<T> listener : listeners) {
-            listener.event(arg);
+            listener.preExecute(arg);
+        }
+    }
+
+    @Override public void postExecute(T arg) {
+        for (Listener<T> listener : listeners) {
+            listener.preExecute(arg);
         }
     }
 
@@ -20,4 +26,5 @@ public class ListenerList<T> implements Listener<T> {
     public void removeListener(Listener<T> listener) {
         listeners.remove(listener);
     }
+
 }

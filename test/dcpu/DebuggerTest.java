@@ -3,8 +3,10 @@ package dcpu;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.LinkedList;
+import java.util.List;
 
 import static dcpu.Debugger.*;
 import static org.junit.Assert.*;
@@ -25,15 +27,15 @@ public class DebuggerTest {
 
     @Test
     public void testBreakpoints() throws Exception {
-        cpu.upload(assembler.assemble("" +
-                "SET A,1\n" +
-                "IFE A,0\n" +
-                ":nobrk SET A,2\n" +
-                "SET A,3\n" +
-                ":brk SET A,4\n" +
-                "SET A,5\n" +
-                "SET A,6\n" +
-                "DAT 0\n"));
+        cpu.upload(assembler.assemble(
+                "       SET A,1\n" +
+                "       IFE A,0\n" +
+                ":nobrk    SET A,2\n" +
+                "       SET A,3\n" +
+                ":brk   SET A,4\n" +
+                "       SET A,5\n" +
+                "       SET A,6\n" +
+                "       DAT 0\n"));
 
         short nobrk = assembler.asmmap.symbol("nobrk");
         final short brk = assembler.asmmap.symbol("brk");
@@ -44,28 +46,29 @@ public class DebuggerTest {
         assertTrue(debugger.getBreakpoints().contains(nobrk));
         assertTrue(debugger.getBreakpoints().contains(brk));
 
-        final boolean[] brkhit = {false};
+        final List<Short> brkHits = new ArrayList<Short>();
         debugger.breakpointsHalt = false;
-        debugger.breakpointListener = new Listener<Short>() {
-            public void event(Short arg) {
-                assertEquals(brk, arg.shortValue());
-                brkhit[0] = true;
+        debugger.breakpointListener = new PreListener<Short>() {
+            @Override public void preExecute(Short pc) {
+                brkHits.add(pc);
             }
         };
         debugger.resetSession();
         debugger.run();
-        assertTrue(brkhit[0]);
+        assertEquals("brk count", 1, brkHits.size());
+        assertEquals("brk pt", brk, (short) brkHits.get(0));
     }
 
     @Test
     public void testModifiedRegisters() {
-        cpu.upload(assembler.assemble("SET X,0\n" +
+        cpu.upload(assembler.assemble(
+                "      SET X,0\n" +
                 ":brk1 SET A,1\n" +
-                "SET B,2\n" +
-                "SET PUSH,B\n" +
+                "      SET B,2\n" +
+                "      SET PUSH,B\n" +
                 ":brk2 SET C,3\n" +
-                "SET Y,POP\n" +
-                "DAT 0\n"));
+                "      SET Y,POP\n" +
+                "      DAT 0\n"));
         short brk1 = assembler.asmmap.symbol("brk1");
         short brk2 = assembler.asmmap.symbol("brk2");
         final LinkedList<BitSet> modregs_list = new LinkedList<BitSet>();
@@ -74,8 +77,8 @@ public class DebuggerTest {
         debugger.setBreakpoint(brk2, true);
         debugger.breakpointsHalt = false;
         BitSet modregs;
-        Listener<Short> recorder = new Listener<Short>() {
-            public void event(Short arg) {
+        Listener<Short> recorder = new PreListener<Short>() {
+            @Override public void preExecute(Short arg) {
                 modregs_list.add(debugger.getModifiedRegisters());
             }
         };

@@ -84,8 +84,8 @@ public class IdeMain {
     public IdeMain() {
         cpu = new Dcpu();
         debugger = new Debugger();
-        debugger.breakpointListener = new Listener<Short>() {
-            public void event(Short arg) {
+        debugger.breakpointListener = new PreListener<Short>() {
+            public void preExecute(Short arg) {
                 breakpointHit(arg);
             }
         };
@@ -290,7 +290,7 @@ public class IdeMain {
                 StringBuilder sb = new StringBuilder();
                 while (dasm.getAddress() < binary.length) {
                     int addr = dasm.getAddress();
-                    sb.append(String.format("%-26s ; [%04x] =", dasm.next(), addr));
+                    sb.append(String.format("%-26s ; [%04x] =", dasm.next(true), addr));
                     int addr2 = dasm.getAddress();
                     while (addr < addr2) {
                         short i = binary[addr++];

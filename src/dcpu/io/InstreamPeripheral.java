@@ -29,7 +29,7 @@ public class InstreamPeripheral extends Dcpu.Peripheral {
                     }
                 } catch (IOException e) {
                     if (exceptionListener != null) {
-                        exceptionListener.event(e);
+                        exceptionListener.preExecute(e);
                     } else {
                         e.printStackTrace();
                     }

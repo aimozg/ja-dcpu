@@ -30,7 +30,7 @@ public class OutstreamPeripheral extends Dcpu.Peripheral {
             output.flush();
         } catch (IOException e) {
             if (exceptionListener != null) {
-                exceptionListener.event(e);
+                exceptionListener.preExecute(e);
             } else {
                 e.printStackTrace();
             }

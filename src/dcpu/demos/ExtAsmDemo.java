@@ -172,7 +172,7 @@ public class ExtAsmDemo {
                 das.init(bytecode);
                 while (das.getAddress() < bytecode.length) {
                     int addr = das.getAddress();
-                    outsrcf.printf("%-26s ; [%04x] =", das.next(), addr);
+                    outsrcf.printf("%-26s ; [%04x] =", das.next(true), addr);
                     int addr2 = das.getAddress();
                     while (addr < addr2) {
                         short i = bytecode[addr++];

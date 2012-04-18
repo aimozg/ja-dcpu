@@ -300,6 +300,7 @@ public final class Dcpu {
         // save prev PC and prev SP
         mem[M_PPC] = mem[M_PC];
         mem[M_PSP] = mem[M_SP];
+        if (!skip && stepListener != null) stepListener.preExecute(mem[M_PC]);
 
         int cmd = mem[(mem[M_PC]++) & 0xffff] & 0xffff; // command value
         int opcode = cmd & C_O_MASK;
@@ -415,7 +416,7 @@ public final class Dcpu {
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
-        if (!skip && stepListener != null) stepListener.event(mem[M_PC]);
+        if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
     }
 
     /**

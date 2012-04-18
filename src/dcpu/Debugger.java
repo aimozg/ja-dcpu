@@ -106,10 +106,10 @@ public class Debugger {
         if (onehitModregs || modregsOnRun) updModRegs();
         if (breakpointsEnabled && breakpoints.contains(pc)) {
             if (modregsOnBreakpoint) updModRegs();
-            if (breakpointListener != null) breakpointListener.event(pc);
+            if (breakpointListener != null) breakpointListener.preExecute(pc);
             cpu.halt = breakpointsHalt;
         }
-        if (stepListener != null) stepListener.event(pc);
+        if (stepListener != null) stepListener.preExecute(pc);
     }
 
     private void updModRegs() {
@@ -125,8 +125,8 @@ public class Debugger {
     public void attachTo(Dcpu cpu) {
         if (this.cpu != null) detach();
         this.cpu = cpu;
-        cpu.stepListener = new Listener<Short>() {
-            public void event(Short arg) {
+        cpu.stepListener = new PreListener<Short>() {
+            @Override public void preExecute(Short arg) {
                 Debugger.this.stepHandler(arg);
             }
         };

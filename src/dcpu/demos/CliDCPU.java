@@ -18,13 +18,16 @@ import jline.FileNameCompletor;
 import jline.SimpleCompletor;
 import dcpu.Assembler;
 import dcpu.Dcpu;
+import dcpu.Disassembler;
 import dcpu.Tracer;
 
 public class CliDCPU {
     
     private static final Pattern commandParser = Pattern.compile("\\s*([^\\s]+)\\s*(.*)"); // capture a word followed by its args 
     
-    private static Dcpu dcpu = new Dcpu();
+    private static Dcpu dcpu;
+    private static Disassembler disassembler;
+    private static Tracer tracer;
     
     public enum Cmd {
         QUIT("quit") {
@@ -63,12 +66,7 @@ public class CliDCPU {
         
         RUN("run") {
             @Override public void execute(String[] args) {
-                int steps = 1;
-                if (!"".equals(args[0])) {
-                    if (Assembler.numPattern.matcher(args[0]).matches()) {
-                        steps = numberToInt(args[0]);
-                    }
-                }
+                int steps = getNextArgAsNumber(args);
                 dcpu.run(steps);
             }
             @Override public String usage() {
@@ -89,6 +87,7 @@ public class CliDCPU {
             @Override public void execute(String[] args) {
                 if ("".equals(args[0])) {
                     System.err.println("Error: no start address specified.\n" + usage());
+                    return;
                 }
                 if (args.length == 1) {
                     System.out.println(dcpu._dmem(numberToInt(args[0])));
@@ -102,15 +101,37 @@ public class CliDCPU {
         },
         
         REG("reg") {
-
             @Override public void execute(String[] args) {
-                System.out.println(dcpu._dregs());
+                Tracer.outputRegisters(System.out, dcpu);
             }
 
             @Override public String usage() {
                 return formatHelp(name, "displays register values");
             }
             
+        },
+
+        TOGGLEREG("togglereg") {
+            @Override public void execute(String[] args) {
+                boolean isPrintRegisters = tracer.togglePrintRegisters();
+                System.out.println("register printing is " + (isPrintRegisters ? "on" : "off"));
+            }
+
+            @Override public String usage() {
+                return formatHelp(name, "toggles automatic register printing on execution");
+            }
+        },
+        
+        NEXTINSTRUCTION("next") {
+            @Override public void execute(String[] args) {
+                int num = getNextArgAsNumber(args);
+                for (int i = 0; i < num; i++) {
+                    System.out.println(disassembler.next(false));
+                }
+            }
+            @Override public String usage() {
+                return formatHelp(name + " [n]", "displays next [n] instructions, default = 1");
+            }
         },
         
         HELP("help") {
@@ -123,7 +144,6 @@ public class CliDCPU {
             @Override public String usage() {
                 return formatHelp("help", "display supported commands.");
             }
-            
         };
         
         private static final Map<String, Cmd> LOOKUP = new TreeMap<String, Cmd>();
@@ -142,6 +162,15 @@ public class CliDCPU {
         }
         private static String formatHelp(String cmdWithArgs, String helpText) {
             return String.format("%-20s ; %s", cmdWithArgs, helpText);
+        }
+        private static int getNextArgAsNumber(String[] args) {
+            int num = 1;
+            if (!"".equals(args[0])) {
+                if (Assembler.numPattern.matcher(args[0]).matches()) {
+                    num = numberToInt(args[0]);
+                }
+            }
+            return num;
         }
 
         private static int numberToInt(String input) {
@@ -168,8 +197,11 @@ public class CliDCPU {
         ConsoleReader reader = new ConsoleReader();
         reader.setBellEnabled(false);
         
-        Tracer tracer = new Tracer(System.out);
+        dcpu = new Dcpu();
+        tracer = new Tracer(System.out);
         tracer.install(dcpu);
+        disassembler = new Disassembler();
+        disassembler.init(dcpu.mem);
         
         List<Completor> completors = new LinkedList<Completor>();
         completors.add(new SimpleCompletor(Cmd.getCmds()));
