@@ -344,6 +344,7 @@ public final class Dcpu {
         // debug
         //_dstep(skip, opcode, aa, ba, av, bv);
 
+        boolean printedBranch = false;
         int rslt = mem[aa]; // new 'a' value
         int oreg = mem[M_O]; // new 'O' value
         switch (opcode) {
@@ -408,16 +409,32 @@ public final class Dcpu {
                 rslt = av ^ bv;
                 break;
             case O_IFE:
-                if (av != bv) step(true);
+                if (av != bv) {
+                    printedBranch = true;
+                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+                    step(true);
+                }
                 break;
             case O_IFN:
-                if (av == bv) step(true);
+                if (av == bv) {
+                    printedBranch = true;
+                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+                    step(true);
+                }
                 break;
             case O_IFG:
-                if (av <= bv) step(true);
+                if (av <= bv) {
+                    printedBranch = true;
+                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+                    step(true);
+                }
                 break;
             case O_IFB:
-                if ((av & bv) == 0) step(true);
+                if ((av & bv) == 0) {
+                    printedBranch = true;
+                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+                    step(true);
+                }
                 break;
         }
         // overwrite 'a' unless it is constant
@@ -426,7 +443,7 @@ public final class Dcpu {
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
-        if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+        if (!printedBranch && !skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
     }
 
     /**

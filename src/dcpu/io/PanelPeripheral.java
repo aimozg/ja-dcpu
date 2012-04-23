@@ -23,6 +23,7 @@ public class PanelPeripheral extends Peripheral {
     private BufferedImage mainWindow;
     private final VirtualMonitor display;
     private final VirtualKeyboard keyboard;
+    private boolean runThread = true;
 
     public PanelPeripheral(VirtualMonitor display, VirtualKeyboard keyboard) {
         this.display = display;
@@ -60,12 +61,26 @@ public class PanelPeripheral extends Peripheral {
         mainWindow = new BufferedImage(128, 128, 2);
         display.setPixels(((DataBufferInt) mainWindow.getRaster().getDataBuffer()).getData());
         canvas.requestFocus();
-        tick(0);
+        createPanelThread();
     }
 
-    @Override
-    public void tick(int cmd) {
-        // we don't care what the command was, just update the screen
+    private void createPanelThread() {
+    	Thread t = new Thread() {
+    		@Override public void run() {
+    			do {
+    				renderPanel();
+    				try { Thread.sleep(1L); } catch (InterruptedException e) {}
+    			} while (runThread);
+    		}
+    	};
+    	t.start();
+	}
+    
+    public void killPanel() {
+    	runThread = false;
+    }
+
+    public void renderPanel() {
         display.render();
         Graphics g = borderedWindow.getGraphics();
         g.setColor(new Color(display.getBackgroundColor()));

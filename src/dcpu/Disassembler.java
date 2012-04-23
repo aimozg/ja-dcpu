@@ -33,7 +33,7 @@ public class Disassembler {
             int a = (instr & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             opcode = (instr & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
             if (OPCODE0_RESERVED[opcode]) {
-                return String.format("DAT %04x", instr);
+                return String.format("DAT 0x%04x", instr);
             } else {
                 return OPCODE0_NAMES[opcode] + " " + operand(a);
             }
@@ -63,9 +63,9 @@ public class Disassembler {
             case 0x1D:
                 return "O";
             case 0x1E:
-                return String.format("[%04x]", mem[address++]);
+                return String.format("[0x%04x]", mem[address++]);
             case 0x1F:
-                return String.format("%04x", mem[address++]);
+                return String.format("0x%04x", mem[address++]);
             default:
                 throw new RuntimeException("Unknown code value: " + code);
         }
