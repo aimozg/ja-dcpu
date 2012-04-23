@@ -1,6 +1,16 @@
 package dcpu;
 
-import java.util.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.1 implementation.
@@ -500,6 +510,10 @@ public final class Dcpu {
     public String _dmem(int addr) {
         return (addr < M_A) ? String.format("(%04x)", addr) : MEM_NAMES[addr - M_A];
     }
+    
+    public String _dvalmem(int addr) {
+        return (addr < M_A) ? String.format("(%04x) : %04x (%s)", addr, mem[addr], Character.toString((char) mem[addr])) : MEM_NAMES[addr - M_A];
+    }
 
     public void _dstep(boolean skip, int opcode, int aa, int ba, int av, int bv) {
         _d("%s%s %s=%04x %s=%04x\n", skip ? "; " : "> ", OPCODE_NAMES[opcode], _dmem(aa), av, _dmem(ba), bv);
@@ -570,7 +584,28 @@ public final class Dcpu {
     public void upload(short[] buffer) {
         upload(buffer, 0, buffer.length, 0);
     }
-
+    
+    public void upload(File infile) throws IOException {
+        upload(new FileInputStream(infile));
+    }
+    
+    public void upload(InputStream stream) throws IOException {
+        BufferedInputStream instream = new BufferedInputStream(stream);
+        int len = instream.available();
+        if (len % 2 == 1) throw new IOException(String.format("Odd file size (0x%x)\n", len));
+        len /= 2;
+        if (len > 0x10000) throw new IOException(String.format("Too large file (0x%x)\n", len));
+        short[] bytecode = new short[len];
+        for (int i = 0; i < len; i++) {
+            int lo = instream.read();
+            int hi = instream.read();
+            if (lo == -1 || hi == -1) throw new IOException(String.format("Failed to read data from file\n"));
+            bytecode[i] = (short) ((hi << 8) | lo);
+        }
+        upload(bytecode);
+        
+    }
+    
     public int pc() {
         return mem[M_PC] & 0xffff;
     }

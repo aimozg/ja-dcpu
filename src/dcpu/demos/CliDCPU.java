@@ -11,6 +11,10 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import computer.AWTKeyMapping;
+import computer.VirtualKeyboard;
+import computer.VirtualMonitor;
+
 import jline.ArgumentCompletor;
 import jline.Completor;
 import jline.ConsoleReader;
@@ -20,6 +24,7 @@ import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Disassembler;
 import dcpu.Tracer;
+import dcpu.io.PanelPeripheral;
 
 public class CliDCPU {
     
@@ -28,6 +33,7 @@ public class CliDCPU {
     private static Dcpu dcpu;
     private static Disassembler disassembler;
     private static Tracer tracer;
+    private PanelPeripheral panelPeripheral;
     
     public enum Cmd {
         QUIT("quit") {
@@ -90,7 +96,7 @@ public class CliDCPU {
                     return;
                 }
                 if (args.length == 1) {
-                    System.out.println(dcpu._dmem(numberToInt(args[0])));
+                    System.out.println(dcpu._dvalmem(numberToInt(args[0])));
                 } else {
                     System.err.println("TODO: multi range memory output!");
                 }
@@ -202,6 +208,10 @@ public class CliDCPU {
         tracer.install(dcpu);
         disassembler = new Disassembler();
         disassembler.init(dcpu.mem);
+        VirtualMonitor display = new VirtualMonitor(dcpu.mem, 0x8000);
+        VirtualKeyboard keyboard = new VirtualKeyboard(dcpu.mem, 0x9000, new AWTKeyMapping());
+        panelPeripheral = new PanelPeripheral(display, keyboard);
+        dcpu.attach(panelPeripheral, -1);
         
         List<Completor> completors = new LinkedList<Completor>();
         completors.add(new SimpleCompletor(Cmd.getCmds()));
