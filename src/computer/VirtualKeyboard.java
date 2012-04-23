@@ -19,7 +19,7 @@ public class VirtualKeyboard {
             return;
         } else {
             ram[offset + pp] = (short) i;
-            pp = pp + 1 & 0xf;
+            pp = (pp + 1) & 0xf;
             return;
         }
     }
@@ -33,7 +33,7 @@ public class VirtualKeyboard {
             return;
         } else {
             ram[offset + pp] = (short) i;
-            pp = pp + 1 & 0xf;
+            pp = (pp + 1) & 0xf;
             return;
         }
     }
@@ -47,7 +47,7 @@ public class VirtualKeyboard {
             return;
         } else {
             ram[offset + pp] = (short) (i | 0x100);
-            pp = pp + 1 & 0xf;
+            pp = (pp + 1) & 0xf;
             return;
         }
     }
