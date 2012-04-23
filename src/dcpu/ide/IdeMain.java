@@ -4,8 +4,6 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import dcpu.*;
-import dcpu.io.InstreamPeripheral;
-import dcpu.io.OutstreamPeripheral;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -58,10 +56,6 @@ public class IdeMain {
     private Set<Integer> srcBreakpoints = new HashSet<Integer>(); // Line starts from 1
     private Thread cpuThread;
 
-    private InstreamPeripheral stdin;
-    private OutstreamPeripheral stdout;
-    private PipedInputStream stdin_in;
-    private PipedOutputStream stdin_out;
 
     private RegistersModel registersModel;
     private MemoryModel memoryModel;
@@ -91,21 +85,6 @@ public class IdeMain {
         };
         debugger.attachTo(cpu);
         asmMap = new AsmMap();
-        stdin_in = new PipedInputStream();
-        try {
-            stdin_out = new PipedOutputStream(stdin_in);
-        } catch (IOException e) {
-            throw new RuntimeException("Weird things happen here...", e);
-        }
-        stdin = new InstreamPeripheral(stdin_in, 16);
-        stdout = new OutstreamPeripheral(new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-                consoleTextarea.append(String.valueOf((char) b));
-            }
-        });
-        cpu.attach(stdin, 0x9);
-        cpu.attach(stdout, 0x8);
 
         fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File("."));
@@ -172,11 +151,8 @@ public class IdeMain {
         consoleTextarea.addKeyListener(new KeyAdapter() {
             @Override
             public void keyTyped(KeyEvent e) {
-                try {
-                    if (e.getKeyChar() != 0)
-                        stdin_out.write(e.getKeyChar());
-                } catch (IOException e1) {
-                    e1.printStackTrace();
+                if (e.getKeyChar() != 0) {
+                    // TODO send key to VirtualKeyboard
                 }
             }
         });
