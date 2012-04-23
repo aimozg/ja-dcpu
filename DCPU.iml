@@ -19,6 +19,7 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="IntelliJ IDEA GridLayout" level="application" />
+    <orderEntry type="library" name="JLine" level="project" />
   </component>
 </module>
 
