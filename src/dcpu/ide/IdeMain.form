@@ -200,7 +200,7 @@
                 <constraints/>
                 <properties>
                   <font name="Courier New" size="12"/>
-                  <text value="; Input your proram here &#10;:main&#10;  &#9;DAT,0" noi18n="true"/>
+                  <text value="; Input your program here&#10;            set a, 1&#10;            add a, 1&#10;            ife a, 2&#10;                set a, 3&#10;:mainloop&#10;            ife [message + I], 0&#10;                set pc, end&#10;            set a, [message + I]&#10;            add a, 0xA100&#10;            set [0x8000 + I], a&#10;            add i, 1&#10;            set pc, mainloop&#10;:message    dat &quot;Hello, world!&quot;, 0&#10;:end        set pc, end" noi18n="true"/>
                 </properties>
               </component>
             </children>
@@ -212,7 +212,9 @@
         <constraints>
           <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties/>
+        <properties>
+          <visible value="false"/>
+        </properties>
         <border type="none"/>
         <children>
           <component id="5e0b1" class="javax.swing.JTextArea" binding="consoleTextarea">
