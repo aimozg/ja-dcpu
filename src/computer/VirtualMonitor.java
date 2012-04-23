@@ -51,7 +51,7 @@ public class VirtualMonitor {
         int g = (i >> 1 & 1) * 170;
         int r = (i >> 2 & 1) * 170;
         if (i == 6)
-            b += 85;
+            g -= 85;
         else if (i >= 8) {
             r += 85;
             g += 85;

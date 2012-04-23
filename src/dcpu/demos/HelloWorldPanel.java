@@ -20,20 +20,26 @@ public class HelloWorldPanel {
 
     private void startDemo() throws IOException {
         dcpu = new Dcpu();
-        PanelPeripheral panelPeripheral = new PanelPeripheral(new VirtualMonitor(dcpu.mem, 0x8000), new VirtualKeyboard(dcpu.mem, 0x9000, new AWTKeyMapping()));
-        dcpu.attach(panelPeripheral, -1); // don't care about the line, just want it to tick
+        VirtualMonitor display = new VirtualMonitor(dcpu.mem, 0x8000);
+        VirtualKeyboard keyboard = new VirtualKeyboard(dcpu.mem, 0x9000, new AWTKeyMapping());
+        PanelPeripheral panelPeripheral = new PanelPeripheral(display, keyboard);
+        dcpu.attach(panelPeripheral, -1); // don't care about the line, just want it to render the screen from cpu memory
         
         dcpu.upload(new Assembler().assemble(
-        		":mainloop" +
-                "            ife [message + I], 0" +
-        		"                set pc, end" +
-                "            set a, [message + I]" +
-        		"            add a, 0xA100" +
-                "            set [0x8000 + I], a" +
-        		"            add i, 1" +
-                "            set pc, mainloop" +
-        		":message    dat \"Hello, world!\", 0" +
-                ":end        set pc, end"
+                "            set a, 1\n" +
+                "            add a, 1\n" +
+                "            ife a, 2\n" +
+                "                set a, 3\n" +
+        		":mainloop\n" +
+                "            ife [message + I], 0\n" +
+        		"                set pc, end\n" +
+                "            set a, [message + I]\n" +
+        		"            add a, 0xA100\n" +
+                "            set [0x8000 + I], a\n" +
+        		"            add i, 1\n" +
+                "            set pc, mainloop\n" +
+        		":message    dat \"Hello, world!\", 0\n" +
+                ":end        set pc, end\n"
         ));
         // dcpu.upload(HelloWorldPanel.class.getResourceAsStream("mem.dmp"));
         
