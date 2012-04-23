@@ -3,7 +3,11 @@ package dcpu.ide;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import computer.AWTKeyMapping;
+import computer.VirtualKeyboard;
+import computer.VirtualMonitor;
 import dcpu.*;
+import dcpu.io.PanelPeripheral;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -11,8 +15,8 @@ import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -56,6 +60,9 @@ public class IdeMain {
     private Set<Integer> srcBreakpoints = new HashSet<Integer>(); // Line starts from 1
     private Thread cpuThread;
 
+    private PanelPeripheral panelPeripheral;
+    private VirtualKeyboard virtualKeyboard;
+    private VirtualMonitor virtualMonitor;
 
     private RegistersModel registersModel;
     private MemoryModel memoryModel;
@@ -85,6 +92,13 @@ public class IdeMain {
         };
         debugger.attachTo(cpu);
         asmMap = new AsmMap();
+
+        VirtualMonitor display = new VirtualMonitor(cpu.mem, 0x8000);
+        VirtualKeyboard keyboard = new VirtualKeyboard(cpu.mem, 0x9000, new AWTKeyMapping());
+        PanelPeripheral panelPeripheral = new PanelPeripheral(display, keyboard);
+        // TODO PanelPeripheral's frame kills whole app on window close. Should do nothing instead. Something like pP.getFrame().setDCO(code_for_do_nothing).
+        cpu.attach(panelPeripheral, -1); // don't care about the line, just want it to render the screen from cpu memory
+
 
         fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File("."));
@@ -148,13 +162,22 @@ public class IdeMain {
                 step();
             }
         });
-        consoleTextarea.addKeyListener(new KeyAdapter() {
+        consoleTextarea.addKeyListener(new KeyListener() {
             @Override
             public void keyTyped(KeyEvent e) {
-                if (e.getKeyChar() != 0) {
-                    // TODO send key to VirtualKeyboard
-                }
+                virtualKeyboard.keyTyped(e.getKeyChar());
             }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+                virtualKeyboard.keyPressed(e.getKeyCode());
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                virtualKeyboard.keyReleased(e.getKeyCode());
+            }
+
         });
         breakpointButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -491,10 +514,11 @@ public class IdeMain {
         panel1.add(sourceScrollPane, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, new Dimension(500, 400), null, 0, false));
         sourceTextarea = new JTextArea();
         sourceTextarea.setFont(new Font("Courier New", sourceTextarea.getFont().getStyle(), 12));
-        sourceTextarea.setText("; Input your proram here \n:main\n  \tDAT,0");
+        sourceTextarea.setText("; Input your program here\n            set a, 1\n            add a, 1\n            ife a, 2\n                set a, 3\n:mainloop\n            ife [message + I], 0\n                set pc, end\n            set a, [message + I]\n            add a, 0xA100\n            set [0x8000 + I], a\n            add i, 1\n            set pc, mainloop\n:message    dat \"Hello, world!\", 0\n:end        set pc, end");
         sourceScrollPane.setViewportView(sourceTextarea);
         final JPanel panel2 = new JPanel();
         panel2.setLayout(new GridLayoutManager(2, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel2.setVisible(false);
         rootPanel.add(panel2, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         consoleTextarea = new JTextArea();
         consoleTextarea.setEditable(true);
