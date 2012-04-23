@@ -86,6 +86,10 @@ public class Tracer extends PostListener<Short> {
         this.printMemAtReg = b;
     }
     
+    public boolean getPrintRegisters() {
+        return printRegisters;
+    }
+    
     public boolean togglePrintRegisters() {
         printRegisters = !printRegisters;
         return printRegisters;

@@ -4,8 +4,12 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 
@@ -24,6 +28,8 @@ public class PanelPeripheral extends Peripheral {
     private final VirtualMonitor display;
     private final VirtualKeyboard keyboard;
     private boolean runThread = true;
+    private JFrame frame;
+    private Thread renderThread;
 
     public PanelPeripheral(VirtualMonitor display, VirtualKeyboard keyboard) {
         this.display = display;
@@ -32,7 +38,7 @@ public class PanelPeripheral extends Peripheral {
     }
 
     private void createPanel() {
-        JFrame frame = new JFrame();
+        frame = new JFrame();
         canvas = new Canvas();
         canvas.setPreferredSize(new Dimension(160 * SCALE, 128 * SCALE));
         canvas.setMinimumSize(new Dimension(160 * SCALE, 128 * SCALE));
@@ -55,8 +61,19 @@ public class PanelPeripheral extends Peripheral {
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setResizable(false);
-        frame.setDefaultCloseOperation(3);
+        
+        frame.addWindowListener(new WindowAdapter() {
+            @Override public void windowClosing(WindowEvent event) {
+                // tell thread to stop, wait for it then dispose of frame
+                runThread = false;
+                try { renderThread.join(); } catch (InterruptedException e) {}
+                frame.dispose();
+            }
+        });
+        
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         frame.setVisible(true);
+        
         borderedWindow = new BufferedImage(160, 128, 2);
         mainWindow = new BufferedImage(128, 128, 2);
         display.setPixels(((DataBufferInt) mainWindow.getRaster().getDataBuffer()).getData());
@@ -65,19 +82,21 @@ public class PanelPeripheral extends Peripheral {
     }
 
     private void createPanelThread() {
-    	Thread t = new Thread() {
+    	renderThread = new Thread() {
     		@Override public void run() {
     			do {
     				renderPanel();
     				try { Thread.sleep(1L); } catch (InterruptedException e) {}
     			} while (runThread);
+    			
     		}
     	};
-    	t.start();
+    	renderThread.start();
 	}
     
     public void killPanel() {
-    	runThread = false;
+    	WindowEvent wev = new WindowEvent(frame, WindowEvent.WINDOW_CLOSING);
+    	Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(wev);
     }
 
     public void renderPanel() {
@@ -90,6 +109,10 @@ public class PanelPeripheral extends Peripheral {
         g = canvas.getGraphics();
         g.drawImage(borderedWindow, 0, 0, 160 * SCALE, 128 * SCALE, null);
         g.dispose();
+    }
+    
+    public void addWindowListener(WindowListener listener) {
+        frame.addWindowListener(listener);
     }
     
 }

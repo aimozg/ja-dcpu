@@ -695,7 +695,7 @@ public final class Dcpu {
             memlines[line] = peripheral;
         }
         peripherals.add(peripheral);
-        peripheral.attachedTo(this, line << 12);
+        peripheral.attachedTo(this, Math.max(-1, line << 12));
     }
 
     public void detach(Peripheral peripheral) {

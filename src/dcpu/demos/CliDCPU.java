@@ -1,5 +1,7 @@
 package dcpu.demos;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -11,15 +13,16 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import computer.AWTKeyMapping;
-import computer.VirtualKeyboard;
-import computer.VirtualMonitor;
-
 import jline.ArgumentCompletor;
 import jline.Completor;
 import jline.ConsoleReader;
 import jline.FileNameCompletor;
 import jline.SimpleCompletor;
+
+import computer.AWTKeyMapping;
+import computer.VirtualKeyboard;
+import computer.VirtualMonitor;
+
 import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Disassembler;
@@ -33,7 +36,8 @@ public class CliDCPU {
     private static Dcpu dcpu;
     private static Disassembler disassembler;
     private static Tracer tracer;
-    private PanelPeripheral panelPeripheral;
+    private static PanelPeripheral panelPeripheral;
+    private static boolean showingDisplay = false;
     
     public enum Cmd {
         QUIT("quit") {
@@ -83,6 +87,7 @@ public class CliDCPU {
         RESET("reset") {
             @Override public void execute(String[] args) {
                 dcpu.reset();
+                dcpu.memzero();
             }
             @Override public String usage() {
                 return formatHelp(name, "reset dcpu");
@@ -91,18 +96,66 @@ public class CliDCPU {
         
         MEM("mem") {
             @Override public void execute(String[] args) {
-                if ("".equals(args[0])) {
-                    System.err.println("Error: no start address specified.\n" + usage());
+                int numWordsPerLine = 16;
+                if ("".equals(args[0]) || args.length > 3) {
+                    System.err.println("Error: bad args.\n" + usage());
                     return;
                 }
-                if (args.length == 1) {
-                    System.out.println(dcpu._dvalmem(numberToInt(args[0])));
-                } else {
-                    System.err.println("TODO: multi range memory output!");
+                int start = getAddress(args[0].toLowerCase());
+                int end = start;
+                if (args.length > 1) {
+                    end = getAddress(args[1].toLowerCase());
+                    if (end > 0xffff) {
+                        end = 0xffff;
+                    }
                 }
+                if (args.length > 2) {
+                    numWordsPerLine = numberToInt(args[2]);
+                }
+                // start printing
+                int range = end - start + 1;
+                int numLines = range / numWordsPerLine;
+                int numLeftOver = range - numLines * numWordsPerLine;
+                for (int i = 0; i < numLines; i++) {
+                    System.out.printf("(%04x) :", start + i * numWordsPerLine);
+                    for (int j = 0; j < numWordsPerLine; j++) {
+                        System.out.printf(" %04x", dcpu.mem[start + i * numWordsPerLine + j]);
+                    }
+                    System.out.print(" | ");
+                    for (int j = 0; j < numWordsPerLine; j++) {
+                        printShortChars(start + i * numWordsPerLine + j);
+                    }
+                    System.out.println();
+                }
+
+                if (numLeftOver > 0) {
+                    System.out.printf("(%04x) :", start + numLines * numWordsPerLine);
+                    for (int j = 0; j < numLeftOver; j++) {
+                        System.out.printf(" %04x", dcpu.mem[start + numLines * numWordsPerLine + j]);
+                    }
+                    for (int i = 0; i < (numWordsPerLine - numLeftOver); i++) {
+                        System.out.print("     "); // spacer to make chars line up 
+                    }
+                    System.out.print(" | ");
+                    for (int j = 0; j < numLeftOver; j++) {
+                        printShortChars(start + numLines * numWordsPerLine + j);
+                    }
+                }
+                System.out.println();
+                
             }
+
+            private void printShortChars(int addr) {
+                short s = dcpu.mem[addr];
+                char c1 = (char) ((s & 0xff00) >> 8);
+                char c2 = (char) (s & 0x00ff);
+                if (c1 < 0x20 || c1 > 0x7e) c1 = '.';
+                if (c2 < 0x20 || c2 > 0x7e) c2 = '.';
+                System.out.printf(" %c%c", c1, c2);
+            }
+            
             @Override public String usage() {
-                return formatHelp(name + " <start> [<end>]", "displays memory from start. if end not specified, shows only start");
+                return formatHelp(name + " <start> [end [wordsPerLine]]", "displays memory and ascii. if end isn't specified, shows only start word. default 16 words per line");
             }
         },
         
@@ -124,19 +177,45 @@ public class CliDCPU {
             }
 
             @Override public String usage() {
-                return formatHelp(name, "toggles automatic register printing on execution");
+                return formatHelp(name, "toggles automatic register printing on execution, currently " + (tracer.getPrintRegisters() ? "on" : "off"));
             }
         },
         
         NEXTINSTRUCTION("next") {
             @Override public void execute(String[] args) {
                 int num = getNextArgAsNumber(args);
+                disassembler.setAddress(dcpu.pc());
                 for (int i = 0; i < num; i++) {
-                    System.out.println(disassembler.next(false));
+                    System.out.println(disassembler.next(true));
                 }
             }
             @Override public String usage() {
                 return formatHelp(name + " [n]", "displays next [n] instructions, default = 1");
+            }
+        },
+        
+        DISPLAY("display") {
+            @Override public void execute(String[] args) {
+                if (showingDisplay == false) {
+                    VirtualMonitor display = new VirtualMonitor(dcpu.mem, 0x8000);
+                    VirtualKeyboard keyboard = new VirtualKeyboard(dcpu.mem, 0x9000, new AWTKeyMapping());
+                    panelPeripheral = new PanelPeripheral(display, keyboard);
+                    dcpu.attach(panelPeripheral, -1);
+                    panelPeripheral.addWindowListener(new WindowAdapter() {
+                        public void windowClosing(WindowEvent event) {
+                            showingDisplay = false;
+                        }
+                    });
+                    showingDisplay = true;
+                } else {
+                    panelPeripheral.killPanel();
+                    dcpu.detach(panelPeripheral);
+                    panelPeripheral = null;
+                    showingDisplay = false;
+                }
+            }
+            @Override public String usage() {
+                return formatHelp(name, "toggle VDU display");
             }
         },
         
@@ -187,6 +266,22 @@ public class CliDCPU {
             return val;
         }
 
+        private static int getAddress(String addressString) {
+            int returnAddress;
+            if ("pc".equals(addressString)) {
+                returnAddress = dcpu.pc();
+            } else if ("sp".equals(addressString)) {
+                returnAddress = dcpu.sp();
+            } else if ("start".equals(addressString)) {
+                returnAddress = 0;
+            } else if ("end".equals(addressString)) {
+                returnAddress = 0xffff;
+            } else {
+                returnAddress = numberToInt(addressString);
+            }
+            return returnAddress;
+        }
+
         Cmd(String name) {
             this.name = name;
         }
@@ -208,10 +303,6 @@ public class CliDCPU {
         tracer.install(dcpu);
         disassembler = new Disassembler();
         disassembler.init(dcpu.mem);
-        VirtualMonitor display = new VirtualMonitor(dcpu.mem, 0x8000);
-        VirtualKeyboard keyboard = new VirtualKeyboard(dcpu.mem, 0x9000, new AWTKeyMapping());
-        panelPeripheral = new PanelPeripheral(display, keyboard);
-        dcpu.attach(panelPeripheral, -1);
         
         List<Completor> completors = new LinkedList<Completor>();
         completors.add(new SimpleCompletor(Cmd.getCmds()));
