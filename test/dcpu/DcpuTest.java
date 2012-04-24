@@ -666,6 +666,6 @@ public class DcpuTest {
             "  SET PC, POP\n"
         ));
         dcpu.run();
-        assertEquals("x", 5, dcpu.getreg(Dcpu.Reg.X));
+        assertEquals("x", 13, dcpu.getreg(Dcpu.Reg.X));
     }
 }
