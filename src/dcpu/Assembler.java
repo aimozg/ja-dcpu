@@ -197,8 +197,8 @@ public class Assembler {
         } */
         for (Reference reference : references) {
             //System.out.printf("ref to %s @ %04x\n",reference.name,reference.position);
-            Short value = symbols.get(reference.name);
-            if (value == null) fail("Unresolved reference to " + reference.name + " at [" + reference.lineat + "]");
+            Short value = symbols.get(reference.name.toLowerCase());
+            if (value == null) fail("Unresolved reference to " + reference.name.toLowerCase() + " at [" + reference.lineat + "]");
             buffer[reference.position] = value;
         }
         if (buffer.length > counter) {
@@ -320,8 +320,8 @@ public class Assembler {
 
     private void label() throws IOException {
         require(idPattern, "label name");
-        symbols.put(token, (short) counter);
-        if (genMap) asmmap.symbolMap.put(token, (short) counter);
+        symbols.put(token.toLowerCase(), (short) counter);
+        if (genMap) asmmap.symbolMap.put(token.toLowerCase(), (short) counter);
     }
 
     private void macro() {
