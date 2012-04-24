@@ -1,4 +1,4 @@
-package dcpu.demos;
+package dcpu.apps;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -17,6 +17,7 @@ import jline.ArgumentCompletor;
 import jline.Completor;
 import jline.ConsoleReader;
 import jline.FileNameCompletor;
+import jline.History;
 import jline.SimpleCompletor;
 
 import computer.AWTKeyMapping;
@@ -25,6 +26,7 @@ import computer.VirtualMonitor;
 
 import dcpu.Assembler;
 import dcpu.Dcpu;
+import dcpu.Dcpu.Reg;
 import dcpu.Disassembler;
 import dcpu.Tracer;
 import dcpu.io.PanelPeripheral;
@@ -33,6 +35,8 @@ public class CliDCPU {
     
     private static final Pattern commandParser = Pattern.compile("\\s*([^\\s]+)\\s*(.*)"); // capture a word followed by its args 
     
+    // is there a better way to do this? All static else the ENUMs can't access them.
+    private static Assembler assembler;
     private static Dcpu dcpu;
     private static Disassembler disassembler;
     private static Tracer tracer;
@@ -61,8 +65,10 @@ public class CliDCPU {
                     return;
                 }
                 try {
-                    short[] bin = new Assembler().assemble(new FileReader(in));
+                    assembler = new Assembler();
+                    short[] bin = assembler.assemble(new FileReader(in));
                     dcpu.reset();
+                    dcpu.memzero();
                     dcpu.upload(bin);
                 } catch (Exception e) {
                     System.err.println("Error: Couldn't read file " + in.getAbsolutePath());
@@ -76,7 +82,13 @@ public class CliDCPU {
         
         RUN("run") {
             @Override public void execute(String[] args) {
-                int steps = getNextArgAsNumber(args);
+                int steps;
+                try {
+                    steps = getNextArgAsNumber(args[0]);
+                } catch (NumberFormatException e) {
+                    System.err.printf("Error: %s is not valid format for a number.\n", args[1]);
+                    return;
+                }
                 dcpu.run(steps);
             }
             @Override public String usage() {
@@ -96,49 +108,64 @@ public class CliDCPU {
         
         MEM("mem") {
             @Override public void execute(String[] args) {
+                int start;
+                int end;
                 int numWordsPerLine = 16;
+
                 if ("".equals(args[0]) || args.length > 3) {
                     System.err.println("Error: bad args.\n" + usage());
                     return;
                 }
-                int start = getAddress(args[0].toLowerCase());
-                int end = start;
+                try {
+                    start = getAddress(args[0]);
+                } catch (NumberFormatException e) {
+                    System.err.printf("Error: %s is not valid format for a number.\n", args[0]);
+                    return;
+                }
+                end = start;
                 if (args.length > 1) {
-                    end = getAddress(args[1].toLowerCase());
-                    if (end > 0xffff) {
-                        end = 0xffff;
+                    try {
+                        end = getAddress(args[1]);
+                    } catch (NumberFormatException e) {
+                        System.err.printf("Error: %s is not valid format for a number.\n", args[1]);
+                        return;
                     }
                 }
                 if (args.length > 2) {
-                    numWordsPerLine = numberToInt(args[2]);
+                    try {
+                        numWordsPerLine = numberToInt(args[2]);
+                    } catch (NumberFormatException e) {
+                        System.err.printf("Error: %s is not valid format for a number.\n", args[2]);
+                        return;
+                    }
                 }
                 // start printing
                 int range = end - start + 1;
                 int numLines = range / numWordsPerLine;
                 int numLeftOver = range - numLines * numWordsPerLine;
                 for (int i = 0; i < numLines; i++) {
-                    System.out.printf("(%04x) :", start + i * numWordsPerLine);
+                    System.out.printf("(%04x) :", ((short) start & 0xffff) + i * numWordsPerLine);
                     for (int j = 0; j < numWordsPerLine; j++) {
-                        System.out.printf(" %04x", dcpu.mem[start + i * numWordsPerLine + j]);
+                        System.out.printf(" %04x", dcpu.mem[((short) start & 0xffff) + i * numWordsPerLine + j]);
                     }
                     System.out.print(" | ");
                     for (int j = 0; j < numWordsPerLine; j++) {
-                        printShortChars(start + i * numWordsPerLine + j);
+                        printShortChars(((short) start & 0xffff) + i * numWordsPerLine + j);
                     }
                     System.out.println();
                 }
 
                 if (numLeftOver > 0) {
-                    System.out.printf("(%04x) :", start + numLines * numWordsPerLine);
+                    System.out.printf("(%04x) :", ((short) start & 0xffff) + numLines * numWordsPerLine);
                     for (int j = 0; j < numLeftOver; j++) {
-                        System.out.printf(" %04x", dcpu.mem[start + numLines * numWordsPerLine + j]);
+                        System.out.printf(" %04x", dcpu.mem[((short) start & 0xffff) + numLines * numWordsPerLine + j]);
                     }
                     for (int i = 0; i < (numWordsPerLine - numLeftOver); i++) {
                         System.out.print("     "); // spacer to make chars line up 
                     }
                     System.out.print(" | ");
                     for (int j = 0; j < numLeftOver; j++) {
-                        printShortChars(start + numLines * numWordsPerLine + j);
+                        printShortChars(((short) start & 0xffff) + numLines * numWordsPerLine + j);
                     }
                 }
                 System.out.println();
@@ -183,7 +210,13 @@ public class CliDCPU {
         
         NEXTINSTRUCTION("next") {
             @Override public void execute(String[] args) {
-                int num = getNextArgAsNumber(args);
+                int num;
+                try {
+                    num = getNextArgAsNumber(args[0]);
+                } catch (NumberFormatException e) {
+                    System.err.printf("Error: %s is not valid format for a number.\n", args[0]);
+                    return;
+                }
                 disassembler.setAddress(dcpu.pc());
                 for (int i = 0; i < num; i++) {
                     System.out.println(disassembler.next(true));
@@ -248,11 +281,11 @@ public class CliDCPU {
         private static String formatHelp(String cmdWithArgs, String helpText) {
             return String.format("%-20s ; %s", cmdWithArgs, helpText);
         }
-        private static int getNextArgAsNumber(String[] args) {
+        private static int getNextArgAsNumber(String numToTest) {
             int num = 1;
-            if (!"".equals(args[0])) {
-                if (Assembler.numPattern.matcher(args[0]).matches()) {
-                    num = numberToInt(args[0]);
+            if (!"".equals(numToTest)) {
+                if (Assembler.numPattern.matcher(numToTest).matches()) {
+                    num = numberToInt(numToTest);
                 }
             }
             return num;
@@ -267,17 +300,34 @@ public class CliDCPU {
         }
 
         private static int getAddress(String addressString) {
+            addressString = addressString.toLowerCase();
             int returnAddress;
             if ("pc".equals(addressString)) {
-                returnAddress = dcpu.pc();
-            } else if ("sp".equals(addressString)) {
-                returnAddress = dcpu.sp();
+                returnAddress = (short) dcpu.pc();
             } else if ("start".equals(addressString)) {
                 returnAddress = 0;
             } else if ("end".equals(addressString)) {
-                returnAddress = 0xffff;
+                returnAddress = (short) 0xffff;
+            } else if ("a".equals(addressString)) {
+                returnAddress = dcpu.getreg(Reg.A);
+            } else if ("b".equals(addressString)) {
+                returnAddress = dcpu.getreg(Reg.B);
+            } else if ("c".equals(addressString)) {
+                returnAddress = dcpu.getreg(Reg.C);
+            } else if ("x".equals(addressString)) {
+                returnAddress = dcpu.getreg(Reg.X);
+            } else if ("y".equals(addressString)) {
+                returnAddress = dcpu.getreg(Reg.Y);
+            } else if ("z".equals(addressString)) {
+                returnAddress = dcpu.getreg(Reg.Z);
+            } else if ("i".equals(addressString)) {
+                returnAddress = dcpu.getreg(Reg.I);
+            } else if ("j".equals(addressString)) {
+                returnAddress = dcpu.getreg(Reg.J);
+            } else if ("sp".equals(addressString)) {
+                returnAddress = (short) dcpu.sp();
             } else {
-                returnAddress = numberToInt(addressString);
+                returnAddress = (short) numberToInt(addressString);
             }
             return returnAddress;
         }
@@ -295,20 +345,25 @@ public class CliDCPU {
     
     public void startCli() throws IOException {
         System.out.println("CliDCPU by fraoch using ja-dcpu by aimozg.\nPress tab for command list. Can do command and file completion.\nType 'help' for commands supported.\n");
+        File historyFile = new File(System.getProperty("user.home"), ".clidcpu_history");
+        History history = new History(historyFile);
+        history.setMaxSize(0x4000);
         ConsoleReader reader = new ConsoleReader();
         reader.setBellEnabled(false);
-        
+        reader.setHistory(history);
+        reader.setUseHistory(true);
+
         dcpu = new Dcpu();
         tracer = new Tracer(System.out);
         tracer.install(dcpu);
         disassembler = new Disassembler();
         disassembler.init(dcpu.mem);
+        assembler = new Assembler();
         
         List<Completor> completors = new LinkedList<Completor>();
         completors.add(new SimpleCompletor(Cmd.getCmds()));
         completors.add(new FileNameCompletor());
         reader.addCompletor(new ArgumentCompletor(completors));
-        // PrintWriter out = new PrintWriter(System.out);
 
         String line;
         while ((line = reader.readLine("# ")) != null) {
