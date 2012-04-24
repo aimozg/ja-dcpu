@@ -439,7 +439,7 @@ public final class Dcpu {
         }
         // overwrite 'a' unless it is constant
         if (aa < M_CV && OPCODE_MODMEM[opcode]) memset(aa, (short) rslt);
-        mem[M_O] = (short) oreg;
+        if (aa != M_O) mem[M_O] = (short) oreg;
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
