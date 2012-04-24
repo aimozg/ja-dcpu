@@ -109,7 +109,7 @@ public class Assembler {
     }
 
     private static final Pattern strPattern = Pattern.compile("(\'[^\']*\')|(\"[^\"]*\")");
-    private static final Pattern idPattern = Pattern.compile("[a-zA-Z_][a-zA-Z_0-9]*");
+    private static final Pattern idPattern = Pattern.compile("[a-zA-Z_\\.][a-zA-Z_0-9\\.]*");
     private static final Pattern hexPattern = Pattern.compile("0x[0-9a-fA-F]+");
     private static final Pattern binPattern = Pattern.compile("0b\\d+");
     private static final Pattern decPattern = Pattern.compile("\\d+");
@@ -159,9 +159,11 @@ public class Assembler {
         stokizer.quoteChar('\'');
         //stokizer.wordChars('#', '#');
         stokizer.ordinaryChar('-');
+        stokizer.ordinaryChar('.');
         stokizer.ordinaryChars('0', '9');
         stokizer.wordChars('0', '9');
         stokizer.wordChars('_', '_');
+        stokizer.wordChars('.', '.');
         stokizer.slashSlashComments(false);
         stokizer.slashStarComments(false);
         stokizer.eolIsSignificant(false);
