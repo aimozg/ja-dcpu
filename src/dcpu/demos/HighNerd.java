@@ -2,6 +2,7 @@ package dcpu.demos;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
@@ -35,7 +36,8 @@ public class HighNerd {
         int nRead;
         ByteArrayOutputStream buffer = new ByteArrayOutputStream(2048);
         byte[] data = new byte[0x4000];
-        while ((nRead = HighNerd.class.getResourceAsStream(resourceName).read(data, 0, data.length)) != -1) {
+        InputStream stream = HighNerd.class.getResourceAsStream(resourceName);
+        while ((nRead = stream.read(data, 0, data.length)) != -1) {
             buffer.write(data, 0, nRead);
         }
         buffer.flush();
