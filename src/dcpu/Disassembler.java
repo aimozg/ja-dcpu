@@ -28,15 +28,14 @@ public class Disassembler {
         if (opcode != O_NBI) {
             int a = (instr & C_A_MASK) >> C_A_SHIFT;
             int b = (instr & C_B_MASK) >> C_B_SHIFT;
-            return OPCODE_NAMES[opcode] + " " + operand(a) + ", " + operand(b);
+            BasicOp bop = BasicOp.l(opcode);
+            return ((bop == null) ? "???" : bop.name) + " " + operand(a) + ", " + operand(b);
         } else {
             int a = (instr & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             opcode = (instr & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
-            if (OPCODE0_RESERVED[opcode]) {
-                return String.format("DAT 0x%04x", instr);
-            } else {
-                return OPCODE0_NAMES[opcode] + " " + operand(a);
-            }
+            SpecialOp sop = SpecialOp.l(opcode);
+            if (sop == null) return String.format("DAT 0x%04x", instr);
+            else return sop.name + " " + operand(a);
         }
     }
 

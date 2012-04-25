@@ -1,18 +1,9 @@
 package dcpu.demos;
 
-import static dcpu.Dcpu.A_0;
-import static dcpu.Dcpu.A_1;
-import static dcpu.Dcpu.A_I;
-import static dcpu.Dcpu.A_M_NW_I;
-import static dcpu.Dcpu.A_PC;
-import static dcpu.Dcpu.O_ADD;
-import static dcpu.Dcpu.O_IFE;
-import static dcpu.Dcpu.O_SET;
-import static dcpu.Dcpu.O__RESVD;
-import static dcpu.Dcpu.gencmd;
-import static dcpu.Dcpu.gencmd_nbi;
 import dcpu.Dcpu;
 import dcpu.io.OutstreamPeripheral;
+
+import static dcpu.Dcpu.*;
 
 public class StdoutDemo {
     public static void main(String[] args) {
@@ -31,7 +22,7 @@ public class StdoutDemo {
         // set pc,loop
         cpu.mem[0] = gencmd(O_IFE, A_M_NW_I, A_0);
         cpu.mem[1] = data;
-        cpu.mem[2] = gencmd_nbi(O__RESVD, 0);
+        cpu.mem[2] = 0;
         cpu.mem[3] = gencmd(O_SET, A_M_NW_I, A_M_NW_I);
         cpu.mem[4] = tgt;
         cpu.mem[5] = data;

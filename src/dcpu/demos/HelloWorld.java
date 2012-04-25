@@ -1,22 +1,8 @@
 package dcpu.demos;
 
-import static dcpu.Dcpu.A_0;
-import static dcpu.Dcpu.A_1;
-import static dcpu.Dcpu.A_9;
-import static dcpu.Dcpu.A_A;
-import static dcpu.Dcpu.A_I;
-import static dcpu.Dcpu.A_M_NW;
-import static dcpu.Dcpu.A_M_NW_I;
-import static dcpu.Dcpu.A_NW;
-import static dcpu.Dcpu.A_PC;
-import static dcpu.Dcpu.O_ADD;
-import static dcpu.Dcpu.O_IFE;
-import static dcpu.Dcpu.O_IFN;
-import static dcpu.Dcpu.O_SET;
-import static dcpu.Dcpu.O__RESVD;
-import static dcpu.Dcpu.gencmd;
-import static dcpu.Dcpu.gencmd_nbi;
 import dcpu.Dcpu;
+
+import static dcpu.Dcpu.*;
 
 /**
  * Created by IntelliJ IDEA.
@@ -72,7 +58,7 @@ public class HelloWorld {
         cpu.mem[17] = gencmd(O_SET, A_PC, A_9);
 
         // end
-        cpu.mem[0xffff] = gencmd_nbi(O__RESVD, 0);
+        cpu.mem[0xffff] = 0;
 
         int i = i_data;
         for (char c : "Hello_world!".toCharArray()) { // copy to data

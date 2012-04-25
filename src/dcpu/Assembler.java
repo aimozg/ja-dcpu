@@ -155,7 +155,7 @@ public class Assembler {
                 } else if (acceptIgnoreCase("reserve")) {
                     reserve();
                 } else if (acceptIgnoreCase("hlt")) {
-                    append(gencmd_nbi(O__RESVD, 0), false);
+                    append((short) 0, false);
                 } else {
                     oper();
                 }
