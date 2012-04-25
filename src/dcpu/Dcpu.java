@@ -9,7 +9,6 @@ import java.util.*;
  * <p/>
  */
 public final class Dcpu {
-    private boolean usePostFetchMode = true;
     ////////////////
     // NOTES
     ////////////////
@@ -311,8 +310,8 @@ public final class Dcpu {
         if (opcode != O_NBI) {
             a = (cmd & C_A_MASK) >> C_A_SHIFT;
             b = (cmd & C_B_MASK) >> C_B_SHIFT;
-            aa = getaddr(a, OPCODE_MODMEM[opcode]) & 0x1ffff;
-            ba = getaddr(b, usePostFetchMode) & 0x1ffff;
+            aa = getaddr(a) & 0x1ffff;
+            ba = getaddr(b) & 0x1ffff;
             if (skip) {
                 mem[M_SP] = mem[M_PSP];
                 return;
@@ -322,7 +321,7 @@ public final class Dcpu {
         } else {
             a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
-            aa = getaddr(a, OPCODE0_MODMEM[b]) & 0x1ffff;
+            aa = getaddr(a) & 0x1ffff;
             if (skip) {
                 mem[M_SP] = mem[M_PSP];
                 return;
@@ -478,7 +477,6 @@ public final class Dcpu {
     }
 
     public Dcpu() {
-        usePostFetchMode = Boolean.parseBoolean(System.getProperty("dcpu.usePostFetchMode", "true"));
         reset();
     }
 
@@ -530,13 +528,8 @@ public final class Dcpu {
     /**
      * Returns memory address for operand code. 0 returns address of register A and so on.
      * May modify values of PC (in case of "next word of ram") and SP (when PUSH, POP)
-     * <p/>
-     * Ok, so here is the black magic:
-     * SET [PC+20], PC
-     * when parsing [PC+20] it modifies PC, but when parsing PC, it should return previous, unmodified value.
-     * that's what "write" is for.
      */
-    private int getaddr(int cmd, boolean write) {
+    private int getaddr(int cmd) {
         if (cmd <= 0x07) {
             // register
             return M_A + cmd;
@@ -561,10 +554,10 @@ public final class Dcpu {
                 return (--mem[M_SP]) & 0xffff;
             case 0x1b:
                 // SP
-                return write ? M_SP : M_PSP;
+                return M_SP;
             case 0x1c:
                 // PC
-                return write ? M_PC : M_PPC;
+                return M_PC;
             case 0x1d:
                 // EX
                 return M_O;
