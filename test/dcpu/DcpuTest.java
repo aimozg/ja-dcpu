@@ -28,7 +28,7 @@ public class DcpuTest {
 
         // check register values
         // only value set is the M_SP which is initialised to 0xffff
-        short[] registerStartingValues = new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        short[] registerStartingValues = new short[Dcpu.REGS_COUNT];
         for (int i = 0; i < registerStartingValues.length; i++) {
             assertEquals(registerStartingValues[i], dcpu.memget(Dcpu.M_A + i));
         }

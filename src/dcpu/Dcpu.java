@@ -14,7 +14,6 @@ public final class Dcpu {
     ////////////////
     // * Registers are mapped to memory after addressable space for convenience (so operations take something from one
     //   mem cell and put something into another)
-    // * Some magic about PPC, PSP, and getaddr explained in getaddr comment
     // * NW is commonly used for 'Next Word in ram', NBI - non-basic-instruction
     // * Peripherals can be attached to monitor CPU ticks and read/writes to 4096-word memory lines (determined by highest nibble)
 
@@ -26,8 +25,7 @@ public final class Dcpu {
         A("A", 0), B("B", 1), C("C", 2),
         X("X", 3), Y("Y", 4), Z("Z", 5),
         I("I", 6), J("J", 7),
-        PC("PC", 8), SP("SP", 9), EX("EX", 10),
-        PPC("PPC", 11), PSP("PSP", 12);
+        PC("PC", 8), SP("SP", 9), EX("EX", 10);
 
         public static final int BASE_ADDRESS = 0x10000;
 
@@ -119,7 +117,7 @@ public final class Dcpu {
             false, false, false, false, false, false, false
     };
     // Register constants
-    public static final int REGS_COUNT = 8 + 1 + 1 + 1; ///< Register count: 8 GP, PC, SP, EX
+    public static final int REGS_COUNT = Reg.values().length; ///< Number of registers
 
     // Command parts (opcode, A, B)
     public static final int C_O_MASK = 0x000F;
@@ -248,13 +246,11 @@ public final class Dcpu {
     public static final int M_PC = Reg.PC.address;
     public static final int M_SP = Reg.SP.address;
     public static final int M_O = Reg.EX.address;
-    public static final int M_PPC = Reg.PPC.address; // prev PC (PC before execution)
-    public static final int M_PSP = Reg.PSP.address; // prev SP (SP before execution)
-    public static final int M_CV = Reg.PSP.address + 1; // constant value
+    public static final int M_CV = Reg.BASE_ADDRESS + REGS_COUNT; // constant value
     // Memory cell names
     public static final String[] MEM_NAMES = {
             Reg.A.name, Reg.B.name, Reg.C.name, Reg.X.name, Reg.Y.name, Reg.Z.name, Reg.I.name, Reg.J.name,
-            Reg.PC.name, Reg.SP.name, Reg.EX.name, Reg.PPC.name, Reg.PSP.name,
+            Reg.PC.name, Reg.SP.name, Reg.EX.name,
             "0", "1", "2", "3", "4", "5", "6", "7",
             "8", "9", "10", "11", "12", "13", "14", "15",
             "16", "17", "18", "19", "20", "21", "22", "23",
@@ -265,7 +261,7 @@ public final class Dcpu {
     // CORE CPU FUNCTIONS
     ///////////////////////////////////////////////////////////////
 
-    // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + EX + PPC + PSP + 32 constants
+    // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + EX + 32 constants
     public final short[] mem = new short[M_CV + 32];
     public boolean reserved = false; // true if reserved operation executed
     public volatile boolean halt = false;// halt execution
@@ -297,9 +293,8 @@ public final class Dcpu {
      * TODO delay
      */
     public void step(boolean skip) {
-        // save prev PC and prev SP
-        mem[M_PPC] = mem[M_PC];
-        mem[M_PSP] = mem[M_SP];
+        short ppc = mem[M_PC];
+        short psp = mem[M_SP];
         if (!skip && stepListener != null) stepListener.preExecute(mem[M_PC]);
 
         int cmd = mem[(mem[M_PC]++) & 0xffff] & 0xffff; // command value
@@ -313,7 +308,7 @@ public final class Dcpu {
             aa = getaddr(a) & 0x1ffff;
             ba = getaddr(b) & 0x1ffff;
             if (skip) {
-                mem[M_SP] = mem[M_PSP];
+                mem[M_SP] = psp;
                 return;
             }
             av = memget(aa) & 0xffff;
@@ -323,7 +318,7 @@ public final class Dcpu {
             b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
             aa = getaddr(a) & 0x1ffff;
             if (skip) {
-                mem[M_SP] = mem[M_PSP];
+                mem[M_SP] = psp;
                 return;
             }
             ba = 0;
@@ -401,28 +396,28 @@ public final class Dcpu {
             case O_IFE:
                 if (av != bv) {
                     printedBranch = true;
-                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+                    if (!skip && stepListener != null) stepListener.postExecute(ppc);
                     step(true);
                 }
                 break;
             case O_IFN:
                 if (av == bv) {
                     printedBranch = true;
-                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+                    if (!skip && stepListener != null) stepListener.postExecute(ppc);
                     step(true);
                 }
                 break;
             case O_IFG:
                 if (av <= bv) {
                     printedBranch = true;
-                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+                    if (!skip && stepListener != null) stepListener.postExecute(ppc);
                     step(true);
                 }
                 break;
             case O_IFB:
                 if ((av & bv) == 0) {
                     printedBranch = true;
-                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+                    if (!skip && stepListener != null) stepListener.postExecute(ppc);
                     step(true);
                 }
                 break;
@@ -433,7 +428,7 @@ public final class Dcpu {
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
-        if (!printedBranch && !skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+        if (!printedBranch && !skip && stepListener != null) stepListener.postExecute(ppc);
     }
 
     /**
