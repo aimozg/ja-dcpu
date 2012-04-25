@@ -56,7 +56,7 @@ public class Tracer extends PostListener<Short> {
                 dcpu.mem[0xffff & dcpu.mem[M_A]], dcpu.mem[0xffff & dcpu.mem[M_B]], dcpu.mem[0xffff & dcpu.mem[M_C]],
                 dcpu.mem[0xffff & dcpu.mem[M_X]], dcpu.mem[0xffff & dcpu.mem[M_Y]], dcpu.mem[0xffff & dcpu.mem[M_Z]],
                 dcpu.mem[0xffff & dcpu.mem[M_I]], dcpu.mem[0xffff & dcpu.mem[M_J]],
-                dcpu.mem[0xffff & dcpu.mem[M_SP]], dcpu.mem[0xffff & dcpu.mem[M_O]]);
+                dcpu.mem[0xffff & dcpu.mem[M_SP]], dcpu.mem[0xffff & dcpu.mem[M_EX]]);
     }
 
     public static void outputRegMem(PrintStream out, short aM, short bM, short cM, short xM, short yM, short zM, short iM, short jM, short spM, short oM) {
@@ -68,7 +68,7 @@ public class Tracer extends PostListener<Short> {
                 dcpu.mem[M_A], dcpu.mem[M_B], dcpu.mem[M_C],
                 dcpu.mem[M_X], dcpu.mem[M_Y], dcpu.mem[M_Z],
                 dcpu.mem[M_I], dcpu.mem[M_J],
-                dcpu.mem[M_SP], dcpu.mem[M_O]);
+                dcpu.mem[M_SP], dcpu.mem[M_EX]);
     }
 
     public static void outputRegisters(PrintStream out, short A, short B, short C, short X, short Y, short Z, short I, short J, short SP, short O) {

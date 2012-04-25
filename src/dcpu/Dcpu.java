@@ -120,16 +120,22 @@ public final class Dcpu {
     public static final int REGS_COUNT = Reg.values().length; ///< Number of registers
 
     // Command parts (opcode, A, B)
-    public static final int C_O_MASK = 0x000F;
-    public static final int C_A_MASK = 0x03F0;
-    public static final int C_B_MASK = 0xFC00;
-    public static final int C_A_SHIFT = 4;
-    public static final int C_B_SHIFT = 10;
+    public static final int C_O_BITLEN = 5;
+    public static final int C_B_BITLEN = 5;
+    public static final int C_A_BITLEN = 6;
+    public static final int C_B_SHIFT = C_O_BITLEN;
+    public static final int C_A_SHIFT = C_O_BITLEN + C_B_BITLEN;
+    // to get a strip of N binary 1s, we do 1 << (N+1) and substract 1
+    public static final int C_O_MASK = (1 << C_O_BITLEN) * 2 - 1;
+    public static final int C_B_MASK = ((1 << C_B_BITLEN) * 2 - 1) << C_B_SHIFT;
+    public static final int C_A_MASK = ((1 << C_A_BITLEN) * 2 - 1) << C_A_SHIFT;
+    public static final int C_NBI_O_BITLEN = 5;
+    public static final int C_NBI_A_BITLEN = 6;
     public static final int C_NBI_A_MASK = C_B_MASK;
     public static final int C_NBI_A_SHIFT = C_B_SHIFT;
     public static final int C_NBI_O_MASK = C_A_MASK;
     public static final int C_NBI_O_SHIFT = C_A_SHIFT;
-    // Command address types (take one and shift with C_x_SHIFT)
+    // Command value types (take one and shift with C_x_SHIFT)
     //   Plain register
     public static final int A_REG = 0;// | with REG_x
     public static final int A_A = A_REG | Reg.A.offset;
@@ -140,7 +146,7 @@ public final class Dcpu {
     public static final int A_Z = A_REG | Reg.Z.offset;
     public static final int A_I = A_REG | Reg.I.offset;
     public static final int A_J = A_REG | Reg.J.offset;
-    //   (Register)
+    //   [Register]
     public static final int A_M_REG = 8; // or with REG_x
     public static final int A_M_A = A_M_REG | Reg.A.offset;
     public static final int A_M_B = A_M_REG | Reg.B.offset;
@@ -150,8 +156,8 @@ public final class Dcpu {
     public static final int A_M_Z = A_M_REG | Reg.Z.offset;
     public static final int A_M_I = A_M_REG | Reg.I.offset;
     public static final int A_M_J = A_M_REG | Reg.J.offset;
-    //  (Register+NW)
-    public static final int A_M_NW_REG = 16; // or with REG_x
+    //  [Register+NW]
+    public static final int A_M_NW_REG = 0x10; // or with REG_x
     public static final int A_M_NW_A = A_M_NW_REG | Reg.A.offset;
     public static final int A_M_NW_B = A_M_NW_REG | Reg.B.offset;
     public static final int A_M_NW_C = A_M_NW_REG | Reg.C.offset;
@@ -161,16 +167,16 @@ public final class Dcpu {
     public static final int A_M_NW_I = A_M_NW_REG | Reg.I.offset;
     public static final int A_M_NW_J = A_M_NW_REG | Reg.J.offset;
     //   Special registers and stack
-    public static final int A_POP = 24;
-    public static final int A_PEEK = 25;
-    public static final int A_PUSH = 26;
-    public static final int A_SP = 27;
-    public static final int A_PC = 28;
-    public static final int A_O = 29;
-    public static final int A_M_NW = 30; // (NW)
-    public static final int A_NW = 31; // NW
+    public static final int A_PUSHPOP = 0x18;
+    public static final int A_PEEK = 0x19;
+    public static final int A_PICK = 0x1a;
+    public static final int A_SP = 0x1b;
+    public static final int A_PC = 0x1c;
+    public static final int A_EX = 0x1d;
+    public static final int A_M_NW = 0x1e; // [NW]
+    public static final int A_NW = 0x1f; // NW
     //  Constant values
-    public static final int A_CONST = 32; // + with const
+    public static final int A_CONST = 0x20; // + with const
     public static final int A_0 = A_CONST + 0;
     public static final int A_1 = A_CONST + 1;
     public static final int A_2 = A_CONST + 2;
@@ -211,8 +217,8 @@ public final class Dcpu {
             0, 0, 0, 0, 0, 0, 0, 0,
             // [NW+register]
             1, 1, 1, 1, 1, 1, 1, 1,
-            // POP PUSH PEEK SP PC EX [NW] NW
-            0, 0, 0, 0, 0, 0, 1, 1,
+            // PUSHPOP PEEK PICK SP PC EX [NW] NW
+            0, 0, 1, 0, 0, 0, 1, 1,
             // literal
             0, 0, 0, 0, 0, 0, 0, 0
     };
@@ -221,11 +227,11 @@ public final class Dcpu {
             // Register
             false, false, false, false, false, false, false, false,
             // [Register]
-            true, true, true, true, true, true, true, true, true,
+            true, true, true, true, true, true, true, true,
             // [NW+register]
-            true, true, true, true, true, true, true, true, true,
-            // POP PUSH PEEK SP PC EX [NW] NW
-            true, true, true, false, false, false, true, true, true,
+            true, true, true, true, true, true, true, true,
+            // PUSHPOP PEEK PICK SP PC EX [NW] NW
+            true, true, true, false, false, false, true, true,
             // literal
             false, false, false, false, false, false, false, false
     };
@@ -245,7 +251,7 @@ public final class Dcpu {
     public static final int M_J = Reg.J.address;
     public static final int M_PC = Reg.PC.address;
     public static final int M_SP = Reg.SP.address;
-    public static final int M_O = Reg.EX.address;
+    public static final int M_EX = Reg.EX.address;
     public static final int M_CV = Reg.BASE_ADDRESS + REGS_COUNT; // constant value
     // Memory cell names
     public static final String[] MEM_NAMES = {
@@ -305,8 +311,8 @@ public final class Dcpu {
         if (opcode != O_NBI) {
             a = (cmd & C_A_MASK) >> C_A_SHIFT;
             b = (cmd & C_B_MASK) >> C_B_SHIFT;
-            aa = getaddr(a) & 0x1ffff;
-            ba = getaddr(b) & 0x1ffff;
+            aa = getaddr(a, true) & 0x1ffff;
+            ba = getaddr(b, false) & 0x1ffff;
             if (skip) {
                 mem[M_SP] = psp;
                 return;
@@ -316,7 +322,7 @@ public final class Dcpu {
         } else {
             a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
-            aa = getaddr(a) & 0x1ffff;
+            aa = getaddr(a, true) & 0x1ffff;
             if (skip) {
                 mem[M_SP] = psp;
                 return;
@@ -331,7 +337,7 @@ public final class Dcpu {
 
         boolean printedBranch = false;
         int rslt = mem[aa]; // new 'a' value
-        int oreg = mem[M_O]; // new 'EX' value
+        int oreg = mem[M_EX]; // new 'EX' value
         switch (opcode) {
             case O_NBI:
                 switch (b) {
@@ -424,7 +430,7 @@ public final class Dcpu {
         }
         // overwrite 'a' unless it is constant
         if (aa < M_CV && OPCODE_MODMEM[opcode]) memset(aa, (short) rslt);
-        mem[M_O] = (short) oreg;
+        mem[M_EX] = (short) oreg;
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
@@ -505,7 +511,7 @@ public final class Dcpu {
     public String _dregs() {
         return String.format("R A=%04x B=%04x C=%04x X=%04x Y=%04x Z=%04x I=%04x J=%04x  PC=%04x SP=%04x EX=%04x",
                 mem[M_A], mem[M_B], mem[M_C], mem[M_X], mem[M_Y], mem[M_Z], mem[M_I], mem[M_J],
-                mem[M_PC], mem[M_SP], mem[M_O]);
+                mem[M_PC], mem[M_SP], mem[M_EX]);
     }
 
     public String _dmem(int addr) {
@@ -523,8 +529,10 @@ public final class Dcpu {
     /**
      * Returns memory address for operand code. 0 returns address of register A and so on.
      * May modify values of PC (in case of "next word of ram") and SP (when PUSH, POP)
+     *
+     * @param isa true when evaluating "a"
      */
-    private int getaddr(int cmd) {
+    private int getaddr(int cmd, boolean isa) {
         if (cmd <= 0x07) {
             // register
             return M_A + cmd;
@@ -538,28 +546,22 @@ public final class Dcpu {
             // literal value
             return M_CV + cmd - 0x20;
         } else switch (cmd) {
-            case 0x18:
-                // POP
-                return (mem[M_SP]++) & 0xffff;
-            case 0x19:
-                // PEEK
+            case A_PUSHPOP:
+                // isa?POP:PUSH
+                return (isa ? (mem[M_SP]++) : (--mem[M_SP])) & 0xffff;
+            case A_PEEK:
                 return mem[M_SP] & 0xffff;
-            case 0x1a:
-                // PUSH
-                return (--mem[M_SP]) & 0xffff;
-            case 0x1b:
-                // SP
+            case A_PICK:
+                return (M_SP + mem[M_PC]++) & 0xffff;
+            case A_SP:
                 return M_SP;
-            case 0x1c:
-                // PC
+            case A_PC:
                 return M_PC;
-            case 0x1d:
-                // EX
-                return M_O;
-            case 0x1e:
-                // [next word]
+            case A_EX:
+                return M_EX;
+            case A_M_NW:
                 return mem[mem[M_PC]++] & 0xffff;
-            case 0x1f:
+            case A_NW:
                 // next word (literal)
                 return mem[M_PC]++ & 0xffff;
             default:

@@ -63,7 +63,7 @@ public class Debugger {
     public static final int DREG_J = M_J - M_A;
     public static final int DREG_SP = M_SP - M_A;
     public static final int DREG_PC = M_PC - M_A;
-    public static final int DREG_O = M_O - M_A;
+    public static final int DREG_O = M_EX - M_A;
 
     private short[] oldRegs = new short[REGS_COUNT];
     private BitSet modifiedRegisters = new BitSet(REGS_COUNT);
@@ -126,7 +126,8 @@ public class Debugger {
         if (this.cpu != null) detach();
         this.cpu = cpu;
         cpu.stepListener = new PreListener<Short>() {
-            @Override public void preExecute(Short arg) {
+            @Override
+            public void preExecute(Short arg) {
                 Debugger.this.stepHandler(arg);
             }
         };
