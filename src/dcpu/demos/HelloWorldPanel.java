@@ -41,7 +41,6 @@ public class HelloWorldPanel {
         		":message    dat \"Hello, world!\", 0\n" +
                 ":end        set pc, end\n"
         ));
-        // dcpu.upload(HelloWorldPanel.class.getResourceAsStream("mem.dmp"));
         
         dcpu.reset();
         dcpu.run();

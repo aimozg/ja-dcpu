@@ -175,6 +175,41 @@ public class AssemblerTest {
     }
 
     @Test
+	public void testLabelsAreCaseInsensitive() throws Exception {
+        short[] bin = assembler.assemble(
+        		"           set pc, starthere\n" +
+                ":startHere set a, 1\n" +
+                "           set pc, endOfFile\n" +
+                "           set a, 0\n" +
+                ":endoffile\n" +
+                "           hlt\n"
+        );
+        short[] expected = new short[]{
+                        0x7dc1, 0x0002,
+                (short) 0x8401,
+                        0x7dc1, 0x0006,
+                (short) 0x8001,
+                        0x0000
+        };
+        assertArrayEquals("bin", expected, bin);
+	}
+    
+    @Test
+    public void testLabelsWithFullStopsSupported() throws Exception {
+        short[] bin = assembler.assemble(
+                "          set pc, .LBB0_.1\n" +
+                ":.LBB0_.1 set a, 1\n" +
+                "          hlt\n"
+        );
+        short[] expected = new short[]{
+                        0x7dc1, 0x0002,
+                (short) 0x8401,
+                        0x0000
+        };
+        assertArrayEquals("bin", expected, bin);
+    }
+
+    @Test
     public void testOpcodes() throws Exception {
         // Test every OP command except NBI for every A,B combination.
         // We also test every upper and lower case variation of both op command and codes and literals

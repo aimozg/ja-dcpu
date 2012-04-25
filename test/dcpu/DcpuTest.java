@@ -1,12 +1,12 @@
 package dcpu;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
 
 public class DcpuTest {
 
@@ -28,7 +28,7 @@ public class DcpuTest {
 
         // check register values
         // only value set is the M_SP which is initialised to 0xffff
-        short[] registerStartingValues = new short[Dcpu.REGS_COUNT];
+        short[] registerStartingValues = new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
         for (int i = 0; i < registerStartingValues.length; i++) {
             assertEquals(registerStartingValues[i], dcpu.memget(Dcpu.M_A + i));
         }
@@ -299,7 +299,7 @@ public class DcpuTest {
 
     private void assertExpectedValues(Integer[] expected, String v1, String v2) throws Exception {
         assertEquals("A", expected[0].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.A) & 0xffff));
-        assertEquals("EX", expected[1].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.EX) & 0xffff));
+        assertEquals("O", expected[1].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.O) & 0xffff));
         assertEquals("[0xA000]", expected[2].shortValue(), (short) (dcpu.mem[0xA000] & 0xffff));
         assertEquals("[0xA010]", expected[3].shortValue(), (short) (dcpu.mem[0xA000 + Integer.parseInt(v2.substring(2), 16)] & 0xffff));
         assertEquals("[0x0100]", expected[4].shortValue(), (short) (dcpu.mem[Integer.parseInt(v1.substring(2), 16)] & 0xffff));
@@ -308,7 +308,7 @@ public class DcpuTest {
     @Test
     public void testAddOverflow() throws Exception {
         dcpu.upload(assembler.assemble(
-                "SET EX, 1\n" +
+                "SET O, 1\n" +
                         "SET X, 1\n" +
                         "SET Y, 2\n" +
                         "ADD X, Y\n"
@@ -316,11 +316,11 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", 3, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 2, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.O));
 
         dcpu.reset();
         dcpu.upload(assembler.assemble(
-                "SET EX, 0\n" +
+                "SET O, 0\n" +
                         "SET X, 0xfff0\n" +
                         "SET Y, 0x0011\n" +
                         "ADD X, Y\n"
@@ -328,13 +328,13 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", 1, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 0x11, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("o", 1, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("o", 1, dcpu.getreg(Dcpu.Reg.O));
 
     }
 
     public void testSubOverflow() throws Exception {
         dcpu.upload(assembler.assemble(
-                "SET EX, 1\n" +
+                "SET O, 1\n" +
                         "SET X, 1\n" +
                         "SET Y, 2\n" +
                         "SUB Y, X\n"
@@ -342,11 +342,11 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", 1, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 1, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.O));
 
         dcpu.reset();
         dcpu.upload(assembler.assemble(
-                "SET EX, 0\n" +
+                "SET O, 0\n" +
                         "SET X, 0\n" +
                         "SET Y, 1\n" +
                         "SUB X, Y\n"
@@ -354,13 +354,13 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", (short) 0xffff, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 1, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("o", (short) 0xffff, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("o", (short) 0xffff, dcpu.getreg(Dcpu.Reg.O));
     }
 
     @Test
     public void testMulOverflow() throws Exception {
         dcpu.upload(assembler.assemble(
-                "SET EX, 1\n" +
+                "SET O, 1\n" +
                         "SET X, 3\n" +
                         "SET Y, 4\n" +
                         "MUL X, Y\n"
@@ -368,11 +368,11 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", 12, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 4, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.O));
 
         dcpu.reset();
         dcpu.upload(assembler.assemble(
-                "SET EX, 0\n" +
+                "SET O, 0\n" +
                         "SET X, 0xffff\n" +
                         "SET Y, 0x10\n" +
                         "MUL X, Y\n"
@@ -380,13 +380,13 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", (short) 0xfff0, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 0x10, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("o", (short) 0x000f, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("o", (short) 0x000f, dcpu.getreg(Dcpu.Reg.O));
     }
 
     @Test
     public void testDivOverflow() throws Exception {
         dcpu.upload(assembler.assemble(
-                "SET EX, 1\n" +
+                "SET O, 1\n" +
                         "SET X, 12\n" +
                         "SET Y, 4\n" +
                         "DIV X, Y\n"
@@ -394,11 +394,11 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", 3, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 4, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.O));
 
         dcpu.reset();
         dcpu.upload(assembler.assemble(
-                "SET EX, 0\n" +
+                "SET O, 0\n" +
                         "SET X, 0x00ff\n" +
                         "SET Y, 0x1234\n" +
                         "DIV X, Y\n"
@@ -406,13 +406,13 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", (short) 0x0000, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 0x1234, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("o", (short) 0x0e02, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("o", (short) 0x0e02, dcpu.getreg(Dcpu.Reg.O));
     }
 
     @Test
     public void testModWhenZero() throws Exception {
         dcpu.upload(assembler.assemble(
-                "SET EX, 1\n" +
+                "SET O, 1\n" +
                         "SET X, 12\n" +
                         "SET Y, 0\n" +
                         "MOD X, Y\n"
@@ -420,13 +420,13 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", 0, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 0, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("o", 1, dcpu.getreg(Dcpu.Reg.O));
     }
 
     @Test
     public void testDivWhenZero() throws Exception {
         dcpu.upload(assembler.assemble(
-                "SET EX, 1\n" +
+                "SET O, 1\n" +
                         "SET X, 12\n" +
                         "SET Y, 0\n" +
                         "DIV X, Y\n"
@@ -434,7 +434,7 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", 0, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 0, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("o", 0, dcpu.getreg(Dcpu.Reg.O));
     }
 
     @Test
@@ -576,15 +576,15 @@ public class DcpuTest {
     public void test_PC_SP_Increminting() throws Exception {
         dcpu.upload(assembler.assemble(
                 "SET A, 0xFF\n" +
-                        "SET A, PC\n" +
-                        "SET PUSH, A\n" +
-                        "SET B, PEEK\n" +
-                        "SET C, SP\n" +
-                        "SET I, POP\n" +
-                        "SET [0x0100], PC\n" +
-                        "SET PUSH, SP\n" +
-                        "SET X, 1\n" +
-                        "HLT"
+                "SET A, PC\n" +
+                "SET PUSH, A\n" +
+                "SET B, PEEK\n" +
+                "SET C, SP\n" +
+                "SET I, POP\n" +
+                "SET [0x0100], PC\n" +
+                "SET PUSH, SP\n" +
+                "SET X, 1\n" +
+                "HLT"
         ));
         dcpu.run(1);
         dcpu.run(1);
@@ -604,7 +604,76 @@ public class DcpuTest {
         dcpu.run(1);
         assertEquals("sp", -1, dcpu.getreg(Dcpu.Reg.SP));
         assertEquals("stack[0]", -1, dcpu.mem[0xffff]);
-
     }
 
+    @Test
+    public void testFibonaciSeriesGeneratedCode() throws Exception {
+        // this is some generated code that works on web based assembler/emulators
+        // and was generated by https://github.com/llvm-dcpu16/llvm-dcpu16
+        // there was a bug in setting O to any value.
+        dcpu.upload(assembler.assemble(
+            ":autoinit\n" +
+            "      SET C, SP\n" +
+            "      SUB C, 256\n" +
+            "\n" +
+            ":autostart\n" +
+            "  JSR main\n" +
+            ":autohalt HLT\n" +
+            ":fib\n" +
+            "  SUB  C, 12\n" +
+            "  SET  [10+C], X\n" +
+            "  SET  [8+C], 1\n" +
+            "  SET  [6+C], 1\n" +
+            "  SET  [4+C], 0\n" +
+            "  SET  [0+C], X\n" +
+            ":.LBB0_1\n" +
+            "  SET  J, [4+C]\n" +
+            "  SET  Z, [10+C]\n" +
+            "  SET  O, 65535\n" +
+            "  IFE  J, Z\n" +
+            "  SET  O, 0\n" +
+            "  IFG  J, Z\n" +
+            "  SET  O, 1\n" +
+            "  IFN  O, 65535\n" +
+            "  SET  PC, .LBB0_4\n" +
+            "  SET  PC, .LBB0_2\n" +
+            ":.LBB0_2\n" +
+            "  SET  J, [8+C]\n" +
+            "  SET  Z, [6+C]\n" +
+            "  ADD  J, Z\n" +
+            "  SET  [2+C], J\n" +
+            "  SET  J, [8+C]\n" +
+            "  SET  [6+C], J\n" +
+            "  SET  J, [2+C]\n" +
+            "  SET  [8+C], J\n" +
+            "  SET  J, [4+C]\n" +
+            "  ADD  J, 1\n" +
+            "  SET  [4+C], J\n" +
+            "  SET  PC, .LBB0_1\n" +
+            ":.LBB0_4\n" +
+            "  SET  X, [8+C]\n" +
+            "  ADD  C, 12\n" +
+            "  SET PC, POP\n" +
+            "\n" +
+            ":main\n" +
+            "  SUB  C, 2\n" +
+            "  SET  [0+C], 0\n" +
+            "  SET  X, 5\n" +
+            "  JSR  fib\n" +
+            "  ADD  C, 2\n" +
+            "  SET PC, POP\n"
+        ));
+        dcpu.run();
+        assertEquals("x", 13, dcpu.getreg(Dcpu.Reg.X));
+    }
+    
+    @Test
+    public void testSettingO() throws Exception {
+        dcpu.upload(assembler.assemble(
+                "SET O, 0xffff\n" +
+                "HLT"
+        ));
+        dcpu.run();
+        assertEquals("o", (short) 0xffff, dcpu.getreg(Dcpu.Reg.O));
+    }
 }
