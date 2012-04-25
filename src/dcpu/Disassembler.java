@@ -41,29 +41,29 @@ public class Disassembler {
 
     String operand(int code) {
         if (code <= 0x07) {
-            return MEM_NAMES[code];
+            return Reg.l(code).name;
         } else if (code <= 0x0F) {
-            return "[" + MEM_NAMES[code - 8] + "]";
+            return "[" + Reg.l(code - 8).name + "]";
         } else if (code <= 0x17) {
-            return String.format("[%s+0x%04x]", MEM_NAMES[code - 16], mem[address++]);
+            return String.format("[%s+0x%04x]", Reg.l(code - 16).name, mem[address++]);
         } else if (code >= 0x20 && code <= 0x3F) {
             return String.valueOf(code - 0x20);
         } else switch (code) {
-            case 0x18:
-                return "POP";
-            case 0x19:
+            case A_PUSHPOP://TODO
+                return "PUSHPOP";
+            case A_PEEK:
                 return "PEEK";
-            case 0x1A:
-                return "PUSH";
-            case 0x1B:
+            case A_PICK:
+                return "PICK";
+            case A_SP:
                 return "SP";
-            case 0x1C:
+            case A_PC:
                 return "PC";
-            case 0x1D:
+            case A_EX:
                 return "EX";
-            case 0x1E:
+            case A_M_NW:
                 return String.format("[0x%04x]", mem[address++]);
-            case 0x1F:
+            case A_NW:
                 return String.format("0x%04x", mem[address++]);
             default:
                 throw new RuntimeException("Unknown code value: " + code);
