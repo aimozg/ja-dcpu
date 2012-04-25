@@ -1,16 +1,7 @@
 package dcpu;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 /**
  * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.1 implementation.
@@ -18,13 +9,11 @@ import java.util.Map;
  * <p/>
  */
 public final class Dcpu {
-    private boolean usePostFetchMode = true;
     ////////////////
     // NOTES
     ////////////////
     // * Registers are mapped to memory after addressable space for convenience (so operations take something from one
     //   mem cell and put something into another)
-    // * Some magic about PPC, PSP, and getaddr explained in getaddr comment
     // * NW is commonly used for 'Next Word in ram', NBI - non-basic-instruction
     // * Peripherals can be attached to monitor CPU ticks and read/writes to 4096-word memory lines (determined by highest nibble)
 
@@ -33,91 +22,154 @@ public final class Dcpu {
     ////////////////
 
     public enum Reg {
-        A("A", 0), B("B", 1), C("C", 2),
-        X("X", 3), Y("Y", 4), Z("Z", 5),
-        I("I", 6), J("J", 7),
-        PC("PC", 8), SP("SP", 9), O("O", 10),
-        PPC("PPC", 11), PSP("PSP", 12);
+        A("A", 0, A_A), B("B", 1, A_B), C("C", 2, A_C),
+        X("X", 3, A_X), Y("Y", 4, A_Y), Z("Z", 5, A_Z),
+        I("I", 6, A_I), J("J", 7, A_J),
+        PC("PC", 8, A_PC), SP("SP", 9, A_SP), EX("EX", 10, A_EX), IA("IA", 11, -1);
 
         public static final int BASE_ADDRESS = 0x10000;
 
         public final String name;
         public final int offset;
         public final int address;
+        public final int acode;///< value code when referencing as a value, like SET A, SP. -1 for unaddressable regs
 
         // reverse map for looking up the Enum from the code, and convenience function
-        private static final Map<Integer, Reg> LOOKUP = new HashMap<Integer, Reg>();
+        private static final Map<Integer, Reg> OFFSET_LOOKUP = new HashMap<Integer, Reg>();
+        private static final Map<String, Reg> NAME_LOOKUP = new HashMap<String, Reg>();
 
         public static Reg l(int offset) {
-            return Reg.LOOKUP.get(offset);
+            return Reg.OFFSET_LOOKUP.get(offset);
+        }
+
+        public static Reg byName(String name) {
+            return NAME_LOOKUP.get(name);
         }
 
         static {
-            for (Reg r : EnumSet.allOf(Reg.class)) {
-                LOOKUP.put(r.offset, r);
+            for (Reg r : Reg.values()) {
+                OFFSET_LOOKUP.put(r.offset, r);
+                NAME_LOOKUP.put(r.name, r);
             }
         }
 
-        Reg(String name, int offset) {
+        Reg(String name, int offset, int acode) {
             this.name = name;
             this.offset = offset;
+            this.acode = acode;
             this.address = BASE_ADDRESS + offset;
+        }
+    }
+
+    public enum BasicOp {
+        SET("SET", 0x01, 1, true), ADD("ADD", 0x02, 2, true), SUB("SUB", 0x03, 2, true),
+        MUL("MUL", 0x04, 2, true), MLI("MLI", 0x05, 2, true), DIV("DIV", 0x06, 3, true), DVI("DVI", 0x07, 3, true),
+        MOD("MOD", 0x08, 3, true), AND("AND", 0x09, 1, true), BOR("BOR", 0x0a, 1, true), XOR("XOR", 0x0b, 1, true),
+        SHR("SHR", 0x0c, 2, true), ASR("ASR", 0x0d, 2, true), SHL("SHL", 0x0e, 2, true),
+        IFB("IFB", 0x10, 2, false), IFC("IFC", 0x11, 2, false), IFE("IFE", 0x12, 2, false), IFN("IFN", 0x13, 2, false),
+        IFG("IFG", 0x14, 2, false), IFA("IFA", 0x15, 2, false), IFL("IFL", 0x16, 2, false), IFU("IFU", 0x17, 2, false);
+
+        private static final Map<Integer, BasicOp> CODE_LOOKUP = new HashMap<Integer, BasicOp>();
+        private static final Map<String, BasicOp> NAME_LOOKUP = new HashMap<String, BasicOp>();
+
+        static {
+            for (BasicOp op : values()) {
+                CODE_LOOKUP.put(op.code, op);
+                NAME_LOOKUP.put(op.name, op);
+            }
+        }
+
+        public final String name;
+        public final int code;
+        public final int cycles;
+        public final boolean modb;///< true if operation is of "b = f(a,b)" kind
+
+        public static BasicOp l(int code) {
+            return CODE_LOOKUP.get(code);
+        }
+
+        BasicOp(String name, int code, int cycles, boolean modb) {
+            this.name = name;
+            this.code = code;
+            this.cycles = cycles;
+            this.modb = modb;
+        }
+
+        public static BasicOp byName(String name) {
+            return NAME_LOOKUP.get(name);
+        }
+    }
+
+    public enum SpecialOp {
+        JSR("JSR", 0x01, 3, false),
+        INT("INT", 0x08, 4, false), ING("ING", 0x09, 1, true), INS("INS", 0x0a, 1, false),
+        HWN("HWN", 0x10, 2, true), HWQ("HWQ", 0x11, 4, false), HWI("HWI", 0x12, 4, false);
+
+        public final String name;
+        public final int code;
+        public final int cycles;
+        public final boolean moda;
+
+        private static final Map<Integer, SpecialOp> CODE_LOOKUP = new HashMap<Integer, SpecialOp>();
+        private static final Map<String, SpecialOp> NAME_LOOKUP = new HashMap<String, SpecialOp>();
+
+        public static SpecialOp l(int code) {
+            return CODE_LOOKUP.get(code);
+        }
+
+        public static SpecialOp byName(String name) {
+            return NAME_LOOKUP.get(name);
+        }
+
+        static {
+            for (SpecialOp op : values()) {
+                CODE_LOOKUP.put(op.code, op);
+                NAME_LOOKUP.put(op.name, op);
+            }
+        }
+
+        SpecialOp(String name, int code, int cycles, boolean moda) {
+            this.name = name;
+            this.code = code;
+            this.cycles = cycles;
+            this.moda = moda;
         }
     }
 
     //////
     // Opcode constants
-    public static final int O_NBI = 0;
-    public static final int O_SET = 1;
-    public static final int O_ADD = 2;
-    public static final int O_SUB = 3;
-    public static final int O_MUL = 4;
-    public static final int O_DIV = 5;
-    public static final int O_MOD = 6;
-    public static final int O_SHL = 7;
-    public static final int O_SHR = 8;
-    public static final int O_AND = 9;
-    public static final int O_BOR = 10;
-    public static final int O_XOR = 11;
-    public static final int O_IFE = 12;
-    public static final int O_IFN = 13;
-    public static final int O_IFG = 14;
-    public static final int O_IFB = 15;
-    public static final int O__RESVD = 0; // reserved
-    public static final int O__JSR = 1;//NBI
-    public static final String[] OPCODE_NAMES = {
-            "?", "SET", "ADD", "SUB",
-            "MUL", "DIV", "MOD", "SHL",
-            "SHR", "AND", "BOR", "XOR",
-            "IFE", "IFN", "IFG", "IFB"
-    };
-    public static final String[] OPCODE0_NAMES = {
-            "?", "JSR", "?", "?", "?", "?", "?", "?", //0x00-0x07
-            "?", "?", "?", "?", "?", "?", "?", "?",//0x08-0x0f
-            "?", "?", "?", "?", "?", "?", "?", "?",//0x10-0x17
-            "?", "?", "?", "?", "?", "?", "?", "?",//0x18-0x1f
-            "?", "?", "?", "?", "?", "?", "?", "?",//0x20-0x27
-            "?", "?", "?", "?", "?", "?", "?", "?",//0x28-0x2f
-            "?", "?", "?", "?", "?", "?", "?", "?",//0x30-0x37
-            "?", "?", "?", "?", "?", "?", "?", "?"//0x38-0x3f
-    };
-    public static final boolean[] OPCODE0_RESERVED = {
-            true, false, true, true, true, true, true, true,
-            true, true, true, true, true, true, true, true,
-            true, true, true, true, true, true, true, true,
-            true, true, true, true, true, true, true, true,
-            true, true, true, true, true, true, true, true,
-            true, true, true, true, true, true, true, true,
-            true, true, true, true, true, true, true, true,
-            true, true, true, true, true, true, true, true
-    };
-    // operations that place their result into memory cell
-    public static final boolean[] OPCODE_MODMEM = {
-            false, true, true, true,
-            true, true, true, true,
-            true, true, true, true,
-            false, false, false, false
-    };
+    public static final int O_NBI = 0x00;
+    public static final int O_SET = BasicOp.SET.code;
+    public static final int O_ADD = BasicOp.ADD.code;
+    public static final int O_SUB = BasicOp.SUB.code;
+    public static final int O_MUL = BasicOp.MUL.code;
+    public static final int O_MLI = BasicOp.MLI.code;
+    public static final int O_DIV = BasicOp.DIV.code;
+    public static final int O_DVI = BasicOp.DVI.code;
+    public static final int O_MOD = BasicOp.MOD.code;
+    public static final int O_AND = BasicOp.AND.code;
+    public static final int O_BOR = BasicOp.BOR.code;
+    public static final int O_XOR = BasicOp.XOR.code;
+    public static final int O_SHR = BasicOp.SHR.code;
+    public static final int O_ASR = BasicOp.ASR.code;
+    public static final int O_SHL = BasicOp.SHL.code;
+    // 0x0f reserved
+    public static final int O_IFB = BasicOp.IFB.code;
+    public static final int O_IFC = BasicOp.IFC.code;
+    public static final int O_IFE = BasicOp.IFE.code;
+    public static final int O_IFN = BasicOp.IFN.code;
+    public static final int O_IFG = BasicOp.IFG.code;
+    public static final int O_IFA = BasicOp.IFA.code;
+    public static final int O_IFL = BasicOp.IFL.code;
+    public static final int O_IFU = BasicOp.IFU.code;
+    // 0x18-0x1f reserved
+    // Special opcodes
+    public static final int O__JSR = SpecialOp.JSR.code;
+    public static final int O__INT = SpecialOp.INT.code;
+    public static final int O__ING = SpecialOp.ING.code;
+    public static final int O__INS = SpecialOp.INS.code;
+    public static final int O__HWN = SpecialOp.HWN.code;
+    public static final int O__HWQ = SpecialOp.HWQ.code;
     public static final boolean[] OPCODE0_MODMEM = {
             false, false, false, false, false, false, false,
             false, false, false, false, false, false, false,
@@ -129,19 +181,25 @@ public final class Dcpu {
             false, false, false, false, false, false, false
     };
     // Register constants
-    public static final int REGS_COUNT = 8 + 1 + 1 + 1; ///< Register count: 8 GP, PC, SP, O
+    public static final int REGS_COUNT = Reg.values().length; ///< Number of registers
 
     // Command parts (opcode, A, B)
-    public static final int C_O_MASK = 0x000F;
-    public static final int C_A_MASK = 0x03F0;
-    public static final int C_B_MASK = 0xFC00;
-    public static final int C_A_SHIFT = 4;
-    public static final int C_B_SHIFT = 10;
-    public static final int C_NBI_A_MASK = C_B_MASK;
-    public static final int C_NBI_A_SHIFT = C_B_SHIFT;
-    public static final int C_NBI_O_MASK = C_A_MASK;
-    public static final int C_NBI_O_SHIFT = C_A_SHIFT;
-    // Command address types (take one and shift with C_x_SHIFT)
+    public static final int C_O_BITLEN = 5;
+    public static final int C_B_BITLEN = 5;
+    public static final int C_A_BITLEN = 6;
+    public static final int C_B_SHIFT = C_O_BITLEN;
+    public static final int C_A_SHIFT = C_O_BITLEN + C_B_BITLEN;
+    // to get a strip of N binary 1s, we do 1 << (N+1) and substract 1
+    public static final int C_O_MASK = (1 << C_O_BITLEN) * 2 - 1;
+    public static final int C_B_MASK = ((1 << C_B_BITLEN) * 2 - 1) << C_B_SHIFT;
+    public static final int C_A_MASK = ((1 << C_A_BITLEN) * 2 - 1) << C_A_SHIFT;
+    public static final int C_NBI_O_BITLEN = 5;
+    public static final int C_NBI_A_BITLEN = 6;
+    public static final int C_NBI_O_SHIFT = C_O_BITLEN;
+    public static final int C_NBI_A_SHIFT = C_NBI_O_SHIFT + C_O_BITLEN;
+    public static final int C_NBI_O_MASK = ((1 << C_NBI_O_BITLEN) * 2 - 1) << C_NBI_O_SHIFT;
+    public static final int C_NBI_A_MASK = ((1 << C_NBI_A_BITLEN) * 2 - 1) << C_NBI_A_BITLEN;
+    // Command value types (take one and shift with C_x_SHIFT)
     //   Plain register
     public static final int A_REG = 0;// | with REG_x
     public static final int A_A = A_REG | Reg.A.offset;
@@ -152,7 +210,7 @@ public final class Dcpu {
     public static final int A_Z = A_REG | Reg.Z.offset;
     public static final int A_I = A_REG | Reg.I.offset;
     public static final int A_J = A_REG | Reg.J.offset;
-    //   (Register)
+    //   [Register]
     public static final int A_M_REG = 8; // or with REG_x
     public static final int A_M_A = A_M_REG | Reg.A.offset;
     public static final int A_M_B = A_M_REG | Reg.B.offset;
@@ -162,8 +220,8 @@ public final class Dcpu {
     public static final int A_M_Z = A_M_REG | Reg.Z.offset;
     public static final int A_M_I = A_M_REG | Reg.I.offset;
     public static final int A_M_J = A_M_REG | Reg.J.offset;
-    //  (Register+NW)
-    public static final int A_M_NW_REG = 16; // or with REG_x
+    //  [Register+NW]
+    public static final int A_M_NW_REG = 0x10; // or with REG_x
     public static final int A_M_NW_A = A_M_NW_REG | Reg.A.offset;
     public static final int A_M_NW_B = A_M_NW_REG | Reg.B.offset;
     public static final int A_M_NW_C = A_M_NW_REG | Reg.C.offset;
@@ -173,16 +231,16 @@ public final class Dcpu {
     public static final int A_M_NW_I = A_M_NW_REG | Reg.I.offset;
     public static final int A_M_NW_J = A_M_NW_REG | Reg.J.offset;
     //   Special registers and stack
-    public static final int A_POP = 24;
-    public static final int A_PEEK = 25;
-    public static final int A_PUSH = 26;
-    public static final int A_SP = 27;
-    public static final int A_PC = 28;
-    public static final int A_O = 29;
-    public static final int A_M_NW = 30; // (NW)
-    public static final int A_NW = 31; // NW
+    public static final int A_PUSHPOP = 0x18;
+    public static final int A_PEEK = 0x19;
+    public static final int A_PICK = 0x1a;
+    public static final int A_SP = 0x1b;
+    public static final int A_PC = 0x1c;
+    public static final int A_EX = 0x1d;
+    public static final int A_M_NW = 0x1e; // [NW]
+    public static final int A_NW = 0x1f; // NW
     //  Constant values
-    public static final int A_CONST = 32; // + with const
+    public static final int A_CONST = 0x20; // + with const
     public static final int A_0 = A_CONST + 0;
     public static final int A_1 = A_CONST + 1;
     public static final int A_2 = A_CONST + 2;
@@ -223,8 +281,8 @@ public final class Dcpu {
             0, 0, 0, 0, 0, 0, 0, 0,
             // [NW+register]
             1, 1, 1, 1, 1, 1, 1, 1,
-            // POP PUSH PEEK SP PC O [NW] NW
-            0, 0, 0, 0, 0, 0, 1, 1,
+            // PUSHPOP PEEK PICK SP PC EX [NW] NW
+            0, 0, 1, 0, 0, 0, 1, 1,
             // literal
             0, 0, 0, 0, 0, 0, 0, 0
     };
@@ -233,11 +291,11 @@ public final class Dcpu {
             // Register
             false, false, false, false, false, false, false, false,
             // [Register]
-            true, true, true, true, true, true, true, true, true,
+            true, true, true, true, true, true, true, true,
             // [NW+register]
-            true, true, true, true, true, true, true, true, true,
-            // POP PUSH PEEK SP PC O [NW] NW
-            true, true, true, false, false, false, true, true, true,
+            true, true, true, true, true, true, true, true,
+            // PUSHPOP PEEK PICK SP PC EX [NW] NW
+            true, true, true, false, false, false, true, true,
             // literal
             false, false, false, false, false, false, false, false
     };
@@ -257,25 +315,14 @@ public final class Dcpu {
     public static final int M_J = Reg.J.address;
     public static final int M_PC = Reg.PC.address;
     public static final int M_SP = Reg.SP.address;
-    public static final int M_O = Reg.O.address;
-    public static final int M_PPC = Reg.PPC.address; // prev PC (PC before execution)
-    public static final int M_PSP = Reg.PSP.address; // prev SP (SP before execution)
-    public static final int M_CV = Reg.PSP.address + 1; // constant value
-    // Memory cell names
-    public static final String[] MEM_NAMES = {
-            Reg.A.name, Reg.B.name, Reg.C.name, Reg.X.name, Reg.Y.name, Reg.Z.name, Reg.I.name, Reg.J.name,
-            Reg.PC.name, Reg.SP.name, Reg.O.name, Reg.PPC.name, Reg.PSP.name,
-            "0", "1", "2", "3", "4", "5", "6", "7",
-            "8", "9", "10", "11", "12", "13", "14", "15",
-            "16", "17", "18", "19", "20", "21", "22", "23",
-            "24", "25", "26", "27", "28", "29", "30", "31"
-    };
+    public static final int M_EX = Reg.EX.address;
+    public static final int M_CV = Reg.BASE_ADDRESS + REGS_COUNT; // constant value
 
     ///////////////////////////////////////////////////////////////
     // CORE CPU FUNCTIONS
     ///////////////////////////////////////////////////////////////
 
-    // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + O + PPC + PSP + 32 constants
+    // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + EX + 32 constants
     public final short[] mem = new short[M_CV + 32];
     public boolean reserved = false; // true if reserved operation executed
     public volatile boolean halt = false;// halt execution
@@ -307,143 +354,224 @@ public final class Dcpu {
      * TODO delay
      */
     public void step(boolean skip) {
-        // save prev PC and prev SP
-        mem[M_PPC] = mem[M_PC];
-        mem[M_PSP] = mem[M_SP];
+        short ppc = mem[M_PC];
+        short psp = mem[M_SP];
         if (!skip && stepListener != null) stepListener.preExecute(mem[M_PC]);
 
         int cmd = mem[(mem[M_PC]++) & 0xffff] & 0xffff; // command value
         int opcode = cmd & C_O_MASK;
-        // a,b: raw codes, addresses, values
+        // a,b: raw codes, addresses, values, signed values
         // in NBI: b stores NBO
-        int a, b, aa, ba, av, bv;
+        int a, b, aa, ba, av, bv, asv, bsv;
         if (opcode != O_NBI) {
             a = (cmd & C_A_MASK) >> C_A_SHIFT;
             b = (cmd & C_B_MASK) >> C_B_SHIFT;
-            aa = getaddr(a, OPCODE_MODMEM[opcode]) & 0x1ffff;
-            ba = getaddr(b, usePostFetchMode) & 0x1ffff;
+            aa = getaddr(a, true) & 0x1ffff;
+            ba = getaddr(b, false) & 0x1ffff;
             if (skip) {
-                mem[M_SP] = mem[M_PSP];
+                mem[M_SP] = psp;
                 return;
             }
-            av = memget(aa) & 0xffff;
-            bv = memget(ba) & 0xffff;
+            asv = memget(aa);
+            bsv = memget(ba);
+            av = asv & 0xffff;
+            bv = bsv & 0xffff;
         } else {
             a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
-            aa = getaddr(a, OPCODE0_MODMEM[b]) & 0x1ffff;
+            aa = getaddr(a, true) & 0x1ffff;
             if (skip) {
-                mem[M_SP] = mem[M_PSP];
+                mem[M_SP] = psp;
                 return;
             }
             ba = 0;
-            av = memget(aa) & 0xffff;
-            bv = 0;
+            asv = memget(aa);
+            av = asv & 0xffff;
+            bv = bsv = 0;
         }
 
         // debug
         //_dstep(skip, opcode, aa, ba, av, bv);
 
         boolean printedBranch = false;
-        int rslt = mem[aa]; // new 'a' value
-        int oreg = mem[M_O]; // new 'O' value
-        switch (opcode) {
-            case O_NBI:
-                switch (b) {
-                    case O__JSR:
-                        mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
-                        mem[M_PC] = (short) av;
-                        break;
-                    default:
-                        reserved = true;
-                        halt = true;
-                        break;
-                }
-                break;
-            case O_SET:
-                rslt = bv;
-                break;
-            case O_ADD:
-                rslt = av + bv;
-                oreg = (rslt > 0xffff) ? 1 : 0;
-                break;
-            case O_SUB:
-                rslt = av - bv;
-                oreg = (rslt < 0) ? 1 : 0;
-                break;
-            case O_MUL:
-                rslt = av * bv;
-                oreg = rslt >> 16;
-                break;
-            case O_DIV:
-                if (bv == 0) {
-                    oreg = 0;
-                    rslt = 0;
+        BasicOp bop = BasicOp.l(opcode);
+        if (bop != null) {
+            int rslt = mem[ba]; // new 'b' value
+            int exreg = mem[M_EX]; // new 'EX' value
+            switch (bop) {
+                case SET:
+                    rslt = av;
+                    break;
+                case ADD:
+                    rslt = bv + av;
+                    exreg = (rslt > 0xffff) ? 1 : 0;
+                    break;
+                case SUB:
+                    rslt = bv - av;
+                    exreg = (rslt < 0) ? 0xffff : 0;
+                    break;
+                case MUL:
+                    rslt = bv * av;
+                    exreg = rslt >> 16;
+                    break;
+                case MLI:
+                    rslt = bsv * asv;
+                    exreg = rslt >> 16;
+                    break;
+                case DIV:
+                    if (av == 0) {
+                        exreg = 0;
+                        rslt = 0;
+                    } else {
+                        rslt = (bv / av);
+                        exreg = ((bv << 16) / av);
+                    }
+                    break;
+                case DVI:
+                    if (asv == 0) {
+                        exreg = 0;
+                        rslt = 0;
+                    } else {
+                        rslt = (bsv / asv);
+                        exreg = ((bsv << 16) / asv);
+                    }
+                    break;
+                case MOD:
+                    if (av == 0) {
+                        rslt = 0;
+                    } else {
+                        rslt = (short) (bv % av);
+                    }
+                    break;
+                case SHL:
+                    rslt = bv << av;
+                    exreg = (bv << av) >> 16;
+                    break;
+                case SHR:
+                    rslt = av >>> bv;
+                    exreg = (bv << 16) >>> av;
+                    break;
+                case ASR:
+                    rslt = av >> bv;
+                    exreg = (bv << 16) >> av;
+                    break;
+                case AND:
+                    rslt = av & bv;
+                    break;
+                case BOR:
+                    rslt = av | bv;
+                    break;
+                case XOR:
+                    rslt = av ^ bv;
+                    break;
+                case IFE:
+                    if (av != bv) {
+                        printedBranch = true;
+                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
+                        step(true);
+                    }
+                    break;
+                case IFN:
+                    if (av == bv) {
+                        printedBranch = true;
+                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
+                        step(true);
+                    }
+                    break;
+                case IFG:
+                    if (!(bv > av)) {
+                        // TODO DRY : move this block after switch
+                        printedBranch = true;
+                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
+                        step(true);
+                    }
+                    break;
+                case IFB:
+                    if ((av & bv) == 0) {
+                        printedBranch = true;
+                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
+                        step(true);
+                    }
+                    break;
+                case IFC:
+                    if ((av & bv) != 0) {
+                        printedBranch = true;
+                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
+                        step(true);
+                    }
+                    break;
+                case IFA:
+                    if (!(bsv > asv)) {
+                        printedBranch = true;
+                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
+                        step(true);
+                    }
+                    break;
+                case IFL:
+                    if (!(bv < av)) {
+                        printedBranch = true;
+                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
+                        step(true);
+                    }
+                    break;
+                case IFU:
+                    if (!(bsv < asv)) {
+                        printedBranch = true;
+                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
+                        step(true);
+                    }
+                    break;
+                default:
+                    throw new RuntimeException("DCPU Opcode not implemented: " + bop);
+            }
+            // overwrite 'b' unless it is constant
+            if (ba < M_CV && bop.modb) memset(ba, (short) rslt);
+            mem[M_EX] = (short) exreg;
+        } else {
+            if (opcode == O_NBI) {
+                SpecialOp sop = SpecialOp.l(b);
+                int rslt = mem[aa]; // new 'a' value
+                if (sop == null) {
+                    reserved = true;
+                    halt = true;
                 } else {
-                    rslt = (short) (av / bv);
-                    oreg = (short) ((av << 16) / bv);
+                    switch (sop) {
+                        case JSR:
+                            mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
+                            mem[M_PC] = (short) av;
+                            break;
+                        case INT:
+                            // TODO INT
+                            break;
+                        case ING:
+                            // TODO ING
+                            break;
+                        case INS:
+                            // TODO INS
+                            break;
+                        case HWN:
+                            // TODO HWN
+                            break;
+                        case HWQ:
+                            // TODO HWQ
+                            break;
+                        case HWI:
+                            // TODO HWI
+                            break;
+                    }
+                    // overwrite 'a' unless it is constant
+                    if (aa < M_CV && sop.moda) memset(aa, (short) rslt);
                 }
-                break;
-            case O_MOD:
-                if (bv == 0) {
-                    rslt = 0;
-                } else {
-                    rslt = (short) (av % bv);
-                }
-                break;
-            case O_SHL:
-                rslt = av << bv;
-                oreg = rslt >> 16;
-                break;
-            case O_SHR:
-                rslt = av >> bv;
-                oreg = av - (rslt << bv);
-                break;
-            case O_AND:
-                rslt = av & bv;
-                break;
-            case O_BOR:
-                rslt = av | bv;
-                break;
-            case O_XOR:
-                rslt = av ^ bv;
-                break;
-            case O_IFE:
-                if (av != bv) {
-                    printedBranch = true;
-                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
-                    step(true);
-                }
-                break;
-            case O_IFN:
-                if (av == bv) {
-                    printedBranch = true;
-                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
-                    step(true);
-                }
-                break;
-            case O_IFG:
-                if (av <= bv) {
-                    printedBranch = true;
-                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
-                    step(true);
-                }
-                break;
-            case O_IFB:
-                if ((av & bv) == 0) {
-                    printedBranch = true;
-                    if (!skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
-                    step(true);
-                }
-                break;
+            } else {
+                // invalid opcode
+                reserved = true;
+                halt = true;
+            }
         }
-        // overwrite 'a' unless it is constant
-        if (aa < M_CV && OPCODE_MODMEM[opcode]) memset(aa, (short) rslt);
-        if (aa != M_O) mem[M_O] = (short) oreg;
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
-        if (!printedBranch && !skip && stepListener != null) stepListener.postExecute(mem[M_PPC]);
+        if (!printedBranch && !skip && stepListener != null) stepListener.postExecute(ppc);
     }
 
     /**
@@ -487,7 +615,6 @@ public final class Dcpu {
     }
 
     public Dcpu() {
-        usePostFetchMode = Boolean.parseBoolean(System.getProperty("dcpu.usePostFetchMode", "true"));
         reset();
     }
 
@@ -519,33 +646,37 @@ public final class Dcpu {
      * List of all registers with their hex values
      */
     public String _dregs() {
-        return String.format("R A=%04x B=%04x C=%04x X=%04x Y=%04x Z=%04x I=%04x J=%04x  PC=%04x SP=%04x O=%04x",
+        return String.format("R A=%04x B=%04x C=%04x X=%04x Y=%04x Z=%04x I=%04x J=%04x  PC=%04x SP=%04x EX=%04x",
                 mem[M_A], mem[M_B], mem[M_C], mem[M_X], mem[M_Y], mem[M_Z], mem[M_I], mem[M_J],
-                mem[M_PC], mem[M_SP], mem[M_O]);
+                mem[M_PC], mem[M_SP], mem[M_EX]);
     }
 
     public String _dmem(int addr) {
-        return (addr < M_A) ? String.format("(%04x)", addr) : MEM_NAMES[addr - M_A];
-    }
-    
-    public String _dvalmem(int addr) {
-        return (addr < M_A) ? String.format("(%04x) : %04x (%s)", addr, mem[addr], Character.toString((char) mem[addr])) : MEM_NAMES[addr - M_A];
+        if (addr < M_A) {
+            return String.format("(%04x)", addr);
+        } else if (addr < M_CV) {
+            return Reg.l(addr - M_A).name;
+        } else return String.valueOf(addr - M_CV - 1);//literal value
     }
 
-    public void _dstep(boolean skip, int opcode, int aa, int ba, int av, int bv) {
-        _d("%s%s %s=%04x %s=%04x\n", skip ? "; " : "> ", OPCODE_NAMES[opcode], _dmem(aa), av, _dmem(ba), bv);
+    public String _dvalmem(int addr) {
+        if (addr < M_A) {
+            return String.format("(%04x) : %04x (%s)", addr, mem[addr], Character.toString((char) mem[addr]));
+        } else if (addr < M_CV) {
+            return Reg.l(addr - M_A).name;
+        } else {
+            return String.valueOf(addr - M_CV - 1);
+        }
     }
+
 
     /**
      * Returns memory address for operand code. 0 returns address of register A and so on.
      * May modify values of PC (in case of "next word of ram") and SP (when PUSH, POP)
-     * <p/>
-     * Ok, so here is the black magic:
-     * SET [PC+20], PC
-     * when parsing [PC+20] it modifies PC, but when parsing PC, it should return previous, unmodified value.
-     * that's what "write" is for.
+     *
+     * @param isa true when evaluating "a"
      */
-    private int getaddr(int cmd, boolean write) {
+    private int getaddr(int cmd, boolean isa) {
         if (cmd <= 0x07) {
             // register
             return M_A + cmd;
@@ -557,30 +688,24 @@ public final class Dcpu {
             return (mem[M_A + cmd - 16] + mem[mem[M_PC]++]) & 0xffff;
         } else if (cmd >= 0x20 && cmd <= 0x3f) {
             // literal value
-            return M_CV + cmd - 0x20;
+            return M_CV + cmd - 0x20 - 1;
         } else switch (cmd) {
-            case 0x18:
-                // POP
-                return (mem[M_SP]++) & 0xffff;
-            case 0x19:
-                // PEEK
+            case A_PUSHPOP:
+                // isa?POP:PUSH
+                return (isa ? (mem[M_SP]++) : (--mem[M_SP])) & 0xffff;
+            case A_PEEK:
                 return mem[M_SP] & 0xffff;
-            case 0x1a:
-                // PUSH
-                return (--mem[M_SP]) & 0xffff;
-            case 0x1b:
-                // SP
-                return write ? M_SP : M_PSP;
-            case 0x1c:
-                // PC
-                return write ? M_PC : M_PPC;
-            case 0x1d:
-                // O
-                return M_O;
-            case 0x1e:
-                // [next word]
+            case A_PICK:
+                return (M_SP + mem[M_PC]++) & 0xffff;
+            case A_SP:
+                return M_SP;
+            case A_PC:
+                return M_PC;
+            case A_EX:
+                return M_EX;
+            case A_M_NW:
                 return mem[mem[M_PC]++] & 0xffff;
-            case 0x1f:
+            case A_NW:
                 // next word (literal)
                 return mem[M_PC]++ & 0xffff;
             default:
@@ -601,11 +726,11 @@ public final class Dcpu {
     public void upload(short[] buffer) {
         upload(buffer, 0, buffer.length, 0);
     }
-    
+
     public void upload(File infile) throws IOException {
         upload(new FileInputStream(infile));
     }
-    
+
     public void upload(InputStream stream) throws IOException {
         BufferedInputStream instream = new BufferedInputStream(stream);
         int len = instream.available();
@@ -620,9 +745,9 @@ public final class Dcpu {
             bytecode[i] = (short) ((hi << 8) | lo);
         }
         upload(bytecode);
-        
+
     }
-    
+
     public int pc() {
         return mem[M_PC] & 0xffff;
     }
@@ -695,7 +820,7 @@ public final class Dcpu {
             memlines[line] = peripheral;
         }
         peripherals.add(peripheral);
-        peripheral.attachedTo(this, Math.max(-1, line << 12));
+        peripheral.attachedTo(this, line << 12);
     }
 
     public void detach(Peripheral peripheral) {

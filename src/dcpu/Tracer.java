@@ -27,7 +27,8 @@ public class Tracer extends PostListener<Short> {
         disassembler.init(dcpu.mem);
     }
 
-    @Override public void postExecute(Short pc) {
+    @Override
+    public void postExecute(Short pc) {
         printTrace(pc);
     }
 
@@ -51,27 +52,27 @@ public class Tracer extends PostListener<Short> {
     }
 
     public static void outputRegMem(PrintStream out, Dcpu dcpu) {
-        outputRegMem(out, 
+        outputRegMem(out,
                 dcpu.mem[0xffff & dcpu.mem[M_A]], dcpu.mem[0xffff & dcpu.mem[M_B]], dcpu.mem[0xffff & dcpu.mem[M_C]],
-                dcpu.mem[0xffff & dcpu.mem[M_X]], dcpu.mem[0xffff & dcpu.mem[M_Y]], dcpu.mem[0xffff & dcpu.mem[M_Z]], 
+                dcpu.mem[0xffff & dcpu.mem[M_X]], dcpu.mem[0xffff & dcpu.mem[M_Y]], dcpu.mem[0xffff & dcpu.mem[M_Z]],
                 dcpu.mem[0xffff & dcpu.mem[M_I]], dcpu.mem[0xffff & dcpu.mem[M_J]],
-                dcpu.mem[0xffff & dcpu.mem[M_SP]], dcpu.mem[0xffff & dcpu.mem[M_O]]);
+                dcpu.mem[0xffff & dcpu.mem[M_SP]], dcpu.mem[0xffff & dcpu.mem[M_EX]]);
     }
 
     public static void outputRegMem(PrintStream out, short aM, short bM, short cM, short xM, short yM, short zM, short iM, short jM, short spM, short oM) {
-        out.printf("  M:  A*%04x B*%04x C*%04x X*%04x Y*%04x Z*%04x I*%04x J*%04x  SP*%04x O*%04x\n", aM, bM, cM, xM, yM, zM, iM, jM, spM, oM);
+        out.printf("  M:  A*%04x B*%04x C*%04x X*%04x Y*%04x Z*%04x I*%04x J*%04x  SP*%04x EX*%04x\n", aM, bM, cM, xM, yM, zM, iM, jM, spM, oM);
     }
 
     public static void outputRegisters(PrintStream out, Dcpu dcpu) {
-        outputRegisters(out, 
-                dcpu.mem[M_A], dcpu.mem[M_B], dcpu.mem[M_C], 
-                dcpu.mem[M_X], dcpu.mem[M_Y], dcpu.mem[M_Z], 
-                dcpu.mem[M_I], dcpu.mem[M_J], 
-                dcpu.mem[M_SP], dcpu.mem[M_O]);
+        outputRegisters(out,
+                dcpu.mem[M_A], dcpu.mem[M_B], dcpu.mem[M_C],
+                dcpu.mem[M_X], dcpu.mem[M_Y], dcpu.mem[M_Z],
+                dcpu.mem[M_I], dcpu.mem[M_J],
+                dcpu.mem[M_SP], dcpu.mem[M_EX]);
     }
 
     public static void outputRegisters(PrintStream out, short A, short B, short C, short X, short Y, short Z, short I, short J, short SP, short O) {
-        out.printf("  R:  A=%04x B=%04x C=%04x X=%04x Y=%04x Z=%04x I=%04x J=%04x  SP=%04x O=%04x\n", A, B, C, X, Y, Z, I, J, SP, O);
+        out.printf("  R:  A=%04x B=%04x C=%04x X=%04x Y=%04x Z=%04x I=%04x J=%04x  SP=%04x EX=%04x\n", A, B, C, X, Y, Z, I, J, SP, O);
     }
 
     public void printRegisters(boolean b) {
@@ -89,7 +90,7 @@ public class Tracer extends PostListener<Short> {
     public boolean getPrintRegisters() {
         return printRegisters;
     }
-    
+
     public boolean togglePrintRegisters() {
         printRegisters = !printRegisters;
         return printRegisters;
