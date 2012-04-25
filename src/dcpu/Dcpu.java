@@ -667,7 +667,7 @@ public final class Dcpu {
             return (mem[M_A + cmd - 16] + mem[mem[M_PC]++]) & 0xffff;
         } else if (cmd >= 0x20 && cmd <= 0x3f) {
             // literal value
-            return M_CV + cmd - 0x20;
+            return M_CV + cmd - 0x20 - 1;
         } else switch (cmd) {
             case A_PUSHPOP:
                 // isa?POP:PUSH
