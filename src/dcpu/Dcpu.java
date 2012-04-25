@@ -62,12 +62,12 @@ public final class Dcpu {
     }
 
     public enum BasicOp {
-        SET("SET", 0x01, 1), ADD("ADD", 0x02, 2), SUB("SUB", 0x03, 2),
-        MUL("MUL", 0x04, 2), MLI("MLI", 0x05, 2), DIV("DIV", 0x06, 3), DVI("DVI", 0x07, 3),
-        MOD("MOD", 0x08, 3), AND("AND", 0x09, 1), BOR("BOR", 0x0a, 1), XOR("XOR", 0x0b, 1),
-        SHR("SHR", 0x0c, 2), ASR("ASR", 0x0d, 2), SHL("SHL", 0x0e, 2),
-        IFB("IFB", 0x10, 2), IFC("IFC", 0x11, 2), IFE("IFE", 0x12, 2), IFN("IFN", 0x13, 2),
-        IFG("IFG", 0x14, 2), IFA("IFA", 0x15, 2), IFL("IFL", 0x16, 2), IFU("IFU", 0x17, 2);
+        SET("SET", 0x01, 1, true), ADD("ADD", 0x02, 2, true), SUB("SUB", 0x03, 2, true),
+        MUL("MUL", 0x04, 2, true), MLI("MLI", 0x05, 2, true), DIV("DIV", 0x06, 3, true), DVI("DVI", 0x07, 3, true),
+        MOD("MOD", 0x08, 3, true), AND("AND", 0x09, 1, true), BOR("BOR", 0x0a, 1, true), XOR("XOR", 0x0b, 1, true),
+        SHR("SHR", 0x0c, 2, true), ASR("ASR", 0x0d, 2, true), SHL("SHL", 0x0e, 2, true),
+        IFB("IFB", 0x10, 2, false), IFC("IFC", 0x11, 2, false), IFE("IFE", 0x12, 2, false), IFN("IFN", 0x13, 2, false),
+        IFG("IFG", 0x14, 2, false), IFA("IFA", 0x15, 2, false), IFL("IFL", 0x16, 2, false), IFU("IFU", 0x17, 2, false);
 
         private static final Map<Integer, BasicOp> CODE_LOOKUP = new HashMap<Integer, BasicOp>();
         private static final Map<String, BasicOp> NAME_LOOKUP = new HashMap<String, BasicOp>();
@@ -82,15 +82,17 @@ public final class Dcpu {
         public final String name;
         public final int code;
         public final int cycles;
+        public final boolean modb;///< true if operation is of "b = f(a,b)" kind
 
         public static BasicOp l(int code) {
             return CODE_LOOKUP.get(code);
         }
 
-        BasicOp(String name, int code, int cycles) {
+        BasicOp(String name, int code, int cycles, boolean modb) {
             this.name = name;
             this.code = code;
             this.cycles = cycles;
+            this.modb = modb;
         }
 
         public static BasicOp byName(String name) {
@@ -99,13 +101,14 @@ public final class Dcpu {
     }
 
     public enum SpecialOp {
-        JSR("JSR", 0x01, 3),
-        INT("INT", 0x08, 4), ING("ING", 0x09, 1), INS("INS", 0x0a, 1),
-        HWN("HWN", 0x10, 2), HWQ("HWQ", 0x11, 4), HWI("HWI", 0x12, 4);
+        JSR("JSR", 0x01, 3, false),
+        INT("INT", 0x08, 4, false), ING("ING", 0x09, 1, true), INS("INS", 0x0a, 1, false),
+        HWN("HWN", 0x10, 2, true), HWQ("HWQ", 0x11, 4, false), HWI("HWI", 0x12, 4, false);
 
         public final String name;
         public final int code;
         public final int cycles;
+        public final boolean moda;
 
         private static final Map<Integer, SpecialOp> CODE_LOOKUP = new HashMap<Integer, SpecialOp>();
         private static final Map<String, SpecialOp> NAME_LOOKUP = new HashMap<String, SpecialOp>();
@@ -125,10 +128,11 @@ public final class Dcpu {
             }
         }
 
-        SpecialOp(String name, int code, int cycles) {
+        SpecialOp(String name, int code, int cycles, boolean moda) {
             this.name = name;
             this.code = code;
             this.cycles = cycles;
+            this.moda = moda;
         }
     }
 
@@ -166,13 +170,6 @@ public final class Dcpu {
     public static final int O__INS = SpecialOp.INS.code;
     public static final int O__HWN = SpecialOp.HWN.code;
     public static final int O__HWQ = SpecialOp.HWQ.code;
-    // operations that place their result into memory cell
-    public static final boolean[] OPCODE_MODMEM = {
-            false, true, true, true,
-            true, true, true, true,
-            true, true, true, true,
-            false, false, false, false
-    };
     public static final boolean[] OPCODE0_MODMEM = {
             false, false, false, false, false, false, false,
             false, false, false, false, false, false, false,
@@ -198,10 +195,10 @@ public final class Dcpu {
     public static final int C_A_MASK = ((1 << C_A_BITLEN) * 2 - 1) << C_A_SHIFT;
     public static final int C_NBI_O_BITLEN = 5;
     public static final int C_NBI_A_BITLEN = 6;
-    public static final int C_NBI_A_MASK = C_B_MASK;
-    public static final int C_NBI_A_SHIFT = C_B_SHIFT;
-    public static final int C_NBI_O_MASK = C_A_MASK;
-    public static final int C_NBI_O_SHIFT = C_A_SHIFT;
+    public static final int C_NBI_O_SHIFT = C_O_BITLEN;
+    public static final int C_NBI_A_SHIFT = C_NBI_O_SHIFT + C_O_BITLEN;
+    public static final int C_NBI_O_MASK = ((1 << C_NBI_O_BITLEN) * 2 - 1) << C_NBI_O_SHIFT;
+    public static final int C_NBI_A_MASK = ((1 << C_NBI_A_BITLEN) * 2 - 1) << C_NBI_A_BITLEN;
     // Command value types (take one and shift with C_x_SHIFT)
     //   Plain register
     public static final int A_REG = 0;// | with REG_x
@@ -320,15 +317,6 @@ public final class Dcpu {
     public static final int M_SP = Reg.SP.address;
     public static final int M_EX = Reg.EX.address;
     public static final int M_CV = Reg.BASE_ADDRESS + REGS_COUNT; // constant value
-    // Memory cell names
-    public static final String[] MEM_NAMES = {
-            Reg.A.name, Reg.B.name, Reg.C.name, Reg.X.name, Reg.Y.name, Reg.Z.name, Reg.I.name, Reg.J.name,
-            Reg.PC.name, Reg.SP.name, Reg.EX.name,
-            "0", "1", "2", "3", "4", "5", "6", "7",
-            "8", "9", "10", "11", "12", "13", "14", "15",
-            "16", "17", "18", "19", "20", "21", "22", "23",
-            "24", "25", "26", "27", "28", "29", "30", "31"
-    };
 
     ///////////////////////////////////////////////////////////////
     // CORE CPU FUNCTIONS
@@ -406,10 +394,10 @@ public final class Dcpu {
         //_dstep(skip, opcode, aa, ba, av, bv);
 
         boolean printedBranch = false;
-        int rslt = mem[ba]; // new 'b' value
-        int exreg = mem[M_EX]; // new 'EX' value
         BasicOp bop = BasicOp.l(opcode);
         if (bop != null) {
+            int rslt = mem[ba]; // new 'b' value
+            int exreg = mem[M_EX]; // new 'EX' value
             switch (bop) {
                 case SET:
                     rslt = av;
@@ -536,9 +524,13 @@ public final class Dcpu {
                 default:
                     throw new RuntimeException("DCPU Opcode not implemented: " + bop);
             }
+            // overwrite 'b' unless it is constant
+            if (ba < M_CV && bop.modb) memset(ba, (short) rslt);
+            mem[M_EX] = (short) exreg;
         } else {
             if (opcode == O_NBI) {
                 SpecialOp sop = SpecialOp.l(b);
+                int rslt = mem[aa]; // new 'a' value
                 if (sop == null) {
                     reserved = true;
                     halt = true;
@@ -567,6 +559,8 @@ public final class Dcpu {
                             // TODO HWI
                             break;
                     }
+                    // overwrite 'a' unless it is constant
+                    if (aa < M_CV && sop.moda) memset(aa, (short) rslt);
                 }
             } else {
                 // invalid opcode
@@ -574,9 +568,6 @@ public final class Dcpu {
                 halt = true;
             }
         }
-        // overwrite 'a' unless it is constant
-        if (aa < M_CV && OPCODE_MODMEM[opcode]) memset(aa, (short) rslt);
-        mem[M_EX] = (short) exreg;
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
@@ -661,11 +652,21 @@ public final class Dcpu {
     }
 
     public String _dmem(int addr) {
-        return (addr < M_A) ? String.format("(%04x)", addr) : MEM_NAMES[addr - M_A];
+        if (addr < M_A) {
+            return String.format("(%04x)", addr);
+        } else if (addr < M_CV) {
+            return Reg.l(addr - M_A).name;
+        } else return String.valueOf(addr - M_CV - 1);//literal value
     }
 
     public String _dvalmem(int addr) {
-        return (addr < M_A) ? String.format("(%04x) : %04x (%s)", addr, mem[addr], Character.toString((char) mem[addr])) : MEM_NAMES[addr - M_A];
+        if (addr < M_A) {
+            return String.format("(%04x) : %04x (%s)", addr, mem[addr], Character.toString((char) mem[addr]));
+        } else if (addr < M_CV) {
+            return Reg.l(addr - M_A).name;
+        } else {
+            return String.valueOf(addr - M_CV - 1);
+        }
     }
 
 
