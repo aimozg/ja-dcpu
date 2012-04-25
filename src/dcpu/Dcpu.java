@@ -22,33 +22,41 @@ public final class Dcpu {
     ////////////////
 
     public enum Reg {
-        A("A", 0), B("B", 1), C("C", 2),
-        X("X", 3), Y("Y", 4), Z("Z", 5),
-        I("I", 6), J("J", 7),
-        PC("PC", 8), SP("SP", 9), EX("EX", 10);
+        A("A", 0, A_A), B("B", 1, A_B), C("C", 2, A_C),
+        X("X", 3, A_X), Y("Y", 4, A_Y), Z("Z", 5, A_Z),
+        I("I", 6, A_I), J("J", 7, A_J),
+        PC("PC", 8, A_PC), SP("SP", 9, A_SP), EX("EX", 10, A_EX), IA("IA", 11, -1);
 
         public static final int BASE_ADDRESS = 0x10000;
 
         public final String name;
         public final int offset;
         public final int address;
+        public final int acode;///< value code when referencing as a value, like SET A, SP. -1 for unaddressable regs
 
         // reverse map for looking up the Enum from the code, and convenience function
-        private static final Map<Integer, Reg> LOOKUP = new HashMap<Integer, Reg>();
+        private static final Map<Integer, Reg> OFFSET_LOOKUP = new HashMap<Integer, Reg>();
+        private static final Map<String, Reg> NAME_LOOKUP = new HashMap<String, Reg>();
 
         public static Reg l(int offset) {
-            return Reg.LOOKUP.get(offset);
+            return Reg.OFFSET_LOOKUP.get(offset);
+        }
+
+        public static Reg byName(String name) {
+            return NAME_LOOKUP.get(name);
         }
 
         static {
             for (Reg r : Reg.values()) {
-                LOOKUP.put(r.offset, r);
+                OFFSET_LOOKUP.put(r.offset, r);
+                NAME_LOOKUP.put(r.name, r);
             }
         }
 
-        Reg(String name, int offset) {
+        Reg(String name, int offset, int acode) {
             this.name = name;
             this.offset = offset;
+            this.acode = acode;
             this.address = BASE_ADDRESS + offset;
         }
     }
@@ -61,11 +69,13 @@ public final class Dcpu {
         IFB("IFB", 0x10, 2), IFC("IFC", 0x11, 2), IFE("IFE", 0x12, 2), IFN("IFN", 0x13, 2),
         IFG("IFG", 0x14, 2), IFA("IFA", 0x15, 2), IFL("IFL", 0x16, 2), IFU("IFU", 0x17, 2);
 
-        private static final Map<Integer, BasicOp> LOOKUP = new HashMap<Integer, BasicOp>();
+        private static final Map<Integer, BasicOp> CODE_LOOKUP = new HashMap<Integer, BasicOp>();
+        private static final Map<String, BasicOp> NAME_LOOKUP = new HashMap<String, BasicOp>();
 
         static {
             for (BasicOp op : values()) {
-                LOOKUP.put(op.code, op);
+                CODE_LOOKUP.put(op.code, op);
+                NAME_LOOKUP.put(op.name, op);
             }
         }
 
@@ -74,7 +84,7 @@ public final class Dcpu {
         public final int cycles;
 
         public static BasicOp l(int code) {
-            return LOOKUP.get(code);
+            return CODE_LOOKUP.get(code);
         }
 
         BasicOp(String name, int code, int cycles) {
@@ -82,26 +92,36 @@ public final class Dcpu {
             this.code = code;
             this.cycles = cycles;
         }
+
+        public static BasicOp byName(String name) {
+            return NAME_LOOKUP.get(name);
+        }
     }
 
     public enum SpecialOp {
         JSR("JSR", 0x01, 3),
         INT("INT", 0x08, 4), ING("ING", 0x09, 1), INS("INS", 0x0a, 1),
-        HWN("HWN", 0x10, 2), HWQ("HWQ", 0x11, 4), HWI("HWI", 0x012, 4);
+        HWN("HWN", 0x10, 2), HWQ("HWQ", 0x11, 4), HWI("HWI", 0x12, 4);
 
         public final String name;
         public final int code;
         public final int cycles;
 
-        private static final Map<Integer, SpecialOp> LOOKUP = new HashMap<Integer, SpecialOp>();
+        private static final Map<Integer, SpecialOp> CODE_LOOKUP = new HashMap<Integer, SpecialOp>();
+        private static final Map<String, SpecialOp> NAME_LOOKUP = new HashMap<String, SpecialOp>();
 
         public static SpecialOp l(int code) {
-            return LOOKUP.get(code);
+            return CODE_LOOKUP.get(code);
+        }
+
+        public static SpecialOp byName(String name) {
+            return NAME_LOOKUP.get(name);
         }
 
         static {
             for (SpecialOp op : values()) {
-                LOOKUP.put(op.code, op);
+                CODE_LOOKUP.put(op.code, op);
+                NAME_LOOKUP.put(op.name, op);
             }
         }
 

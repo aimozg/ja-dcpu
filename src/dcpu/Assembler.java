@@ -217,13 +217,12 @@ public class Assembler {
     private void oper() throws IOException {
         boolean nbi = false;
         require(idPattern, "operation");
-        int opcode = opcodeByName(token);
-        if (opcode == -1) {
-            opcode = opcodeNbiByName(token);
-            if (opcode == -1) {
+        BasicOp bop = BasicOp.byName(token);
+        SpecialOp sop = null;
+        if (bop == null) {
+            sop = SpecialOp.byName(token);
+            if (sop == null) {
                 fail("Bad operation " + token);
-            } else {
-                nbi = true;
             }
         }
         int op_pc = counter;
@@ -231,14 +230,14 @@ public class Assembler {
         Param pa = param();
         int a = pa.acode();
         if (a == -1) fail("Bad operand a");
-        if (!nbi) {
+        if (bop != null) {
             require(",", "comma");
             Param pb = param();
             int b = pb.acode();
             if (b == -1) fail("Bad operand b");
-            buffer[op_pc] = gencmd(opcode, a, b);
+            buffer[op_pc] = gencmd(bop.code, a, b);
         } else {
-            buffer[op_pc] = gencmd_nbi(opcode, a);
+            buffer[op_pc] = gencmd_nbi(sop.code, a);
         }
     }
 
@@ -264,8 +263,8 @@ public class Assembler {
 
     private SimpleParam simpleParam(boolean canBeShort) throws IOException {
         if (accept(idPattern)) {
-            int regidx = registerByName(token);
-            if (regidx >= 0) return new SimpleRegisterParam(regidx);
+            Reg reg = Reg.byName(token);
+            if (reg != null) return new SimpleRegisterParam(reg);
             append((short) 0, true);
             Reference ref = new Reference(token, (short) (counter - 1), stokizer.lineno());
             references.add(ref);
@@ -313,57 +312,6 @@ public class Assembler {
             }
         }
         buffer[counter++] = s;
-    }
-
-    private static final String[] instr_names =
-            {
-                    "add", "sub", "mul",
-                    "div", "mod", "shl", "shr",
-                    "and", "bor", "xor", "set",
-                    "ifb", "ife", "ifg", "ifn"};
-    private static final int[] instr_codes =
-            {
-                    O_ADD, O_SUB, O_MUL,
-                    O_DIV, O_MOD, O_SHL, O_SHR,
-                    O_AND, O_BOR, O_XOR, O_SET,
-                    O_IFB, O_IFE, O_IFG, O_IFN};
-    public static final String[] nbinstr_names =
-            {
-                    "jsr"
-            };
-    public static final int[] nbinstr_codes =
-            {
-                    O__JSR
-            };
-    private static final String[] reg_names =
-            {"A", "B", "C", "X", "Y", "Z", "I", "J", "SP", "PC", "EX", "POP", "PEEK", "PUSH"};
-    private static final int[] reg_offsets =
-            {0, 1, 2, 3, 4, 5, 6, 7, -1, -1, -1, -1, -1, -1};
-    private static final int[] reg_selfcodes =
-            {0, 1, 2, 3, 4, 5, 6, 7, 27, 28, 29, 24, 25, 26};
-
-    private int opcodeByName(String name) {
-        name = name.toLowerCase();
-        for (int i = 0; i < instr_names.length; i++) {
-            if (instr_names[i].equals(name)) return instr_codes[i];
-        }
-        return -1;
-    }
-
-    private int opcodeNbiByName(String name) {
-        name = name.toLowerCase();
-        for (int i = 0; i < nbinstr_names.length; i++) {
-            if (nbinstr_names[i].equals(name)) return nbinstr_codes[i];
-        }
-        return -1;
-    }
-
-    private int registerByName(String name) {
-        name = name.toUpperCase();
-        for (int i = 0; i < reg_names.length; i++) {
-            if (reg_names[i].equals(name)) return i;
-        }
-        return -1;
     }
 
     private static abstract class Param {
@@ -439,23 +387,23 @@ public class Assembler {
     }
 
     private static class SimpleRegisterParam extends SimpleParam {
-        private final int idx;
+        private final Reg reg;
 
-        public SimpleRegisterParam(int idx) {
-            this.idx = idx;
+        public SimpleRegisterParam(Reg reg) {
+            this.reg = reg;
         }
 
         public boolean isGP() {
-            return reg_offsets[idx] >= 0;
+            return reg.offset < 8;
         }
 
         public int offset() {
-            return reg_offsets[idx];
+            return reg.offset;
         }
 
         @Override
         int acode() {
-            return reg_selfcodes[idx];
+            return reg.acode;
         }
     }
 
