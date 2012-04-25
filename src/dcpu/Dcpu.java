@@ -189,16 +189,16 @@ public final class Dcpu {
     public static final int C_A_BITLEN = 6;
     public static final int C_B_SHIFT = C_O_BITLEN;
     public static final int C_A_SHIFT = C_O_BITLEN + C_B_BITLEN;
-    // to get a strip of N binary 1s, we do 1 << (N+1) and substract 1
-    public static final int C_O_MASK = (1 << C_O_BITLEN) * 2 - 1;
-    public static final int C_B_MASK = ((1 << C_B_BITLEN) * 2 - 1) << C_B_SHIFT;
-    public static final int C_A_MASK = ((1 << C_A_BITLEN) * 2 - 1) << C_A_SHIFT;
+    // to get a strip of N binary 1s, we do 1 << N and substract 1
+    public static final int C_O_MASK = (1 << C_O_BITLEN) - 1;
+    public static final int C_B_MASK = ((1 << C_B_BITLEN) - 1) << C_B_SHIFT;
+    public static final int C_A_MASK = ((1 << C_A_BITLEN) - 1) << C_A_SHIFT;
     public static final int C_NBI_O_BITLEN = 5;
     public static final int C_NBI_A_BITLEN = 6;
     public static final int C_NBI_O_SHIFT = C_O_BITLEN;
     public static final int C_NBI_A_SHIFT = C_NBI_O_SHIFT + C_O_BITLEN;
-    public static final int C_NBI_O_MASK = ((1 << C_NBI_O_BITLEN) * 2 - 1) << C_NBI_O_SHIFT;
-    public static final int C_NBI_A_MASK = ((1 << C_NBI_A_BITLEN) * 2 - 1) << C_NBI_A_BITLEN;
+    public static final int C_NBI_O_MASK = ((1 << C_NBI_O_BITLEN) - 1) << C_NBI_O_SHIFT;
+    public static final int C_NBI_A_MASK = ((1 << C_NBI_A_BITLEN) - 1) << C_NBI_A_BITLEN;
     // Command value types (take one and shift with C_x_SHIFT)
     //   Plain register
     public static final int A_REG = 0;// | with REG_x
@@ -241,38 +241,38 @@ public final class Dcpu {
     public static final int A_NW = 0x1f; // NW
     //  Constant values
     public static final int A_CONST = 0x20; // + with const
-    public static final int A_0 = A_CONST + 0;
-    public static final int A_1 = A_CONST + 1;
-    public static final int A_2 = A_CONST + 2;
-    public static final int A_3 = A_CONST + 3;
-    public static final int A_4 = A_CONST + 4;
-    public static final int A_5 = A_CONST + 5;
-    public static final int A_6 = A_CONST + 6;
-    public static final int A_7 = A_CONST + 7;
-    public static final int A_8 = A_CONST + 8;
-    public static final int A_9 = A_CONST + 9;
-    public static final int A_10 = A_CONST + 10;
-    public static final int A_11 = A_CONST + 11;
-    public static final int A_12 = A_CONST + 12;
-    public static final int A_13 = A_CONST + 13;
-    public static final int A_14 = A_CONST + 14;
-    public static final int A_15 = A_CONST + 15;
-    public static final int A_16 = A_CONST + 16;
-    public static final int A_17 = A_CONST + 17;
-    public static final int A_18 = A_CONST + 18;
-    public static final int A_19 = A_CONST + 19;
-    public static final int A_20 = A_CONST + 20;
-    public static final int A_21 = A_CONST + 21;
-    public static final int A_22 = A_CONST + 22;
-    public static final int A_23 = A_CONST + 23;
-    public static final int A_24 = A_CONST + 24;
-    public static final int A_25 = A_CONST + 25;
-    public static final int A_26 = A_CONST + 26;
-    public static final int A_27 = A_CONST + 27;
-    public static final int A_28 = A_CONST + 28;
-    public static final int A_29 = A_CONST + 29;
-    public static final int A_30 = A_CONST + 30;
-    public static final int A_31 = A_CONST + 31;
+    public static final int A_M1 = A_CONST + 0;
+    public static final int A_0 = A_CONST + 1;
+    public static final int A_1 = A_CONST + 2;
+    public static final int A_2 = A_CONST + 3;
+    public static final int A_3 = A_CONST + 4;
+    public static final int A_4 = A_CONST + 5;
+    public static final int A_5 = A_CONST + 6;
+    public static final int A_6 = A_CONST + 7;
+    public static final int A_7 = A_CONST + 8;
+    public static final int A_8 = A_CONST + 9;
+    public static final int A_9 = A_CONST + 10;
+    public static final int A_10 = A_CONST + 11;
+    public static final int A_11 = A_CONST + 12;
+    public static final int A_12 = A_CONST + 13;
+    public static final int A_13 = A_CONST + 14;
+    public static final int A_14 = A_CONST + 15;
+    public static final int A_15 = A_CONST + 16;
+    public static final int A_16 = A_CONST + 17;
+    public static final int A_17 = A_CONST + 18;
+    public static final int A_18 = A_CONST + 19;
+    public static final int A_19 = A_CONST + 20;
+    public static final int A_20 = A_CONST + 21;
+    public static final int A_21 = A_CONST + 22;
+    public static final int A_22 = A_CONST + 23;
+    public static final int A_23 = A_CONST + 24;
+    public static final int A_24 = A_CONST + 25;
+    public static final int A_25 = A_CONST + 26;
+    public static final int A_26 = A_CONST + 27;
+    public static final int A_27 = A_CONST + 28;
+    public static final int A_28 = A_CONST + 29;
+    public static final int A_29 = A_CONST + 30;
+    public static final int A_30 = A_CONST + 31;
     // Additional instruction length from operand (1 if has NW, 0 otherwise)
     public static final int[] OPERAND_LENGTH = {
             // Register
@@ -398,6 +398,7 @@ public final class Dcpu {
         if (bop != null) {
             int rslt = mem[ba]; // new 'b' value
             int exreg = mem[M_EX]; // new 'EX' value
+            boolean conditionalOpMiss = false;
             switch (bop) {
                 case SET:
                     rslt = av;
@@ -465,68 +466,43 @@ public final class Dcpu {
                     rslt = av ^ bv;
                     break;
                 case IFE:
-                    if (av != bv) {
-                        printedBranch = true;
-                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
-                        step(true);
-                    }
+                    if (av != bv) conditionalOpMiss = true;
                     break;
                 case IFN:
-                    if (av == bv) {
-                        printedBranch = true;
-                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
-                        step(true);
-                    }
+                    if (av == bv) conditionalOpMiss = true;
                     break;
                 case IFG:
-                    if (!(bv > av)) {
-                        // TODO DRY : move this block after switch
-                        printedBranch = true;
-                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
-                        step(true);
-                    }
+                    if (!(bv > av)) conditionalOpMiss = true;
                     break;
                 case IFB:
-                    if ((av & bv) == 0) {
-                        printedBranch = true;
-                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
-                        step(true);
-                    }
+                    if ((av & bv) == 0) conditionalOpMiss = true;
                     break;
                 case IFC:
-                    if ((av & bv) != 0) {
-                        printedBranch = true;
-                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
-                        step(true);
-                    }
+                    if ((av & bv) != 0) conditionalOpMiss = true;
                     break;
                 case IFA:
-                    if (!(bsv > asv)) {
-                        printedBranch = true;
-                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
-                        step(true);
-                    }
+                    if (!(bsv > asv)) conditionalOpMiss = true;
                     break;
                 case IFL:
-                    if (!(bv < av)) {
-                        printedBranch = true;
-                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
-                        step(true);
-                    }
+                    if (!(bv < av)) conditionalOpMiss = true;
                     break;
                 case IFU:
-                    if (!(bsv < asv)) {
-                        printedBranch = true;
-                        if (!skip && stepListener != null) stepListener.postExecute(ppc);
-                        step(true);
-                    }
+                    if (!(bsv < asv)) conditionalOpMiss = true;
                     break;
                 default:
                     throw new RuntimeException("DCPU Opcode not implemented: " + bop);
             }
+            if (conditionalOpMiss) {
+                printedBranch = true;
+                if (!skip && stepListener != null) stepListener.postExecute(ppc);
+                step(true);
+            }
+
             // overwrite 'b' unless it is constant
             if (ba < M_CV && bop.modb) memset(ba, (short) rslt);
-            mem[M_EX] = (short) exreg;
+            
+            // only overwrite EX if it wasn't being changed itself with (e.g.) "SET EX, ..."
+            if (ba != M_EX) mem[M_EX] = (short) exreg;
         } else {
             if (opcode == O_NBI) {
                 SpecialOp sop = SpecialOp.l(b);
@@ -603,7 +579,7 @@ public final class Dcpu {
         halt = false;
         for (int i = 0; i < M_CV - M_A; i++) mem[M_A + i] = 0;
         for (int i = 0; i < 32; i++) {
-            mem[M_CV + i] = (short) i;
+            mem[M_CV + i] = (short) ((i - 1) & 0xffff);
         }
     }
 
@@ -687,8 +663,8 @@ public final class Dcpu {
             // [next word + register]
             return (mem[M_A + cmd - 16] + mem[mem[M_PC]++]) & 0xffff;
         } else if (cmd >= 0x20 && cmd <= 0x3f) {
-            // literal value
-            return M_CV + cmd - 0x20 - 1;
+            // literal value.
+            return M_CV + cmd - 0x20;
         } else switch (cmd) {
             case A_PUSHPOP:
                 // isa?POP:PUSH

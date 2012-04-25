@@ -229,17 +229,17 @@ public class Assembler {
         }
         int op_pc = counter;
         append((short) 0, true);
-        Param pa = param();
-        int a = pa.acode();
-        if (a == -1) fail("Bad operand a");
+        Param pb = param();
+        int b = pb.acode();
+        if (b == -1) fail("Bad operand b");
         if (bop != null) {
             require(",", "comma");
-            Param pb = param();
-            int b = pb.acode();
-            if (b == -1) fail("Bad operand b");
+            Param pa = param();
+            int a = pa.acode();
+            if (a == -1) fail("Bad operand a");
             buffer[op_pc] = gencmd(bop.code, a, b);
         } else {
-            buffer[op_pc] = gencmd_nbi(sop.code, a);
+            buffer[op_pc] = gencmd_nbi(sop.code, b);
         }
     }
 
@@ -351,7 +351,8 @@ public class Assembler {
 
         @Override
         int acode() {
-            if ((value & 0xffff) < 32) return A_CONST + value;
+            // int i = value & 0xffff; // why did value used to be anded with 0xffff?
+            if (value >=-1 && value <= 30) return A_CONST + value + 1; // adjust for -1 ... 30
             return A_NW;
         }
     }

@@ -309,7 +309,7 @@ public class DcpuTest {
     @Test
     public void testAddOverflow() throws Exception {
         dcpu.upload(assembler.assemble(
-                "SET EX, 1\n" +
+                "SET EX, -1\n" +
                         "SET X, 1\n" +
                         "SET Y, 2\n" +
                         "ADD X, Y\n"
@@ -671,7 +671,7 @@ public class DcpuTest {
     }
     
     @Test
-    public void testSettingO() throws Exception {
+    public void testSettingEX() throws Exception {
         dcpu.upload(assembler.assemble(
                 "SET EX, 0xffff\n" +
                 "HLT"
