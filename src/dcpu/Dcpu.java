@@ -1,16 +1,7 @@
 package dcpu;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 /**
  * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.1 implementation.
@@ -36,7 +27,7 @@ public final class Dcpu {
         A("A", 0), B("B", 1), C("C", 2),
         X("X", 3), Y("Y", 4), Z("Z", 5),
         I("I", 6), J("J", 7),
-        PC("PC", 8), SP("SP", 9), O("O", 10),
+        PC("PC", 8), SP("SP", 9), EX("EX", 10),
         PPC("PPC", 11), PSP("PSP", 12);
 
         public static final int BASE_ADDRESS = 0x10000;
@@ -129,7 +120,7 @@ public final class Dcpu {
             false, false, false, false, false, false, false
     };
     // Register constants
-    public static final int REGS_COUNT = 8 + 1 + 1 + 1; ///< Register count: 8 GP, PC, SP, O
+    public static final int REGS_COUNT = 8 + 1 + 1 + 1; ///< Register count: 8 GP, PC, SP, EX
 
     // Command parts (opcode, A, B)
     public static final int C_O_MASK = 0x000F;
@@ -223,7 +214,7 @@ public final class Dcpu {
             0, 0, 0, 0, 0, 0, 0, 0,
             // [NW+register]
             1, 1, 1, 1, 1, 1, 1, 1,
-            // POP PUSH PEEK SP PC O [NW] NW
+            // POP PUSH PEEK SP PC EX [NW] NW
             0, 0, 0, 0, 0, 0, 1, 1,
             // literal
             0, 0, 0, 0, 0, 0, 0, 0
@@ -236,7 +227,7 @@ public final class Dcpu {
             true, true, true, true, true, true, true, true, true,
             // [NW+register]
             true, true, true, true, true, true, true, true, true,
-            // POP PUSH PEEK SP PC O [NW] NW
+            // POP PUSH PEEK SP PC EX [NW] NW
             true, true, true, false, false, false, true, true, true,
             // literal
             false, false, false, false, false, false, false, false
@@ -257,14 +248,14 @@ public final class Dcpu {
     public static final int M_J = Reg.J.address;
     public static final int M_PC = Reg.PC.address;
     public static final int M_SP = Reg.SP.address;
-    public static final int M_O = Reg.O.address;
+    public static final int M_O = Reg.EX.address;
     public static final int M_PPC = Reg.PPC.address; // prev PC (PC before execution)
     public static final int M_PSP = Reg.PSP.address; // prev SP (SP before execution)
     public static final int M_CV = Reg.PSP.address + 1; // constant value
     // Memory cell names
     public static final String[] MEM_NAMES = {
             Reg.A.name, Reg.B.name, Reg.C.name, Reg.X.name, Reg.Y.name, Reg.Z.name, Reg.I.name, Reg.J.name,
-            Reg.PC.name, Reg.SP.name, Reg.O.name, Reg.PPC.name, Reg.PSP.name,
+            Reg.PC.name, Reg.SP.name, Reg.EX.name, Reg.PPC.name, Reg.PSP.name,
             "0", "1", "2", "3", "4", "5", "6", "7",
             "8", "9", "10", "11", "12", "13", "14", "15",
             "16", "17", "18", "19", "20", "21", "22", "23",
@@ -275,7 +266,7 @@ public final class Dcpu {
     // CORE CPU FUNCTIONS
     ///////////////////////////////////////////////////////////////
 
-    // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + O + PPC + PSP + 32 constants
+    // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + EX + PPC + PSP + 32 constants
     public final short[] mem = new short[M_CV + 32];
     public boolean reserved = false; // true if reserved operation executed
     public volatile boolean halt = false;// halt execution
@@ -346,7 +337,7 @@ public final class Dcpu {
 
         boolean printedBranch = false;
         int rslt = mem[aa]; // new 'a' value
-        int oreg = mem[M_O]; // new 'O' value
+        int oreg = mem[M_O]; // new 'EX' value
         switch (opcode) {
             case O_NBI:
                 switch (b) {
@@ -519,7 +510,7 @@ public final class Dcpu {
      * List of all registers with their hex values
      */
     public String _dregs() {
-        return String.format("R A=%04x B=%04x C=%04x X=%04x Y=%04x Z=%04x I=%04x J=%04x  PC=%04x SP=%04x O=%04x",
+        return String.format("R A=%04x B=%04x C=%04x X=%04x Y=%04x Z=%04x I=%04x J=%04x  PC=%04x SP=%04x EX=%04x",
                 mem[M_A], mem[M_B], mem[M_C], mem[M_X], mem[M_Y], mem[M_Z], mem[M_I], mem[M_J],
                 mem[M_PC], mem[M_SP], mem[M_O]);
     }
@@ -527,7 +518,7 @@ public final class Dcpu {
     public String _dmem(int addr) {
         return (addr < M_A) ? String.format("(%04x)", addr) : MEM_NAMES[addr - M_A];
     }
-    
+
     public String _dvalmem(int addr) {
         return (addr < M_A) ? String.format("(%04x) : %04x (%s)", addr, mem[addr], Character.toString((char) mem[addr])) : MEM_NAMES[addr - M_A];
     }
@@ -575,7 +566,7 @@ public final class Dcpu {
                 // PC
                 return write ? M_PC : M_PPC;
             case 0x1d:
-                // O
+                // EX
                 return M_O;
             case 0x1e:
                 // [next word]
@@ -601,11 +592,11 @@ public final class Dcpu {
     public void upload(short[] buffer) {
         upload(buffer, 0, buffer.length, 0);
     }
-    
+
     public void upload(File infile) throws IOException {
         upload(new FileInputStream(infile));
     }
-    
+
     public void upload(InputStream stream) throws IOException {
         BufferedInputStream instream = new BufferedInputStream(stream);
         int len = instream.available();
@@ -620,9 +611,9 @@ public final class Dcpu {
             bytecode[i] = (short) ((hi << 8) | lo);
         }
         upload(bytecode);
-        
+
     }
-    
+
     public int pc() {
         return mem[M_PC] & 0xffff;
     }

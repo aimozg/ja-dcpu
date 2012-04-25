@@ -16,7 +16,7 @@ public class AssemblerTest {
     private Assembler assembler;
 
     private static String[] REGISTERS = new String[]{"A", "B", "C", "X", "Y", "Z", "I", "J"};
-    private static String[] VAL_COMMANDS = new String[]{"POP", "PEEK", "PUSH", "SP", "PC", "O"};
+    private static String[] VAL_COMMANDS = new String[]{"POP", "PEEK", "PUSH", "SP", "PC", "EX"};
     private static Map<String, Integer> AVALUES = new LinkedHashMap<String, Integer>();
     private static Map<String, Integer> BVALUES = new LinkedHashMap<String, Integer>();
     private static final String A_BIG_LITERAL = "f154"; // used where a word is needed for A, e.g. "SET [0xf154 + I], 0x20"

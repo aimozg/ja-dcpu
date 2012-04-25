@@ -61,7 +61,7 @@ public class Disassembler {
             case 0x1C:
                 return "PC";
             case 0x1D:
-                return "O";
+                return "EX";
             case 0x1E:
                 return String.format("[0x%04x]", mem[address++]);
             case 0x1F:
