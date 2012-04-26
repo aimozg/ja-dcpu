@@ -50,15 +50,15 @@ public class HelloWorld {
         cpu.mem[12] = end;
         // set (video+i), (data+i)
         cpu.mem[13] = gencmd(O_SET, A_M_NW_I, A_M_NW_I);
-        cpu.mem[14] = video;
-        cpu.mem[15] = data;
+        cpu.mem[14] = data;
+        cpu.mem[15] = video;
         // add i, 1
         cpu.mem[16] = gencmd(O_ADD, A_I, A_1);
         // set PC, nextchar
         cpu.mem[17] = gencmd(O_SET, A_PC, A_9);
 
         // end
-        cpu.mem[0xffff] = 0;
+        cpu.mem[0xffff] = gencmd_nbi(O__HCF, 0);
 
         int i = i_data;
         for (char c : "Hello_world!".toCharArray()) { // copy to data
