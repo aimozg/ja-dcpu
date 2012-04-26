@@ -29,7 +29,7 @@ public class Disassembler {
             int a = (instr & C_A_MASK) >> C_A_SHIFT;
             int b = (instr & C_B_MASK) >> C_B_SHIFT;
             BasicOp bop = BasicOp.l(opcode);
-            return ((bop == null) ? "???" : bop.name) + " " + operand(a) + ", " + operand(b);
+            return ((bop == null) ? "???" : bop.name) + " " + operand(b) + ", " + operand(a);
         } else {
             int a = (instr & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             opcode = (instr & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
@@ -47,7 +47,7 @@ public class Disassembler {
         } else if (code <= 0x17) {
             return String.format("[%s+0x%04x]", Reg.l(code - 16).name, mem[address++]);
         } else if (code >= 0x20 && code <= 0x3F) {
-            return String.valueOf(code - 0x20);
+            return String.valueOf(code - 0x20 - 1);
         } else switch (code) {
             case A_PUSHPOP://TODO
                 return "PUSHPOP";

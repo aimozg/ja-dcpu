@@ -219,14 +219,14 @@ public final class Dcpu {
     // Command value types (take one and shift with C_x_SHIFT)
     //   Plain register
     public static final int A_REG = 0;// | with REG_x
-    public static final int A_A = 1;
-    public static final int A_B = 2;
-    public static final int A_C = 3;
-    public static final int A_X = 4;
-    public static final int A_Y = 5;
-    public static final int A_Z = 6;
-    public static final int A_I = 7;
-    public static final int A_J = 8;
+    public static final int A_A = 0;
+    public static final int A_B = 1;
+    public static final int A_C = 2;
+    public static final int A_X = 3;
+    public static final int A_Y = 4;
+    public static final int A_Z = 5;
+    public static final int A_I = 6;
+    public static final int A_J = 7;
     //   [Register]
     public static final int A_M_REG = 8; // or with REG_x
     public static final int A_M_A = A_M_REG | Reg.A.offset;
@@ -551,7 +551,7 @@ public final class Dcpu {
                             mem[M_PC] = (short) av;
                             break;
                         case HCF:
-                            // TODO HCF
+                            halt = true;
                             break;
                         case INT:
                             // TODO INT
@@ -635,11 +635,13 @@ public final class Dcpu {
     // UTILITY, DEBUG, AND INTERNAL FUNCTIONS
 
     /**
-     * Generates command code for specified opcode, 'a', and 'b'.
+     * Generates command code for specified opcode, 'b', and 'a'.
      * <p/>
      * Example: gencmd(O_SET, A_PC, A_NW) for "set PC, next_word_of_ram"
      */
-    public static short gencmd(int opcode, int a, int b) {
+    public static short gencmd(int opcode, int b, int a) {
+        if (opcode < 0 || opcode > 1 << C_O_BITLEN || b < 0 || b > 1 << C_B_BITLEN || a < 0 || a > 1 << C_A_BITLEN)
+            throw new IllegalArgumentException("Bad arguments");
         return (short) (opcode | a << C_A_SHIFT | b << C_B_SHIFT);
     }
 
