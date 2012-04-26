@@ -17,7 +17,6 @@ As of 06.04.2012, contains:
 ## Implementation specifics
 
 1. Reserved instructions halt the cpu.
-2. "Register value" as operand means value *before* instruction execution. If instruction modifies PC/SP, their unmodified values are used (so SET PUSH, SP saves stack position before PUSH; SET [0xbeef], PC saves this instruction address).
 
 ## Using IDE
 
