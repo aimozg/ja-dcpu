@@ -173,7 +173,8 @@ public class Assembler {
         for (Reference reference : references) {
             //System.out.printf("ref to %s @ %04x\n",reference.name,reference.position);
             Short value = symbols.get(reference.name.toLowerCase());
-            if (value == null) fail("Unresolved reference to " + reference.name.toLowerCase() + " at [" + reference.lineat + "]");
+            if (value == null)
+                fail("Unresolved reference to " + reference.name.toLowerCase() + " at [" + reference.lineat + "]");
             buffer[reference.position] = value;
         }
         if (buffer.length > counter) {
@@ -219,10 +220,10 @@ public class Assembler {
     private void oper() throws IOException {
         boolean nbi = false;
         require(idPattern, "operation");
-        BasicOp bop = BasicOp.byName(token);
+        BasicOp bop = BasicOp.byName(token.toUpperCase());
         SpecialOp sop = null;
         if (bop == null) {
-            sop = SpecialOp.byName(token);
+            sop = SpecialOp.byName(token.toUpperCase());
             if (sop == null) {
                 fail("Bad operation " + token);
             }
@@ -265,7 +266,7 @@ public class Assembler {
 
     private SimpleParam simpleParam(boolean canBeShort) throws IOException {
         if (accept(idPattern)) {
-            Reg reg = Reg.byName(token);
+            Reg reg = Reg.byName(token.toUpperCase());
             if (reg != null) return new SimpleRegisterParam(reg);
             append((short) 0, true);
             Reference ref = new Reference(token, (short) (counter - 1), stokizer.lineno());
@@ -352,7 +353,7 @@ public class Assembler {
         @Override
         int acode() {
             // int i = value & 0xffff; // why did value used to be anded with 0xffff?
-            if (value >=-1 && value <= 30) return A_CONST + value + 1; // adjust for -1 ... 30
+            if (value >= -1 && value <= 30) return A_CONST + value + 1; // adjust for -1 ... 30
             return A_NW;
         }
     }
