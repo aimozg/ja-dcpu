@@ -777,9 +777,8 @@ public final class Dcpu {
 
     /**
      * Peripheral to DCPU.
-     * <p/>
-     * Communication
      */
+    @Deprecated
     public abstract static class Peripheral {
 
         public Dcpu cpu;
@@ -824,9 +823,12 @@ public final class Dcpu {
         }
     }
 
+    @Deprecated
     final Peripheral[] memlines = new Peripheral[16];
+    @Deprecated
     final List<Peripheral> peripherals = new LinkedList<Peripheral>();
 
+    @Deprecated
     public void attach(Peripheral peripheral, int line) {
         if (line != -1) {
             if (memlines[line] != null) {
@@ -838,6 +840,7 @@ public final class Dcpu {
         peripheral.attachedTo(this, line << 12);
     }
 
+    @Deprecated
     public void detach(Peripheral peripheral) {
         if (peripheral.baseaddr != -1) {
             memlines[peripheral.baseaddr >> 12] = null;
