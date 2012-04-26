@@ -15,7 +15,6 @@ public final class Dcpu {
     // * Registers are mapped to memory after addressable space for convenience (so operations take something from one
     //   mem cell and put something into another)
     // * NW is commonly used for 'Next Word in ram', NBI - non-basic-instruction
-    // * Peripherals can be attached to monitor CPU ticks and read/writes to 4096-word memory lines (determined by highest nibble)
 
     ////////////////
     /// CONSTANTS
@@ -65,18 +64,31 @@ public final class Dcpu {
         SET("SET", 0x01, 1, true), ADD("ADD", 0x02, 2, true), SUB("SUB", 0x03, 2, true),
         MUL("MUL", 0x04, 2, true), MLI("MLI", 0x05, 2, true), DIV("DIV", 0x06, 3, true), DVI("DVI", 0x07, 3, true),
         MOD("MOD", 0x08, 3, true), AND("AND", 0x09, 1, true), BOR("BOR", 0x0a, 1, true), XOR("XOR", 0x0b, 1, true),
-        SHR("SHR", 0x0c, 2, true), ASR("ASR", 0x0d, 2, true), SHL("SHL", 0x0e, 2, true),
+        SHR("SHR", 0x0c, 2, true), ASR("ASR", 0x0d, 2, true), SHL("SHL", 0x0e, 2, true), STI("STI", 0x0f, 2, true),
         IFB("IFB", 0x10, 2, false), IFC("IFC", 0x11, 2, false), IFE("IFE", 0x12, 2, false), IFN("IFN", 0x13, 2, false),
-        IFG("IFG", 0x14, 2, false), IFA("IFA", 0x15, 2, false), IFL("IFL", 0x16, 2, false), IFU("IFU", 0x17, 2, false);
+        IFG("IFG", 0x14, 2, false), IFA("IFA", 0x15, 2, false), IFL("IFL", 0x16, 2, false), IFU("IFU", 0x17, 2, false),
+        ADX("ADX", 0x1a, 3, true), SBX("SBX", 0x1b, 3, true);
 
         private static final Map<Integer, BasicOp> CODE_LOOKUP = new HashMap<Integer, BasicOp>();
         private static final Map<String, BasicOp> NAME_LOOKUP = new HashMap<String, BasicOp>();
+
+        public static final Set<BasicOp> OPS_IF;
 
         static {
             for (BasicOp op : values()) {
                 CODE_LOOKUP.put(op.code, op);
                 NAME_LOOKUP.put(op.name, op);
             }
+            EnumSet<BasicOp> _ops_if = EnumSet.noneOf(BasicOp.class);
+            _ops_if.add(IFB);
+            _ops_if.add(IFC);
+            _ops_if.add(IFE);
+            _ops_if.add(IFN);
+            _ops_if.add(IFG);
+            _ops_if.add(IFA);
+            _ops_if.add(IFL);
+            _ops_if.add(IFU);
+            OPS_IF = Collections.unmodifiableSet(_ops_if);
         }
 
         public final String name;
@@ -102,7 +114,8 @@ public final class Dcpu {
 
     public enum SpecialOp {
         JSR("JSR", 0x01, 3, false),
-        INT("INT", 0x08, 4, false), ING("ING", 0x09, 1, true), INS("INS", 0x0a, 1, false),
+        HCF("HFC", 0x07, 9, false),
+        INT("INT", 0x08, 4, false), IAG("IAG", 0x09, 1, true), IAS("IAS", 0x0a, 1, false),
         HWN("HWN", 0x10, 2, true), HWQ("HWQ", 0x11, 4, false), HWI("HWI", 0x12, 4, false);
 
         public final String name;
@@ -153,7 +166,7 @@ public final class Dcpu {
     public static final int O_SHR = BasicOp.SHR.code;
     public static final int O_ASR = BasicOp.ASR.code;
     public static final int O_SHL = BasicOp.SHL.code;
-    // 0x0f reserved
+    public static final int O_STI = BasicOp.STI.code;
     public static final int O_IFB = BasicOp.IFB.code;
     public static final int O_IFC = BasicOp.IFC.code;
     public static final int O_IFE = BasicOp.IFE.code;
@@ -162,12 +175,16 @@ public final class Dcpu {
     public static final int O_IFA = BasicOp.IFA.code;
     public static final int O_IFL = BasicOp.IFL.code;
     public static final int O_IFU = BasicOp.IFU.code;
-    // 0x18-0x1f reserved
+    // 0x18-0x19 reserved
+    public static final int O_ADX = BasicOp.ADX.code;
+    public static final int O_SBX = BasicOp.SBX.code;
+    // 0x1c-0x1f reserved
     // Special opcodes
+    public static final int O__HCF = SpecialOp.HCF.code;
     public static final int O__JSR = SpecialOp.JSR.code;
     public static final int O__INT = SpecialOp.INT.code;
-    public static final int O__ING = SpecialOp.ING.code;
-    public static final int O__INS = SpecialOp.INS.code;
+    public static final int O__IAG = SpecialOp.IAG.code;
+    public static final int O__IAS = SpecialOp.IAS.code;
     public static final int O__HWN = SpecialOp.HWN.code;
     public static final int O__HWQ = SpecialOp.HWQ.code;
     public static final boolean[] OPCODE0_MODMEM = {
@@ -363,13 +380,18 @@ public final class Dcpu {
         // a,b: raw codes, addresses, values, signed values
         // in NBI: b stores NBO
         int a, b, aa, ba, av, bv, asv, bsv;
-        if (opcode != O_NBI) {
+        BasicOp bop = BasicOp.l(opcode);
+        if (bop != null) {
             a = (cmd & C_A_MASK) >> C_A_SHIFT;
             b = (cmd & C_B_MASK) >> C_B_SHIFT;
             aa = getaddr(a, true) & 0x1ffff;
             ba = getaddr(b, false) & 0x1ffff;
             if (skip) {
                 mem[M_SP] = psp;
+                if (BasicOp.OPS_IF.contains(bop)) {
+                    // Chaining IF - skip one more instruction
+                    step(true);
+                }
                 return;
             }
             asv = memget(aa);
@@ -394,7 +416,6 @@ public final class Dcpu {
         //_dstep(skip, opcode, aa, ba, av, bv);
 
         boolean printedBranch = false;
-        BasicOp bop = BasicOp.l(opcode);
         if (bop != null) {
             int rslt = mem[ba]; // new 'b' value
             int exreg = mem[M_EX]; // new 'EX' value
@@ -448,6 +469,11 @@ public final class Dcpu {
                     rslt = bv << av;
                     exreg = (bv << av) >> 16;
                     break;
+                case STI:
+                    rslt = av;
+                    mem[M_I]++;
+                    mem[M_J]++;
+                    break;
                 case SHR:
                     rslt = av >>> bv;
                     exreg = (bv << 16) >>> av;
@@ -489,6 +515,14 @@ public final class Dcpu {
                 case IFU:
                     if (!(bsv < asv)) conditionalOpMiss = true;
                     break;
+                case ADX:
+                    rslt = bv + av + exreg;
+                    exreg = (rslt > 0xffff) ? 1 : 0;
+                    break;
+                case SBX:
+                    rslt = bv - av + exreg;
+                    exreg = (rslt < 0) ? 0xffff : 0;
+                    break;
                 default:
                     throw new RuntimeException("DCPU Opcode not implemented: " + bop);
             }
@@ -500,7 +534,7 @@ public final class Dcpu {
 
             // overwrite 'b' unless it is constant
             if (ba < M_CV && bop.modb) memset(ba, (short) rslt);
-            
+
             // only overwrite EX if it wasn't being changed itself with (e.g.) "SET EX, ..."
             if (ba != M_EX) mem[M_EX] = (short) exreg;
         } else {
@@ -516,13 +550,16 @@ public final class Dcpu {
                             mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
                             mem[M_PC] = (short) av;
                             break;
+                        case HCF:
+                            // TODO HCF
+                            break;
                         case INT:
                             // TODO INT
                             break;
-                        case ING:
+                        case IAG:
                             // TODO ING
                             break;
-                        case INS:
+                        case IAS:
                             // TODO INS
                             break;
                         case HWN:
