@@ -219,14 +219,14 @@ public final class Dcpu {
     // Command value types (take one and shift with C_x_SHIFT)
     //   Plain register
     public static final int A_REG = 0;// | with REG_x
-    public static final int A_A = A_REG | Reg.A.offset;
-    public static final int A_B = A_REG | Reg.B.offset;
-    public static final int A_C = A_REG | Reg.C.offset;
-    public static final int A_X = A_REG | Reg.X.offset;
-    public static final int A_Y = A_REG | Reg.Y.offset;
-    public static final int A_Z = A_REG | Reg.Z.offset;
-    public static final int A_I = A_REG | Reg.I.offset;
-    public static final int A_J = A_REG | Reg.J.offset;
+    public static final int A_A = 1;
+    public static final int A_B = 2;
+    public static final int A_C = 3;
+    public static final int A_X = 4;
+    public static final int A_Y = 5;
+    public static final int A_Z = 6;
+    public static final int A_I = 7;
+    public static final int A_J = 8;
     //   [Register]
     public static final int A_M_REG = 8; // or with REG_x
     public static final int A_M_A = A_M_REG | Reg.A.offset;
