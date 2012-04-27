@@ -230,30 +230,30 @@ public class Assembler {
         }
         int op_pc = counter;
         append((short) 0, true);
-        Param pb = param();
+        Param pb = param(false);
         int b = pb.acode();
         if (b == -1) fail("Bad operand b");
         if (bop != null) {
             require(",", "comma");
-            Param pa = param();
+            Param pa = param(true);
             int a = pa.acode();
             if (a == -1) fail("Bad operand a");
-            buffer[op_pc] = gencmd(bop.code, a, b);
+            buffer[op_pc] = gencmd(bop.code, b, a);
         } else {
             buffer[op_pc] = gencmd_nbi(sop.code, b);
         }
     }
 
-    private Param param() throws IOException {
-        SimpleParam p = simpleParam(true);
+    private Param param(boolean isA) throws IOException {
+        SimpleParam p = simpleParam(true, isA);
         if (p != null) return p;
         require("[", "parameter");
-        p = simpleParam(false);
+        p = simpleParam(false, isA);
         if (p == null) fail("Bad parameter1");
         if (accept("+") || accept("-")) {
             // maybe bad solution for handling "-literal", but no better idea yet
             boolean neg = token.equals("-");
-            SimpleParam p2 = simpleParam(false);
+            SimpleParam p2 = simpleParam(false, isA);
             if (p2 == null) fail("Bad parameter2");
             if (neg && !(p2 instanceof SimpleConstParam)) fail("Bad parameter2");
             if (neg) buffer[counter - 1] = (short) (0x10000 - buffer[counter - 1]);
@@ -264,7 +264,7 @@ public class Assembler {
         return new ParamMem(p);
     }
 
-    private SimpleParam simpleParam(boolean canBeShort) throws IOException {
+    private SimpleParam simpleParam(boolean canBeShort, boolean isA) throws IOException {
         if (accept(idPattern)) {
             Reg reg = Reg.byName(token.toUpperCase());
             if (reg != null) return new SimpleRegisterParam(reg);
@@ -273,11 +273,16 @@ public class Assembler {
             references.add(ref);
             return new SimpleSymbolParam(token);
         } else {
+            // TODO: this is broken for -1 as a CONST, e.g. SET A, -1
             int sgn = accept("-") ? -1 : 1;
             if (accept(numPattern)) {
                 int val = sgn * tokenToInt();
-                if (!canBeShort || val >= 32 || val < 0) append((short) val, true);
-                return new SimpleConstParam((short) val);
+                if (!isA && val < 0) return null;
+                // a const in B should always append the val
+                if (!isA || !canBeShort || val >= 31 || val < -1) {
+                    append((short) val, true);
+                }
+                return new SimpleConstParam((short) val, isA);
             } else {
                 return null;
             }
@@ -345,15 +350,17 @@ public class Assembler {
 
     private static class SimpleConstParam extends SimpleParam {
         final short value;
+        final boolean isA;
 
-        public SimpleConstParam(short value) {
+        public SimpleConstParam(short value, boolean isA) {
             this.value = value;
+            this.isA = isA;
         }
 
         @Override
         int acode() {
             // int i = value & 0xffff; // why did value used to be anded with 0xffff?
-            if (value >= -1 && value <= 30) return A_CONST + value + 1; // adjust for -1 ... 30
+            if (isA && (value >= -1 && value <= 30)) return A_CONST + value + 1; // adjust for -1 ... 30
             return A_NW;
         }
     }

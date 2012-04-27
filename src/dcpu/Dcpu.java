@@ -114,7 +114,7 @@ public final class Dcpu {
 
     public enum SpecialOp {
         JSR("JSR", 0x01, 3, false),
-        HCF("HFC", 0x07, 9, false),
+        HCF("HCF", 0x07, 9, false),
         INT("INT", 0x08, 4, false), IAG("IAG", 0x09, 1, true), IAS("IAS", 0x0a, 1, false),
         HWN("HWN", 0x10, 2, true), HWQ("HWQ", 0x11, 4, false), HWI("HWI", 0x12, 4, false);
 
