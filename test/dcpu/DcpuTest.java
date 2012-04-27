@@ -1,6 +1,8 @@
 package dcpu;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +38,7 @@ public class DcpuTest {
 
         // check constants
         for (int i = Dcpu.M_CV; i < Dcpu.M_CV + 32; i++) {
-            assertEquals(i - Dcpu.M_CV, dcpu.memget(i));
+            assertEquals("at i=" + i, i - Dcpu.M_CV - 1, dcpu.memget(i));
         }
     }
 
@@ -67,22 +69,22 @@ public class DcpuTest {
     public void testSUB() throws Exception {
         String[] setupValues = new String[]{"0x0100", "0x0200", "0x10", "0x20", "0x30", "0x40", "0x50", "0x60", "0x70", "0x80"};
         List<Integer[]> expected = new ArrayList<Integer[]>();
-        expected.add(new Integer[]{0xff00, 0x0001, 0x0030, 0x0050, 0x0070});
+        expected.add(new Integer[]{0xff00, 0xffff, 0x0030, 0x0050, 0x0070});
         expected.add(new Integer[]{0x0080, 0x0000, 0x0030, 0x0050, 0x0070});
         expected.add(new Integer[]{0x00a0, 0x0000, 0x0030, 0x0050, 0x0070});
         expected.add(new Integer[]{0x00c0, 0x0000, 0x0030, 0x0050, 0x0070});
-        expected.add(new Integer[]{0x0100, 0x0001, 0x0030, 0x0050, 0xfe70});
-        expected.add(new Integer[]{0x0100, 0x0001, 0x0030, 0x0050, 0xfff0});
+        expected.add(new Integer[]{0x0100, 0xffff, 0x0030, 0x0050, 0xfe70});
+        expected.add(new Integer[]{0x0100, 0xffff, 0x0030, 0x0050, 0xfff0});
         expected.add(new Integer[]{0x0100, 0x0000, 0x0030, 0x0050, 0x0010});
         expected.add(new Integer[]{0x0100, 0x0000, 0x0030, 0x0050, 0x0030});
-        expected.add(new Integer[]{0x0100, 0x0001, 0x0030, 0xfe50, 0x0070});
-        expected.add(new Integer[]{0x0100, 0x0001, 0x0030, 0xffd0, 0x0070});
-        expected.add(new Integer[]{0x0100, 0x0001, 0x0030, 0xfff0, 0x0070});
+        expected.add(new Integer[]{0x0100, 0xffff, 0x0030, 0xfe50, 0x0070});
+        expected.add(new Integer[]{0x0100, 0xffff, 0x0030, 0xffd0, 0x0070});
+        expected.add(new Integer[]{0x0100, 0xffff, 0x0030, 0xfff0, 0x0070});
         expected.add(new Integer[]{0x0100, 0x0000, 0x0030, 0x0010, 0x0070});
-        expected.add(new Integer[]{0x0100, 0x0001, 0xfe30, 0x0050, 0x0070});
-        expected.add(new Integer[]{0x0100, 0x0001, 0xffb0, 0x0050, 0x0070});
-        expected.add(new Integer[]{0x0100, 0x0001, 0xffd0, 0x0050, 0x0070});
-        expected.add(new Integer[]{0x0100, 0x0001, 0xfff0, 0x0050, 0x0070});
+        expected.add(new Integer[]{0x0100, 0xffff, 0xfe30, 0x0050, 0x0070});
+        expected.add(new Integer[]{0x0100, 0xffff, 0xffb0, 0x0050, 0x0070});
+        expected.add(new Integer[]{0x0100, 0xffff, 0xffd0, 0x0050, 0x0070});
+        expected.add(new Integer[]{0x0100, 0xffff, 0xfff0, 0x0050, 0x0070});
         testCmd("SUB", setupValues, expected);
     }
 
@@ -291,19 +293,20 @@ public class DcpuTest {
                 String assembly = setup + cmd + " " + a + ", " + b + "\n";
                 // System.out.println(assembly);
                 dcpu.reset();
+                dcpu.memzero();
                 dcpu.upload(assembler.assemble(assembly));
                 dcpu.run(11);
-                assertExpectedValues(expected.get(i++), setupValues[0], setupValues[2]);
+                assertExpectedValues(assembly, expected.get(i++), setupValues[0], setupValues[2]);
             }
         }
     }
 
-    private void assertExpectedValues(Integer[] expected, String v1, String v2) throws Exception {
-        assertEquals("A", expected[0].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.A) & 0xffff));
-        assertEquals("EX", expected[1].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.EX) & 0xffff));
-        assertEquals("[0xA000]", expected[2].shortValue(), (short) (dcpu.mem[0xA000] & 0xffff));
-        assertEquals("[0xA010]", expected[3].shortValue(), (short) (dcpu.mem[0xA000 + Integer.parseInt(v2.substring(2), 16)] & 0xffff));
-        assertEquals("[0x0100]", expected[4].shortValue(), (short) (dcpu.mem[Integer.parseInt(v1.substring(2), 16)] & 0xffff));
+    private void assertExpectedValues(String assembly, Integer[] expected, String v1, String v2) throws Exception {
+        assertEquals("running '"+ assembly + "' : A", expected[0].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.A) & 0xffff));
+        assertEquals("running '"+ assembly + "' : EX", expected[1].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.EX) & 0xffff));
+        assertEquals("running '"+ assembly + "' : [0xA000]", expected[2].shortValue(), (short) (dcpu.mem[0xA000] & 0xffff));
+        assertEquals("running '"+ assembly + "' : [0xA010]", expected[3].shortValue(), (short) (dcpu.mem[0xA000 + Integer.parseInt(v2.substring(2), 16)] & 0xffff));
+        assertEquals("running '"+ assembly + "' : [0x0100]", expected[4].shortValue(), (short) (dcpu.mem[Integer.parseInt(v1.substring(2), 16)] & 0xffff));
     }
 
     @Test
@@ -320,6 +323,8 @@ public class DcpuTest {
         assertEquals("ex", 0, dcpu.getreg(Dcpu.Reg.EX));
 
         dcpu.reset();
+        dcpu.memzero();
+
         dcpu.upload(assembler.assemble(
                 "SET EX, 0\n" +
                         "SET X, 0xfff0\n" +
@@ -346,6 +351,7 @@ public class DcpuTest {
         assertEquals("ex", 0, dcpu.getreg(Dcpu.Reg.EX));
 
         dcpu.reset();
+        dcpu.memzero();
         dcpu.upload(assembler.assemble(
                 "SET EX, 0\n" +
                         "SET X, 0\n" +
@@ -360,6 +366,7 @@ public class DcpuTest {
 
     @Test
     public void testMulOverflow() throws Exception {
+        /*
         dcpu.upload(assembler.assemble(
                 "SET EX, 1\n" +
                         "SET X, 3\n" +
@@ -370,14 +377,18 @@ public class DcpuTest {
         assertEquals("x", 12, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 4, dcpu.getreg(Dcpu.Reg.Y));
         assertEquals("ex", 0, dcpu.getreg(Dcpu.Reg.EX));
-
+        */
         dcpu.reset();
-        dcpu.upload(assembler.assemble(
+        dcpu.memzero();
+        short[] bin = assembler.assemble(
                 "SET EX, 0\n" +
                         "SET X, 0xffff\n" +
                         "SET Y, 0x10\n" +
                         "MUL X, Y\n"
-        ));
+        );
+        short[] expected = new short[] {(short) 0x87a1, (short) 0x8061, (short) 0xc481, 0x1064};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
+        dcpu.upload(bin);
         dcpu.run(4);
         assertEquals("x", (short) 0xfff0, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 0x10, dcpu.getreg(Dcpu.Reg.Y));
@@ -398,6 +409,7 @@ public class DcpuTest {
         assertEquals("ex", 0, dcpu.getreg(Dcpu.Reg.EX));
 
         dcpu.reset();
+        dcpu.memzero();
         dcpu.upload(assembler.assemble(
                 "SET EX, 0\n" +
                         "SET X, 0x00ff\n" +
@@ -421,7 +433,7 @@ public class DcpuTest {
         dcpu.run(4);
         assertEquals("x", 0, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 0, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("ex", 0, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("ex", 1, dcpu.getreg(Dcpu.Reg.EX));
     }
 
     @Test
@@ -678,5 +690,33 @@ public class DcpuTest {
         ));
         dcpu.run();
         assertEquals("ex", (short) 0xffff, dcpu.getreg(Dcpu.Reg.EX));
+    }
+    
+    @Test
+    public void testValueOfNW() throws Exception {
+        short[] bin = assembler.assemble(
+                "SET [0xA000], 0x30\n" +
+                "HLT"
+        );
+        short[] expected = new short[] {0x7fc1, 0x0030, (short) 0xa000, 0x0000};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
+        dcpu.upload(bin);
+        dcpu.run();
+        assertEquals("mem [a0000]", (short) 0x30, (short) (dcpu.mem[0xa000] & 0xffff));
+    }
+    
+    @Test
+    public void testSimpleSHR() throws Exception {
+        short[] bin = assembler.assemble(
+                "SET A, 0xA234\n" +
+                "SET B, 0x23\n" +
+                "SHR A, B\n" +
+                "HLT"
+        );
+        short[] expected = new short[] {0x7c01, (short) 0xa234, 0x7c21, 0x0023, 0x040c, 0x0000};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
+        dcpu.upload(bin);
+        dcpu.run();
+        assertEquals("a", (short) 0x1446, dcpu.getreg(Dcpu.Reg.A));
     }
 }

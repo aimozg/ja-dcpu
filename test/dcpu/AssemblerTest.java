@@ -149,7 +149,7 @@ public class AssemblerTest {
                 0x00aa, 0x00aa,
                 0x7001
         };
-        assertArrayEquals("bin", expected, bin);
+        assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
     }
 
     @Test
@@ -169,7 +169,7 @@ public class AssemblerTest {
                 (short) 0x8001,
                         0x0000
         };
-        assertArrayEquals("bin", expected, bin);
+        assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
 	}
     
     @Test
@@ -184,7 +184,7 @@ public class AssemblerTest {
                 (short) 0x8401,
                         0x0000
         };
-        assertArrayEquals("bin", expected, bin);
+        assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
     }
 
     @Test
@@ -226,20 +226,11 @@ public class AssemblerTest {
         short[] expected = new short[numWords];
         expected[0] = expectedCode;
 
-        String firstLiteralToUse = bExtraWords > 0 ? B_BIG_LITERAL : A_BIG_LITERAL; // decide if the first extra word is on A or B when we only have 1 extra word
+        String firstLiteralToUse = aExtraWords > 0 ? A_BIG_LITERAL : B_BIG_LITERAL; // decide if the first extra word is on A or B when we only have 1 extra word
         if (numWords > 1) expected[1] = (short) (Integer.parseInt(firstLiteralToUse, 16) & 0xffff);
         if (numWords > 2)
-            expected[2] = (short) (Integer.parseInt(A_BIG_LITERAL, 16) & 0xffff); // will always be A if we get 3 words
-        assertArrayEquals("Testing '" + assembly + "' - Expected " + printShorts(expected) + ", got " + printShorts(code), expected, code);
+            expected[2] = (short) (Integer.parseInt(B_BIG_LITERAL, 16) & 0xffff); // will always be B if we get 3 words
+        assertArrayEquals("Testing '" + assembly + "', " + TestUtils.displayExpected(expected, code), expected, code);
     }
-
-    private String printShorts(short[] data) {
-        StringBuffer sb = new StringBuffer();
-        for (short s : data) {
-            sb.append(String.format("0x%04x ", s));
-        }
-        return sb.toString();
-    }
-    
 
 }

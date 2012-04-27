@@ -42,21 +42,13 @@ public class PeripheralsTest {
                         "SET [X], 0xf154\n"
         );
         short[] expected = new short[]{
-                (short) 0x8461,
-                0x7c31, (short) 0xa110,
-
-                0x7801, (short) 0xa100,
-                0x5811, (short) 0xa100,
-                0x2c41,
-
-                (short) 0xc1e1, (short) 0xa200,
-                (short) 0xc561, (short) 0xa200,
-                (short) 0xc8b1,
-
-                0x7c31, (short) 0xa111,
-                0x7cb1, (short) 0xf154
+                (short) 0x88c1, 0x7c61, (short) 0xa110, 0x7801,
+                (short) 0xa100, 0x5821, (short) 0xa100, 0x2c81,
+                (short) 0xc7c1, (short) 0xa200, (short) 0xcac1, (short) 0xa200,
+                (short) 0xcd61, 0x7c61, (short) 0xa111, 0x7d61,
+                (short) 0xf154
         };
-        assertArrayEquals("bin", expected, bin);
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
 
         dcpu.upload(bin);
         dcpu.run(2);

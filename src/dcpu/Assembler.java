@@ -119,6 +119,16 @@ public class Assembler {
     public boolean genMap = false;
 
     public AsmMap asmmap;
+    private List<AppendableWord> newWords;
+    
+    private class AppendableWord {
+        public short value;
+        public boolean code;
+        public AppendableWord(short value, boolean code) {
+            this.value = value;
+            this.code = code;
+        }
+    }
 
     public short[] assemble(String s) {
         return assemble(new StringReader(s));
@@ -218,6 +228,7 @@ public class Assembler {
     }
 
     private void oper() throws IOException {
+        newWords = new ArrayList<AppendableWord>(); // have to push A's new word *before* B's new word, but we read B first, so save them up to end
         boolean nbi = false;
         require(idPattern, "operation");
         BasicOp bop = BasicOp.byName(token.toUpperCase());
@@ -241,6 +252,10 @@ public class Assembler {
             buffer[op_pc] = gencmd(bop.code, b, a);
         } else {
             buffer[op_pc] = gencmd_nbi(sop.code, b);
+        }
+        // add the saved newWords
+        for (AppendableWord a : newWords) {
+            append(a.value, a.code);
         }
     }
 
@@ -273,14 +288,15 @@ public class Assembler {
             references.add(ref);
             return new SimpleSymbolParam(token);
         } else {
-            // TODO: this is broken for -1 as a CONST, e.g. SET A, -1
             int sgn = accept("-") ? -1 : 1;
             if (accept(numPattern)) {
                 int val = sgn * tokenToInt();
+                if (val == 65535) val = -1; // special case 0xFFFF to be -1 so it fits in a short literal
                 if (!isA && val < 0) return null;
                 // a const in B should always append the val
                 if (!isA || !canBeShort || val >= 31 || val < -1) {
-                    append((short) val, true);
+                    // append((short) val, true);
+                    newWords.add(0, new AppendableWord((short) val, true)); // add at start of list as we need them in reverse order
                 }
                 return new SimpleConstParam((short) val, isA);
             } else {
