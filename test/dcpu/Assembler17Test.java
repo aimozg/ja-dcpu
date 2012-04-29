@@ -18,7 +18,6 @@ public class Assembler17Test {
     public void testSetEXToMinusOne() {
         short[] bin = assembler.assemble("SET EX, -1\n");
         short[] exp = new short[]{(short) 0x83A1};
-        TestUtils.printShorts(bin);
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
@@ -26,7 +25,6 @@ public class Assembler17Test {
     public void testSetToFFFFIsMinusOne() {
         short[] bin = assembler.assemble("SET X, 0xFFFF\n");
         short[] exp = new short[]{(short) 0x8061};
-        TestUtils.printShorts(bin);
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
@@ -36,7 +34,6 @@ public class Assembler17Test {
                 "SET A, POP\n"
         );
         short[] exp = new short[]{(short) 0x6001};
-        TestUtils.printShorts(bin);
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
@@ -46,7 +43,6 @@ public class Assembler17Test {
                 "SET 0, A\n"
         );
         short[] exp = new short[]{(short) 0x03e1, 0};
-        TestUtils.printShorts(bin);
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
@@ -61,5 +57,10 @@ public class Assembler17Test {
         assertEquals("throws exception", true, threwIAE);
     }
 
-
+    @Test
+    public void testSimpleNWValues() throws Exception {
+        short[] bin = assembler.assemble("SET [A + 0x0100], [B + 0x0200]\n");
+        short[] exp = new short[]{0x4601, 0x0200, 0x0100};
+        assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
+    }
 }
