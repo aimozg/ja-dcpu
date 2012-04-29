@@ -166,7 +166,7 @@ public final class Dcpu {
         }
     }
     
-    class Operation {
+    abstract static class Operation {
         int cmd;
         short pc;
         int opcode;
@@ -176,21 +176,52 @@ public final class Dcpu {
         Operation(int cmd, short pc) {
             this.cmd = cmd;
             this.pc = pc;
-            this.opcode = cmd & C_O_MASK;
-            this.type = OpType.getOpType(cmd);
-            switch (type) {
+        }
+        
+        static Operation createOperation(int cmd, short pc) {
+            OpType opType = OpType.getOpType(cmd);
+            switch (opType) {
                 case BASIC:
-                    a = (cmd & C_A_MASK) >> C_A_SHIFT;
-                    b = (cmd & C_B_MASK) >> C_B_SHIFT;                
-                    break;
+                    return new BasicOperation(cmd, pc);
                 case SPECIAL:
-                    a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
-                    b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
-                    break;
+                    return new SpecialOperation(cmd, pc);
                 default:
-                    break;
+                    return new InvalidOperation(cmd, pc);
             }
         }
+    }
+    
+    static class BasicOperation extends Operation {
+        BasicOp op;
+        BasicOperation(int cmd, short pc) {
+            super(cmd, pc);
+            type = OpType.BASIC;
+            opcode = cmd & C_O_MASK;
+            op = BasicOp.l(opcode);
+            a = (cmd & C_A_MASK) >> C_A_SHIFT;
+            b = (cmd & C_B_MASK) >> C_B_SHIFT;                
+        }
+    }
+
+    static class SpecialOperation extends Operation {
+        SpecialOp op;
+        SpecialOperation(int cmd, short pc) {
+            super(cmd, pc);
+            type = OpType.SPECIAL;
+            opcode = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
+            op = SpecialOp.l(opcode);
+            a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
+            b = opcode;
+        }
+    }
+    
+    static class InvalidOperation extends Operation {
+
+        InvalidOperation(int cmd, short pc) {
+            super(cmd, pc);
+            type = OpType.INVALID;
+        }
+        
     }
 
     //////
@@ -428,17 +459,16 @@ public final class Dcpu {
 
         int cmd = mem[(mem[M_PC]++) & 0xffff] & 0xffff; // command value
 
-        Operation op = new Operation(cmd, ppc);
+        Operation op = Operation.createOperation(cmd, ppc);
         boolean postExecuteCalled = false;
         switch (op.type) {
             case BASIC:
-                postExecuteCalled = handleBasicOp(op, skip);
+                postExecuteCalled = handleBasicOp((BasicOperation) op, skip);
                 break;
             case SPECIAL:
-                handleSpecialOp(op, skip);
+                handleSpecialOp((SpecialOperation) op, skip);
                 break;
-            default:
-                // invalid opcode
+            case INVALID:
                 reserved = true;
                 halt = true;
                 break;
@@ -450,20 +480,18 @@ public final class Dcpu {
         if (!postExecuteCalled && !skip && stepListener != null) stepListener.postExecute(ppc);
     }
 
-    private boolean handleBasicOp(Operation op, boolean skip) {
+    private boolean handleBasicOp(BasicOperation op, boolean skip) {
         boolean postExecuteCalled = false;
         short ppc = op.pc;
         short psp = mem[M_SP];
 
-        BasicOp bop = BasicOp.l(op.opcode);
-        
         int aa, ba, av, bv, asv, bsv;
         aa = getaddr(op.a, true) & 0x1ffff;
         ba = getaddr(op.b, false) & 0x1ffff;
 
         if (skip) {
             mem[M_SP] = psp;
-            if (BasicOp.OPS_IF.contains(bop)) {
+            if (BasicOp.OPS_IF.contains(op.op)) {
                 // Chaining IF - skip one more instruction
                 step(true);
             }
@@ -478,7 +506,7 @@ public final class Dcpu {
         int rslt = mem[ba]; // new 'b' value
         int exreg = mem[M_EX]; // new 'EX' value
         boolean conditionalOpMiss = false;
-        switch (bop) {
+        switch (op.op) {
             case SET:
                 rslt = av;
                 break;
@@ -594,7 +622,7 @@ public final class Dcpu {
                 mem[M_J]--;
                 break;
             default:
-                throw new RuntimeException("DCPU Opcode not implemented: " + bop);
+                throw new RuntimeException("DCPU Opcode not implemented: " + op.op);
         }
         if (conditionalOpMiss) {
             postExecuteCalled = true;
@@ -603,7 +631,7 @@ public final class Dcpu {
         }
 
         // overwrite 'b' unless it is constant
-        if (ba < M_CV && bop.modb) memset(ba, (short) rslt);
+        if (ba < M_CV && op.op.modb) memset(ba, (short) rslt);
 
         // only overwrite EX if it wasn't being changed itself with (e.g.) "SET EX, ..."
         if (ba != M_EX) mem[M_EX] = (short) exreg;
@@ -611,7 +639,7 @@ public final class Dcpu {
         return postExecuteCalled;
     }
 
-    private void handleSpecialOp(Operation op, boolean skip) {
+    private void handleSpecialOp(SpecialOperation op, boolean skip) {
         // a,b: raw codes, addresses, values, signed values
         // in NBI: b stores NBO
         int aa, ba, av, bv, asv, bsv;
@@ -628,8 +656,7 @@ public final class Dcpu {
         bv = bsv = 0;
 
         int rslt = mem[aa]; // new 'a' value
-        SpecialOp sop = SpecialOp.l(op.b);
-        switch (sop) {
+        switch (op.op) {
             case JSR:
                 mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
                 mem[M_PC] = (short) av;
@@ -641,10 +668,16 @@ public final class Dcpu {
                 // TODO INT
                 break;
             case IAG:
-                // TODO ING
+                // TODO IAG
                 break;
             case IAS:
-                // TODO INS
+                // TODO IAS
+                break;
+            case RFI:
+                // TODO RFI
+                break;
+            case IAQ:
+                // TODO IAQ
                 break;
             case HWN:
                 // TODO HWN
@@ -657,7 +690,7 @@ public final class Dcpu {
                 break;
         }
         // overwrite 'a' unless it is constant
-        if (aa < M_CV && sop.moda) memset(aa, (short) rslt);
+        if (aa < M_CV && op.op.moda) memset(aa, (short) rslt);
     
     }
 
