@@ -119,8 +119,9 @@ public class Assembler {
     public boolean genMap = false;
 
     public AsmMap asmmap;
-    private List<AppendableWord> newWords;
-    
+
+    // buffer to hold NextWord values before they are written out
+    private List<AppendableWord> newWords = new ArrayList<AppendableWord>();
     private class AppendableWord {
         public short value;
         public boolean code;
@@ -228,8 +229,7 @@ public class Assembler {
     }
 
     private void oper() throws IOException {
-        newWords = new ArrayList<AppendableWord>(); // have to push A's new word *before* B's new word, but we read B first, so save them up to end
-        boolean nbi = false;
+        newWords.clear(); // have to push A's new word *before* B's new word, but we read B first, so save them up to end
         require(idPattern, "operation");
         BasicOp bop = BasicOp.byName(token.toUpperCase());
         SpecialOp sop = null;

@@ -58,7 +58,9 @@ public class HelloWorld {
         cpu.mem[17] = gencmd(O_SET, A_PC, A_9);
 
         // end
-        cpu.mem[0xffff] = gencmd_nbi(O__HCF, 0);
+        // cpu.mem[0xffff] = gencmd_nbi(O__HCF, 0); // HCF (halt catch fire) is removed from spec
+        cpu.mem[0xffff] = 0;
+        
 
         int i = i_data;
         for (char c : "Hello_world!".toCharArray()) { // copy to data

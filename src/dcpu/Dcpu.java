@@ -3,8 +3,10 @@ package dcpu;
 import java.io.*;
 import java.util.*;
 
+import dcpu.Dcpu.BasicOp;
+
 /**
- * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.1 implementation.
+ * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.7 implementation.
  * <p/>
  * <p/>
  */
@@ -63,11 +65,12 @@ public final class Dcpu {
     public enum BasicOp {
         SET("SET", 0x01, 1, true), ADD("ADD", 0x02, 2, true), SUB("SUB", 0x03, 2, true),
         MUL("MUL", 0x04, 2, true), MLI("MLI", 0x05, 2, true), DIV("DIV", 0x06, 3, true), DVI("DVI", 0x07, 3, true),
-        MOD("MOD", 0x08, 3, true), AND("AND", 0x09, 1, true), BOR("BOR", 0x0a, 1, true), XOR("XOR", 0x0b, 1, true),
-        SHR("SHR", 0x0c, 2, true), ASR("ASR", 0x0d, 2, true), SHL("SHL", 0x0e, 2, true), STI("STI", 0x0f, 2, true),
+        MOD("MOD", 0x08, 3, true), MDI("MDI", 0x09, 3, true), AND("AND", 0x0a, 1, true), BOR("BOR", 0x0b, 1, true), XOR("XOR", 0x0c, 1, true),
+        SHR("SHR", 0x0d, 1, true), ASR("ASR", 0x0e, 1, true), SHL("SHL", 0x0f, 1, true),
         IFB("IFB", 0x10, 2, false), IFC("IFC", 0x11, 2, false), IFE("IFE", 0x12, 2, false), IFN("IFN", 0x13, 2, false),
         IFG("IFG", 0x14, 2, false), IFA("IFA", 0x15, 2, false), IFL("IFL", 0x16, 2, false), IFU("IFU", 0x17, 2, false),
-        ADX("ADX", 0x1a, 3, true), SBX("SBX", 0x1b, 3, true);
+        ADX("ADX", 0x1a, 3, true), SBX("SBX", 0x1b, 3, true),
+        STI("STI", 0x1e, 2, true), STD("STD", 0x1f, 2, true);
 
         private static final Map<Integer, BasicOp> CODE_LOOKUP = new HashMap<Integer, BasicOp>();
         private static final Map<String, BasicOp> NAME_LOOKUP = new HashMap<String, BasicOp>();
@@ -114,8 +117,8 @@ public final class Dcpu {
 
     public enum SpecialOp {
         JSR("JSR", 0x01, 3, false),
-        HCF("HCF", 0x07, 9, false),
-        INT("INT", 0x08, 4, false), IAG("IAG", 0x09, 1, true), IAS("IAS", 0x0a, 1, false),
+        // HCF("HCF", 0x07, 9, false),
+        INT("INT", 0x08, 4, false), IAG("IAG", 0x09, 1, true), IAS("IAS", 0x0a, 1, false), RFI("RFI", 0x0b, 3, false), IAQ("IAQ", 0x0c, 2, false),
         HWN("HWN", 0x10, 2, true), HWQ("HWQ", 0x11, 4, false), HWI("HWI", 0x12, 4, false);
 
         public final String name;
@@ -148,6 +151,44 @@ public final class Dcpu {
             this.moda = moda;
         }
     }
+    
+    public enum OpType {
+        BASIC, SPECIAL, INVALID;
+        public static OpType getOpType(int cmd) {
+            int o = (cmd & C_O_MASK);
+            if (BasicOp.l(o) != null) return BASIC;
+
+            int b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
+            if (o == O_NBI && SpecialOp.l(b) != null) return SPECIAL;
+            
+            return INVALID;
+        }
+    }
+    
+    class Operation {
+        int cmd;
+        int opcode;
+        int a;
+        int b;
+        OpType type;
+        Operation(int cmd) {
+            this.cmd = cmd;
+            this.opcode = cmd & C_O_MASK;
+            this.type = OpType.getOpType(cmd);
+            switch (type) {
+                case BASIC:
+                    a = (cmd & C_A_MASK) >> C_A_SHIFT;
+                    b = (cmd & C_B_MASK) >> C_B_SHIFT;                
+                    break;
+                case SPECIAL:
+                    a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
+                    b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 
     //////
     // Opcode constants
@@ -160,13 +201,13 @@ public final class Dcpu {
     public static final int O_DIV = BasicOp.DIV.code;
     public static final int O_DVI = BasicOp.DVI.code;
     public static final int O_MOD = BasicOp.MOD.code;
+    public static final int O_MDI = BasicOp.MDI.code;
     public static final int O_AND = BasicOp.AND.code;
     public static final int O_BOR = BasicOp.BOR.code;
     public static final int O_XOR = BasicOp.XOR.code;
     public static final int O_SHR = BasicOp.SHR.code;
     public static final int O_ASR = BasicOp.ASR.code;
     public static final int O_SHL = BasicOp.SHL.code;
-    public static final int O_STI = BasicOp.STI.code;
     public static final int O_IFB = BasicOp.IFB.code;
     public static final int O_IFC = BasicOp.IFC.code;
     public static final int O_IFE = BasicOp.IFE.code;
@@ -175,18 +216,22 @@ public final class Dcpu {
     public static final int O_IFA = BasicOp.IFA.code;
     public static final int O_IFL = BasicOp.IFL.code;
     public static final int O_IFU = BasicOp.IFU.code;
-    // 0x18-0x19 reserved
+    // 0x1a-0x1f reserved
     public static final int O_ADX = BasicOp.ADX.code;
     public static final int O_SBX = BasicOp.SBX.code;
-    // 0x1c-0x1f reserved
+    public static final int O_STI = BasicOp.STI.code;
+    public static final int O_STD = BasicOp.STD.code;
     // Special opcodes
-    public static final int O__HCF = SpecialOp.HCF.code;
+    // public static final int O__HCF = SpecialOp.HCF.code;
     public static final int O__JSR = SpecialOp.JSR.code;
     public static final int O__INT = SpecialOp.INT.code;
     public static final int O__IAG = SpecialOp.IAG.code;
     public static final int O__IAS = SpecialOp.IAS.code;
+    public static final int O__RFI = SpecialOp.RFI.code;
+    public static final int O__IAQ = SpecialOp.IAQ.code;
     public static final int O__HWN = SpecialOp.HWN.code;
     public static final int O__HWQ = SpecialOp.HWQ.code;
+    /*
     public static final boolean[] OPCODE0_MODMEM = {
             false, false, false, false, false, false, false,
             false, false, false, false, false, false, false,
@@ -197,6 +242,7 @@ public final class Dcpu {
             false, false, false, false, false, false, false,
             false, false, false, false, false, false, false
     };
+    */
     // Register constants
     public static final int REGS_COUNT = Reg.values().length; ///< Number of registers
 
@@ -290,6 +336,8 @@ public final class Dcpu {
     public static final int A_28 = A_CONST + 29;
     public static final int A_29 = A_CONST + 30;
     public static final int A_30 = A_CONST + 31;
+    
+    /*
     // Additional instruction length from operand (1 if has NW, 0 otherwise)
     public static final int[] OPERAND_LENGTH = {
             // Register
@@ -316,6 +364,7 @@ public final class Dcpu {
             // literal
             false, false, false, false, false, false, false, false
     };
+    */
 
     public static final int RAM_SIZE = 0x10000;
     public static final long CPU_FREQUENCY = 100 * 1000;
@@ -372,219 +421,242 @@ public final class Dcpu {
      */
     public void step(boolean skip) {
         short ppc = mem[M_PC];
-        short psp = mem[M_SP];
-        if (!skip && stepListener != null) stepListener.preExecute(mem[M_PC]);
+        if (!skip && stepListener != null) stepListener.preExecute(ppc);
 
         int cmd = mem[(mem[M_PC]++) & 0xffff] & 0xffff; // command value
-        int opcode = cmd & C_O_MASK;
-        // a,b: raw codes, addresses, values, signed values
-        // in NBI: b stores NBO
-        int a, b, aa, ba, av, bv, asv, bsv;
-        BasicOp bop = BasicOp.l(opcode);
-        if (bop != null) {
-            a = (cmd & C_A_MASK) >> C_A_SHIFT;
-            b = (cmd & C_B_MASK) >> C_B_SHIFT;
-            aa = getaddr(a, true) & 0x1ffff;
-            ba = getaddr(b, false) & 0x1ffff;
-            if (skip) {
-                mem[M_SP] = psp;
-                if (BasicOp.OPS_IF.contains(bop)) {
-                    // Chaining IF - skip one more instruction
-                    step(true);
-                }
-                return;
-            }
-            asv = memget(aa);
-            bsv = memget(ba);
-            av = asv & 0xffff;
-            bv = bsv & 0xffff;
-        } else {
-            a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
-            b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
-            aa = getaddr(a, true) & 0x1ffff;
-            if (skip) {
-                mem[M_SP] = psp;
-                return;
-            }
-            ba = 0;
-            asv = memget(aa);
-            av = asv & 0xffff;
-            bv = bsv = 0;
-        }
 
-        // debug
-        //_dstep(skip, opcode, aa, ba, av, bv);
-
-        boolean printedBranch = false;
-        if (bop != null) {
-            int rslt = mem[ba]; // new 'b' value
-            int exreg = mem[M_EX]; // new 'EX' value
-            boolean conditionalOpMiss = false;
-            switch (bop) {
-                case SET:
-                    rslt = av;
-                    break;
-                case ADD:
-                    rslt = bv + av;
-                    exreg = (rslt > 0xffff) ? 1 : 0;
-                    break;
-                case SUB:
-                    rslt = bv - av;
-                    exreg = (rslt < 0) ? 0xffff : 0;
-                    break;
-                case MUL:
-                    rslt = bv * av;
-                    exreg = rslt >> 16;
-                    break;
-                case MLI:
-                    rslt = bsv * asv;
-                    exreg = rslt >> 16;
-                    break;
-                case DIV:
-                    if (av == 0) {
-                        exreg = 0;
-                        rslt = 0;
-                    } else {
-                        rslt = (bv / av);
-                        exreg = ((bv << 16) / av);
-                    }
-                    break;
-                case DVI:
-                    if (asv == 0) {
-                        exreg = 0;
-                        rslt = 0;
-                    } else {
-                        rslt = (bsv / asv);
-                        exreg = ((bsv << 16) / asv);
-                    }
-                    break;
-                case MOD:
-                    if (av == 0) {
-                        rslt = 0;
-                    } else {
-                        rslt = (short) (bv % av);
-                    }
-                    break;
-                case SHL:
-                    rslt = bv << av;
-                    exreg = (bv << av) >> 16;
-                    break;
-                case STI:
-                    rslt = av;
-                    mem[M_I]++;
-                    mem[M_J]++;
-                    break;
-                case SHR:
-                    rslt = av >>> bv;
-                    exreg = (bv << 16) >>> av;
-                    break;
-                case ASR:
-                    rslt = av >> bv;
-                    exreg = (bv << 16) >> av;
-                    break;
-                case AND:
-                    rslt = av & bv;
-                    break;
-                case BOR:
-                    rslt = av | bv;
-                    break;
-                case XOR:
-                    rslt = av ^ bv;
-                    break;
-                case IFE:
-                    if (av != bv) conditionalOpMiss = true;
-                    break;
-                case IFN:
-                    if (av == bv) conditionalOpMiss = true;
-                    break;
-                case IFG:
-                    if (!(bv > av)) conditionalOpMiss = true;
-                    break;
-                case IFB:
-                    if ((av & bv) == 0) conditionalOpMiss = true;
-                    break;
-                case IFC:
-                    if ((av & bv) != 0) conditionalOpMiss = true;
-                    break;
-                case IFA:
-                    if (!(bsv > asv)) conditionalOpMiss = true;
-                    break;
-                case IFL:
-                    if (!(bv < av)) conditionalOpMiss = true;
-                    break;
-                case IFU:
-                    if (!(bsv < asv)) conditionalOpMiss = true;
-                    break;
-                case ADX:
-                    rslt = bv + av + exreg;
-                    exreg = (rslt > 0xffff) ? 1 : 0;
-                    break;
-                case SBX:
-                    rslt = bv - av + exreg;
-                    exreg = (rslt < 0) ? 0xffff : 0;
-                    break;
-                default:
-                    throw new RuntimeException("DCPU Opcode not implemented: " + bop);
-            }
-            if (conditionalOpMiss) {
-                printedBranch = true;
-                if (!skip && stepListener != null) stepListener.postExecute(ppc);
-                step(true);
-            }
-
-            // overwrite 'b' unless it is constant
-            if (ba < M_CV && bop.modb) memset(ba, (short) rslt);
-
-            // only overwrite EX if it wasn't being changed itself with (e.g.) "SET EX, ..."
-            if (ba != M_EX) mem[M_EX] = (short) exreg;
-        } else {
-            if (opcode == O_NBI) {
-                SpecialOp sop = SpecialOp.l(b);
-                int rslt = mem[aa]; // new 'a' value
-                if (sop == null) {
-                    reserved = true;
-                    halt = true;
-                } else {
-                    switch (sop) {
-                        case JSR:
-                            mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
-                            mem[M_PC] = (short) av;
-                            break;
-                        case HCF:
-                            halt = true;
-                            break;
-                        case INT:
-                            // TODO INT
-                            break;
-                        case IAG:
-                            // TODO ING
-                            break;
-                        case IAS:
-                            // TODO INS
-                            break;
-                        case HWN:
-                            // TODO HWN
-                            break;
-                        case HWQ:
-                            // TODO HWQ
-                            break;
-                        case HWI:
-                            // TODO HWI
-                            break;
-                    }
-                    // overwrite 'a' unless it is constant
-                    if (aa < M_CV && sop.moda) memset(aa, (short) rslt);
-                }
-            } else {
+        Operation op = new Operation(cmd);
+        boolean postExecuteCalled = false;
+        switch (op.type) {
+            case BASIC:
+                postExecuteCalled = handleBasicOp(op, skip);
+                break;
+            case SPECIAL:
+                handleSpecialOp(op, skip);
+                break;
+            default:
                 // invalid opcode
                 reserved = true;
                 halt = true;
-            }
+                break;
         }
+        
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
-        if (!printedBranch && !skip && stepListener != null) stepListener.postExecute(ppc);
+        if (!postExecuteCalled && !skip && stepListener != null) stepListener.postExecute(ppc);
+    }
+
+    private boolean handleBasicOp(Operation op, boolean skip) {
+        boolean postExecuteCalled = false;
+        short ppc = mem[M_PC];
+        short psp = mem[M_SP];
+
+        BasicOp bop = BasicOp.l(op.opcode);
+        
+        int aa, ba, av, bv, asv, bsv;
+        aa = getaddr(op.a, true) & 0x1ffff;
+        ba = getaddr(op.b, false) & 0x1ffff;
+
+        if (skip) {
+            mem[M_SP] = psp;
+            if (BasicOp.OPS_IF.contains(bop)) {
+                // Chaining IF - skip one more instruction
+                step(true);
+            }
+            return false;
+        }
+
+        asv = memget(aa);
+        bsv = memget(ba);
+        av = asv & 0xffff;
+        bv = bsv & 0xffff;
+
+        int rslt = mem[ba]; // new 'b' value
+        int exreg = mem[M_EX]; // new 'EX' value
+        boolean conditionalOpMiss = false;
+        switch (bop) {
+            case SET:
+                rslt = av;
+                break;
+            case ADD:
+                rslt = bv + av;
+                exreg = (rslt > 0xffff) ? 1 : 0;
+                break;
+            case SUB:
+                rslt = bv - av;
+                exreg = (rslt < 0) ? 0xffff : 0;
+                break;
+            case MUL:
+                rslt = bv * av;
+                exreg = rslt >> 16;
+                break;
+            case MLI:
+                rslt = bsv * asv;
+                exreg = rslt >> 16;
+                break;
+            case DIV:
+                if (av == 0) {
+                    exreg = 0;
+                    rslt = 0;
+                } else {
+                    rslt = (bv / av);
+                    exreg = ((bv << 16) / av);
+                }
+                break;
+            case DVI:
+                if (asv == 0) {
+                    exreg = 0;
+                    rslt = 0;
+                } else {
+                    rslt = (bsv / asv);
+                    exreg = ((bsv << 16) / asv);
+                }
+                break;
+            case MOD:
+                if (av == 0) {
+                    rslt = 0;
+                } else {
+                    rslt = (short) (bv % av);
+                }
+                break;
+            case MDI:
+                // TODO: how is this different to MOD?
+                if (av == 0) {
+                    rslt = 0;
+                } else {
+                    rslt = (short) (bv % av);
+                }
+                break;
+            case SHL:
+                rslt = bv << av;
+                exreg = (bv << av) >> 16;
+                break;
+            case SHR:
+                rslt = av >>> bv;
+                exreg = (bv << 16) >>> av;
+                break;
+            case ASR:
+                rslt = av >> bv;
+                exreg = (bv << 16) >> av;
+                break;
+            case AND:
+                rslt = av & bv;
+                break;
+            case BOR:
+                rslt = av | bv;
+                break;
+            case XOR:
+                rslt = av ^ bv;
+                break;
+            case IFE:
+                if (av != bv) conditionalOpMiss = true;
+                break;
+            case IFN:
+                if (av == bv) conditionalOpMiss = true;
+                break;
+            case IFG:
+                if (!(bv > av)) conditionalOpMiss = true;
+                break;
+            case IFB:
+                if ((av & bv) == 0) conditionalOpMiss = true;
+                break;
+            case IFC:
+                if ((av & bv) != 0) conditionalOpMiss = true;
+                break;
+            case IFA:
+                if (!(bsv > asv)) conditionalOpMiss = true;
+                break;
+            case IFL:
+                if (!(bv < av)) conditionalOpMiss = true;
+                break;
+            case IFU:
+                if (!(bsv < asv)) conditionalOpMiss = true;
+                break;
+            case ADX:
+                rslt = bv + av + exreg;
+                exreg = (rslt > 0xffff) ? 1 : 0;
+                break;
+            case SBX:
+                rslt = bv - av + exreg;
+                exreg = (rslt < 0) ? 0xffff : 0;
+                break;
+            case STI:
+                rslt = av;
+                mem[M_I]++;
+                mem[M_J]++;
+                break;
+            case STD:
+                rslt = av;
+                mem[M_I]--;
+                mem[M_J]--;
+                break;
+            default:
+                throw new RuntimeException("DCPU Opcode not implemented: " + bop);
+        }
+        if (conditionalOpMiss) {
+            postExecuteCalled = true;
+            if (!skip && stepListener != null) stepListener.postExecute(ppc);
+            step(true);
+        }
+
+        // overwrite 'b' unless it is constant
+        if (ba < M_CV && bop.modb) memset(ba, (short) rslt);
+
+        // only overwrite EX if it wasn't being changed itself with (e.g.) "SET EX, ..."
+        if (ba != M_EX) mem[M_EX] = (short) exreg;
+        
+        return postExecuteCalled;
+    }
+
+    private void handleSpecialOp(Operation op, boolean skip) {
+        // a,b: raw codes, addresses, values, signed values
+        // in NBI: b stores NBO
+        int aa, ba, av, bv, asv, bsv;
+        short psp = mem[M_SP];
+
+        aa = getaddr(op.a, true) & 0x1ffff;
+        if (skip) {
+            mem[M_SP] = psp;
+            return;
+        }
+        ba = 0;
+        asv = memget(aa);
+        av = asv & 0xffff;
+        bv = bsv = 0;
+
+        int rslt = mem[aa]; // new 'a' value
+        SpecialOp sop = SpecialOp.l(op.b);
+        switch (sop) {
+            case JSR:
+                mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
+                mem[M_PC] = (short) av;
+                break;
+            // case HCF:
+            //    halt = true;
+            //    break;
+            case INT:
+                // TODO INT
+                break;
+            case IAG:
+                // TODO ING
+                break;
+            case IAS:
+                // TODO INS
+                break;
+            case HWN:
+                // TODO HWN
+                break;
+            case HWQ:
+                // TODO HWQ
+                break;
+            case HWI:
+                // TODO HWI
+                break;
+        }
+        // overwrite 'a' unless it is constant
+        if (aa < M_CV && sop.moda) memset(aa, (short) rslt);
+    
     }
 
     /**

@@ -4,6 +4,9 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import dcpu.Dcpu.BasicOp;
+import dcpu.Dcpu.Reg;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -22,12 +25,6 @@ public class AssemblerTest {
     private static final String B_BIG_LITERAL = "f154"; // used where a word is needed for A, e.g. "SET [0xf154 + I], 0x20"
     private static final String A_BIG_LITERAL = "face"; // used where a word is needed for B, e.g. "SET X, [0xface]
     private static Integer[] EXTRA_WORDS = new Integer[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    private static String[] OP_COMMANDS = new String[]{
-        "NBI", "SET", "ADD", "SUB", "MUL", "MLI", "DIV", "DVI", "MOD",
-        "AND", "BOR", "XOR", "SHR", "ASR", "SHL", "STI", 
-        "IFB", "IFC", "IFE", "IFN", "IFG", "IFA", "IFL", "IFU",
-        "ADX", "SBX"
-        };
 
     static {
         for (int i = 0; i < REGISTERS.length; i++) {
@@ -191,7 +188,8 @@ public class AssemblerTest {
     public void testOpcodes() throws Exception {
         // Test every OP command except NBI for every A,B combination.
         // We also test every upper and lower case variation of both op command and codes and literals
-        for (int opCode = 1; opCode < OP_COMMANDS.length; opCode++) {
+        for (BasicOp op : BasicOp.values()) {
+            int opCode = op.code;
             for (Entry<String, Integer> firstArg : BVALUES.entrySet()) {
                 String firstKey = firstArg.getKey(); // e.g. "A"
                 Integer bbbbb = firstArg.getValue(); // e.g. 0
@@ -203,16 +201,13 @@ public class AssemblerTest {
                     int secondExtraWords = EXTRA_WORDS[aaaaaa];
                     // OP B, A = (6 bits for A) (5 bits for B) (5 bits for opcode)
                     int actualOpcode = opCode;
-                    if (OP_COMMANDS[opCode].toLowerCase().equals("adx") || OP_COMMANDS[opCode].toLowerCase().equals("sbx")) {
-                        actualOpcode += 2; // TODO: make OP_COMMANDS an enum or similar instead of plugging gap here
-                    }
                     short expectedCode = (short) (((0x001f & actualOpcode) + (0x03e0 & (bbbbb << 5)) + (0xfc00 & (aaaaaa << 10))) & 0xffff);
                     if (firstKey.equals("PUSHPOP")) firstKey = "PUSH";
                     if (secondKey.equals("PUSHPOP")) secondKey = "POP";
-                    String assemblyLower = OP_COMMANDS[opCode].toLowerCase() + " " + firstKey + ", " + secondKey;
+                    String assemblyLower = op.name.toLowerCase() + " " + firstKey + ", " + secondKey;
                     // System.out.println(assemblyLower);
                     assertAssembly(assemblyLower, expectedCode, secondExtraWords, firstExtraWords);
-                    String assemblyUpper = OP_COMMANDS[opCode].toUpperCase() + " " + firstKey + ", " + secondKey;
+                    String assemblyUpper = op.name.toUpperCase() + " " + firstKey + ", " + secondKey;
                     assertAssembly(assemblyUpper, expectedCode, secondExtraWords, firstExtraWords);
                 }
             }
