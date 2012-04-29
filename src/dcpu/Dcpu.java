@@ -118,7 +118,7 @@ public final class Dcpu {
 
     public enum SpecialOp {
         JSR("JSR", 0x01, 3, false),
-        // HCF("HCF", 0x07, 9, false),
+        HCF("HCF", 0x07, 9, false), // "Undocumented Feature" : http://www.reddit.com/r/dcpu16/comments/sv4bv/dcpu16_17/c4h8zn5
         INT("INT", 0x08, 4, false), IAG("IAG", 0x09, 1, true), IAS("IAS", 0x0a, 1, false), RFI("RFI", 0x0b, 3, false), IAQ("IAQ", 0x0c, 2, false),
         HWN("HWN", 0x10, 2, true), HWQ("HWQ", 0x11, 4, false), HWI("HWI", 0x12, 4, false);
 
@@ -524,11 +524,10 @@ public final class Dcpu {
                 }
                 break;
             case MDI:
-                // TODO: how is this different to MOD?
                 if (av == 0) {
                     rslt = 0;
                 } else {
-                    rslt = (short) (bv % av);
+                    rslt = (short) (bsv % asv);
                 }
                 break;
             case SHL:
@@ -635,9 +634,9 @@ public final class Dcpu {
                 mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
                 mem[M_PC] = (short) av;
                 break;
-            // case HCF:
-            //    halt = true;
-            //    break;
+            case HCF:
+                halt = true;
+                break;
             case INT:
                 // TODO INT
                 break;
@@ -786,7 +785,7 @@ public final class Dcpu {
             case A_PEEK:
                 return mem[M_SP] & 0xffff;
             case A_PICK:
-                return (M_SP + mem[M_PC]++) & 0xffff;
+                return (mem[M_SP] + mem[mem[M_PC]++]) & 0xffff;
             case A_SP:
                 return M_SP;
             case A_PC:

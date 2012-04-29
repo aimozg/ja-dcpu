@@ -38,9 +38,9 @@ public class Disassembler {
             // but we print B first, so need to store up the NW_ values before printing them in case there's multiple
             StringBuilder sb = new StringBuilder();
             sb.append((bop == null) ? "???" : bop.name).append(' ');
-            operand(b, sb, nextWords);
+            operand(b, sb, nextWords, false);
             sb.append(", ");
-            operand(a, sb, nextWords);
+            operand(a, sb, nextWords, true);
             String line = sb.toString();
             int nextWordIndex = 0;
             for (String nextWord : nextWords) {
@@ -56,7 +56,7 @@ public class Disassembler {
             
             StringBuilder sb = new StringBuilder();
             sb.append(sop.name).append(' ');
-            operand(a, sb, nextWords);
+            operand(a, sb, nextWords, true);
             String line = sb.toString();
             int nextWordIndex = 0;
             for (String nextWord : nextWords) {
@@ -64,11 +64,10 @@ public class Disassembler {
                 line = line.replace(replaceString, nextWord);
             }
             return line;
-            // else return sop.name + " " + operand(a);
         }
     }
 
-    void operand(int code, StringBuilder sb, List<String> nextWords) {
+    void operand(int code, StringBuilder sb, List<String> nextWords, boolean isA) {
         if (code <= 0x07) {
             sb.append(Reg.l(code).name);
         } else if (code <= 0x0F) {
@@ -79,14 +78,15 @@ public class Disassembler {
         } else if (code >= 0x20 && code <= 0x3F) {
             sb.append(String.valueOf(code - 0x20 - 1));
         } else switch (code) {
-            case A_PUSHPOP://TODO
-                sb.append("PUSHPOP");
+            case A_PUSHPOP:
+                sb.append(isA ? "POP" : "PUSH");
                 break;
             case A_PEEK:
                 sb.append("PEEK");
                 break;
             case A_PICK:
-                sb.append("PICK");
+                nextWords.add(0, String.format("%d", mem[address++]));
+                sb.append(String.format("PICK __NEXT_WORD_%d__", nextWords.size()));
                 break;
             case A_SP:
                 sb.append("SP");

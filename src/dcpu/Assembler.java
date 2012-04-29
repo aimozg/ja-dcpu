@@ -284,7 +284,18 @@ public class Assembler {
     private SimpleParam simpleParam(boolean canBeShort, boolean isA) throws IOException {
         if (accept(idPattern)) {
             Reg reg = Reg.byName(token.toUpperCase());
-            if (reg != null) return new SimpleRegisterParam(reg);
+            if (reg != null) {
+                if (reg == Reg.PICK) {
+                    int sgn = accept("-") ? -1 : 1;
+                    if (accept(numPattern)) {
+                        int pickValue = tokenToInt() * sgn;
+                        newWords.add(0, new AppendableWord((short) pickValue, true));
+                    } else {
+                        return null;
+                    }
+                }
+                return new SimpleRegisterParam(reg);
+            }
             append((short) 0, true);
             Reference ref = new Reference(token, (short) (counter - 1), stokizer.lineno());
             references.add(ref);

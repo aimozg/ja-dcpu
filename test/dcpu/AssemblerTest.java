@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -22,9 +23,17 @@ public class AssemblerTest {
     private static String[] VAL_COMMANDS = new String[]{"PUSHPOP", "PEEK", "PICK", "SP", "PC", "EX"};
     private static Map<String, Integer> AVALUES = new LinkedHashMap<String, Integer>();
     private static Map<String, Integer> BVALUES = new LinkedHashMap<String, Integer>();
-    private static final String B_BIG_LITERAL = "f154"; // used where a word is needed for A, e.g. "SET [0xf154 + I], 0x20"
-    private static final String A_BIG_LITERAL = "face"; // used where a word is needed for B, e.g. "SET X, [0xface]
-    private static Integer[] EXTRA_WORDS = new Integer[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    private static final String B_BIG_LITERAL = "f154"; // used where a word is needed for B, e.g. "SET [0xf154 + I], 0x20"
+    private static final String A_BIG_LITERAL = "face"; // used where a word is needed for A, e.g. "SET X, [0xface]
+    private static Integer[] EXTRA_WORDS = new Integer[] {
+        0, 0, 0, 0, 0, 0, 0, 0, // Register
+        0, 0, 0, 0, 0, 0, 0, 0, // [Register]
+        1, 1, 1, 1, 1, 1, 1, 1, // [Register + NW]
+        0, 0, 1, 0, 0, 0, 1, 1, // PUSHPOP, PEEK, PICK x, SP, PC, EX, [NW], NW
+        0, 0, 0, 0, 0, 0, 0, 0, 
+        0, 0, 0, 0, 0, 0, 0, 0, 
+        0, 0, 0, 0, 0, 0, 0, 0, 
+        0, 0, 0, 0, 0, 0, 0, 0};
 
     static {
         for (int i = 0; i < REGISTERS.length; i++) {
@@ -186,20 +195,23 @@ public class AssemblerTest {
         };
         assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
     }
-
+    
     @Test
     public void testOpcodes() throws Exception {
         // Test every OP command except NBI for every A,B combination.
         // We also test every upper and lower case variation of both op command and codes and literals
+        // "PICK x" is special cased and ignored here
         for (BasicOp op : BasicOp.values()) {
             int opCode = op.code;
             for (Entry<String, Integer> firstArg : BVALUES.entrySet()) {
                 String firstKey = firstArg.getKey(); // e.g. "A"
+                if (firstKey.equals("PICK")) continue;
                 Integer bbbbb = firstArg.getValue(); // e.g. 0
                 int firstExtraWords = EXTRA_WORDS[bbbbb];
 
                 for (Entry<String, Integer> secondArg : AVALUES.entrySet()) {
                     String secondKey = secondArg.getKey();
+                    if (secondKey.equals("PICK")) continue;
                     Integer aaaaaa = secondArg.getValue();
                     int secondExtraWords = EXTRA_WORDS[aaaaaa];
                     // OP B, A = (6 bits for A) (5 bits for B) (5 bits for opcode)

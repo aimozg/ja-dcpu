@@ -63,4 +63,18 @@ public class Assembler17Test {
         short[] exp = new short[]{0x4601, 0x0200, 0x0100};
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
+
+    @Test
+    public void testPickX() throws Exception {
+        short[] bin = assembler.assemble(
+                "set A, PICK 1\n" +
+                "hlt\n"
+        );
+        short[] expected = new short[]{
+                        0x6801, 0x0001,
+                        0x0000
+        };
+        assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
+    }
+
 }

@@ -192,4 +192,42 @@ public class TracerTest {
                 "000c: DAT 0x0000\n";
         assertEquals("trace", expected, baos.toString());
     }
+
+    @Test
+    public void testStackPICK() throws Exception {
+        short[] bin = assembler.assemble(
+                "SET [0xfffc], 0xBEEF\n" + // eventual SP - 1
+                "SET A, 1\n" +
+                "SET PUSH, 1\n" +
+                "SET PUSH, 2\n" +
+                "SET PUSH, 3\n" +
+                "SET A, PICK -1\n" +
+                "SET A, PICK 0\n" +
+                "SET A, PICK 1\n" +
+                "SET A, PICK 2\n" +
+                "SET A, PICK 3\n" +
+                "SET A, PICK 4\n" +
+                "HLT\n"
+        );
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(256);
+        tracer = new Tracer(new PrintStream(baos));
+        dcpu.upload(bin);
+        tracer.install(dcpu);
+        dcpu.run();
+        System.out.println(baos.toString());
+        String expected = 
+                "0000: SET [0xfffc], 0xbeef\n" +
+                "0003: SET A, 1\n" +
+                "0004: SET PUSH, 1\n" +
+                "0005: SET PUSH, 2\n" +
+                "0006: SET PUSH, 3\n" +
+                "0007: SET A, PICK -1\n" +
+                "0009: SET A, PICK 0\n" +
+                "000b: SET A, PICK 1\n" +
+                "000d: SET A, PICK 2\n" +
+                "000f: SET A, PICK 3\n" +
+                "0011: SET A, PICK 4\n" +
+                "0013: DAT 0x0000\n";
+        assertEquals("trace", expected, baos.toString());
+    }
 }

@@ -764,4 +764,148 @@ public class DcpuTest {
         assertEquals("pc", 5, dcpu.getreg(Dcpu.Reg.PC));
         assertEquals("x", 0, dcpu.getreg(Dcpu.Reg.X));
     }
+
+    @Test
+    public void testMDI() throws Exception {
+        short[] bin = assembler.assemble(
+                "SET A, -7\n" +
+                "SET B, -16\n" +
+                "MDI A, B\n" +
+                "HLT"
+        );
+        short[] expected = new short[] {0x7c01, (short) 0xfff9, 0x7c21, (short) 0xfff0, 0x0409, 0x0000};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
+        dcpu.upload(bin);
+        dcpu.run(3);
+        assertEquals("a", -7, dcpu.getreg(Dcpu.Reg.A));
+    }
+    
+    @Test
+    public void testHCF() throws Exception {
+        short[] bin = assembler.assemble(
+                "SET A, 1\n" +
+                "HCF 0\n" +
+                "SET A, 2\n"
+        );
+        short[] expected = new short[] {(short) 0x8801, (short) 0x84e0, (short) 0x8c01};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
+        dcpu.upload(bin);
+        dcpu.run();
+        assertEquals("a", 1, dcpu.getreg(Dcpu.Reg.A));
+        assertEquals("pc", 2, dcpu.getreg(Dcpu.Reg.PC));
+    }
+    
+    @Test
+    public void testStackPICK() throws Exception {
+        short[] bin = assembler.assemble(
+                "SET [0xfffc], 0xBEEF\n" + // eventual SP - 1
+                "SET A, 1\n" +
+                "SET PUSH, 1\n" +
+                "SET PUSH, 2\n" +
+                "SET PUSH, 3\n" +
+                "SET A, PICK -1\n" +
+                "SET A, PICK 0\n" +
+                "SET A, PICK 1\n" +
+                "SET A, PICK 2\n" +
+                "SET A, PICK 3\n" +
+                "SET A, PICK 4\n" +
+                "HLT\n"
+        );
+        short[] expected = new short[] {
+                0x7fc1, (short) 0xbeef, (short) 0xfffc,
+                (short) 0x8801, (short) 0x8b01, (short) 0x8f01, (short) 0x9301, 
+                0x6801, (short) 0xffff, 
+                0x6801, 0x0000, 
+                0x6801, 0x0001, 
+                0x6801, 0x0002, 
+                0x6801, 0x0003, 
+                0x6801, 0x0004, 
+                0x0000};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
+        dcpu.upload(bin);
+        dcpu.run(5);
+        assertEquals("A", 1, dcpu.getreg(Dcpu.Reg.A));
+        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
+        assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
+        assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
+        dcpu.run(1); // PICK -1 = [0xfffd + (-1)] = [0xfffc]
+        assertEquals("A", 0xbeef, (short) dcpu.getreg(Dcpu.Reg.A) & 0xffff);
+        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
+        assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
+        assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
+        dcpu.run(1); // PICK 0 = [0xfffd] = 3
+        assertEquals("A", 3, dcpu.getreg(Dcpu.Reg.A));
+        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
+        assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
+        assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
+        dcpu.run(1); // PICK 1 = [0xfffd + 1] = 2
+        assertEquals("A", 2, dcpu.getreg(Dcpu.Reg.A));
+        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
+        assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
+        assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
+        dcpu.run(1); // PICK 2 = [0xfffd + 2] = 1
+        assertEquals("A", 1, dcpu.getreg(Dcpu.Reg.A));
+        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
+        assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
+        assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
+        dcpu.run(1); // PICK 3 = [0xfffd + 3]
+        assertEquals("A", 0x7fc1, (short) dcpu.getreg(Dcpu.Reg.A) & 0xffff);
+        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
+        assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
+        assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
+        dcpu.run(1); // PICK 4 = [0xfffd + 4]
+        assertEquals("A", 0xbeef, (short) dcpu.getreg(Dcpu.Reg.A) & 0xffff);
+        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
+        assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
+        assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
+    }
+    
+    @Test
+    public void testPushPopPick() throws Exception {
+        short[] bin = assembler.assemble(
+                "SET PUSH, PICK 0\n" + // push first word of program 
+                "SET PUSH, 1\n" +
+                "SET A, PEEK\n" +
+                "SET B, PICK 1\n" +
+                "SET C, POP\n" +
+                "SET X, PICK 1\n" +
+                "HLT\n"
+        );
+        short[] expected = new short[] {
+                0x6b01, 0x0000, 
+                (short) 0x8b01, 
+                0x6401, 
+                0x6821, 0x0001,
+                0x6041,
+                0x6861, 0x0001,
+                0x0000};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
+        dcpu.upload(bin);
+        dcpu.run(1); // set push, pick 0
+        assertEquals("SP", 0xffff, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("[SP[1]]", 0x6b01, dcpu.mem[0xffff]);
+        dcpu.run(1); // set push, 1
+        assertEquals("SP", 0xfffe, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("[SP[1]]", 0x6b01, dcpu.mem[0xffff]);
+        assertEquals("[SP[2]]", 0x0001, dcpu.mem[0xfffe]);
+        dcpu.run(1); // set a, peek
+        assertEquals("A", 0x0001, (short) dcpu.getreg(Dcpu.Reg.A) & 0xffff);
+        assertEquals("SP", 0xfffe, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        dcpu.run(1); // set b, pick 1
+        assertEquals("B", 0x6b01, (short) dcpu.getreg(Dcpu.Reg.B) & 0xffff);
+        assertEquals("SP", 0xfffe, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        dcpu.run(1); // set c, pop
+        assertEquals("C", 0x0001, (short) dcpu.getreg(Dcpu.Reg.C) & 0xffff);
+        assertEquals("SP", 0xffff, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        dcpu.run(1); // set X, pick 1
+        assertEquals("X", 0x6b01, (short) dcpu.getreg(Dcpu.Reg.X) & 0xffff);
+        assertEquals("SP", 0xffff, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+    }
 }
