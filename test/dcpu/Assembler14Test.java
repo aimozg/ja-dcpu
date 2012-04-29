@@ -19,7 +19,7 @@ public class Assembler14Test {
         short[] bin = assembler.assemble("SET EX, -1\n");
         short[] exp = new short[]{(short) 0x83A1};
         TestUtils.printShorts(bin);
-        assertArrayEquals("binary", exp, bin);
+        assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
     @Test
@@ -27,7 +27,7 @@ public class Assembler14Test {
         short[] bin = assembler.assemble("SET X, 0xFFFF\n");
         short[] exp = new short[]{(short) 0x8061};
         TestUtils.printShorts(bin);
-        assertArrayEquals("binary", exp, bin);
+        assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
     @Test
@@ -37,7 +37,7 @@ public class Assembler14Test {
         );
         short[] exp = new short[]{(short) 0x6001};
         TestUtils.printShorts(bin);
-        assertArrayEquals("binary", exp, bin);
+        assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
     @Test
@@ -47,7 +47,7 @@ public class Assembler14Test {
         );
         short[] exp = new short[]{(short) 0x03e1, 0};
         TestUtils.printShorts(bin);
-        assertArrayEquals("binary", exp, bin);
+        assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
     @Test
@@ -60,4 +60,6 @@ public class Assembler14Test {
         }
         assertEquals("throws exception", true, threwIAE);
     }
+
+
 }

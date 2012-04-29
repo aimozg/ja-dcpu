@@ -2,6 +2,9 @@ package dcpu;
 
 import static dcpu.Dcpu.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Converts opcodes to strings
  */
@@ -23,48 +26,85 @@ public class Disassembler {
     }
 
     public String next(boolean incrementMemory) {
+        List<String> nextWords = new ArrayList<String>();
         int instr = (incrementMemory ? mem[address++] : mem[address]) & 0xffff;
         int opcode = instr & C_O_MASK;
         if (opcode != O_NBI) {
             int a = (instr & C_A_MASK) >> C_A_SHIFT;
             int b = (instr & C_B_MASK) >> C_B_SHIFT;
             BasicOp bop = BasicOp.l(opcode);
-            return ((bop == null) ? "???" : bop.name) + " " + operand(b) + ", " + operand(a);
+            
+            // Words come in order : OPERATION_WORD NW_A NW_B
+            // but we print B first, so need to store up the NW_ values before printing them in case there's multiple
+            StringBuilder sb = new StringBuilder();
+            sb.append((bop == null) ? "???" : bop.name).append(' ');
+            operand(b, sb, nextWords);
+            sb.append(", ");
+            operand(a, sb, nextWords);
+            String line = sb.toString();
+            int nextWordIndex = 0;
+            for (String nextWord : nextWords) {
+                String replaceString = String.format("__NEXT_WORD_%d__", ++nextWordIndex);
+                line = line.replace(replaceString, nextWord);
+            }
+            return line;
         } else {
             int a = (instr & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             opcode = (instr & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
             SpecialOp sop = SpecialOp.l(opcode);
             if (sop == null) return String.format("DAT 0x%04x", instr);
-            else return sop.name + " " + operand(a);
+            
+            StringBuilder sb = new StringBuilder();
+            sb.append(sop.name).append(' ');
+            operand(a, sb, nextWords);
+            String line = sb.toString();
+            int nextWordIndex = 0;
+            for (String nextWord : nextWords) {
+                String replaceString = String.format("__NEXT_WORD_%d__", ++nextWordIndex);
+                line = line.replace(replaceString, nextWord);
+            }
+            return line;
+            // else return sop.name + " " + operand(a);
         }
     }
 
-    String operand(int code) {
+    void operand(int code, StringBuilder sb, List<String> nextWords) {
         if (code <= 0x07) {
-            return Reg.l(code).name;
+            sb.append(Reg.l(code).name);
         } else if (code <= 0x0F) {
-            return "[" + Reg.l(code - 8).name + "]";
+            sb.append("[" + Reg.l(code - 8).name + "]");
         } else if (code <= 0x17) {
-            return String.format("[%s+0x%04x]", Reg.l(code - 16).name, mem[address++]);
+            nextWords.add(0, String.format("0x%04x", mem[address++]));
+            sb.append(String.format("[%s + __NEXT_WORD_%d__]", Reg.l(code - 16).name, nextWords.size()));
         } else if (code >= 0x20 && code <= 0x3F) {
-            return String.valueOf(code - 0x20 - 1);
+            sb.append(String.valueOf(code - 0x20 - 1));
         } else switch (code) {
             case A_PUSHPOP://TODO
-                return "PUSHPOP";
+                sb.append("PUSHPOP");
+                break;
             case A_PEEK:
-                return "PEEK";
+                sb.append("PEEK");
+                break;
             case A_PICK:
-                return "PICK";
+                sb.append("PICK");
+                break;
             case A_SP:
-                return "SP";
+                sb.append("SP");
+                break;
             case A_PC:
-                return "PC";
+                sb.append("PC");
+                break;
             case A_EX:
-                return "EX";
+                sb.append("EX");
+                break;
             case A_M_NW:
-                return String.format("[0x%04x]", mem[address++]);
+                nextWords.add(0, String.format("0x%04x", mem[address++]));
+                sb.append(String.format("[__NEXT_WORD_%d__]", nextWords.size()));
+                break;
             case A_NW:
-                return String.format("0x%04x", mem[address++]);
+                nextWords.add(0, String.format("0x%04x", mem[address++]));
+                sb.append(String.format("__NEXT_WORD_%d__", nextWords.size()));
+                break;
             default:
                 throw new RuntimeException("Unknown code value: " + code);
         }

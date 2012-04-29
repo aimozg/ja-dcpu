@@ -184,11 +184,11 @@ public class DcpuTest {
     public void testSHR() throws Exception {
         String[] setupValues = new String[]{"0xa234", "0x23", "0x10", "0x20", "0x30", "0x40", "0x50", "0x60", "0x5a5a", "0x80"};
         List<Integer[]> expected = new ArrayList<Integer[]>();
-        expected.add(new Integer[]{0x1446, 0x0004, 0x0030, 0x0050, 0x5a5a});
+        expected.add(new Integer[]{0x1446, 0x8000, 0x0030, 0x0050, 0x5a5a});
         expected.add(new Integer[]{0xa234, 0x0000, 0x0030, 0x0050, 0x5a5a});
         expected.add(new Integer[]{0xa234, 0x0000, 0x0030, 0x0050, 0x5a5a});
         expected.add(new Integer[]{0xa234, 0x0000, 0x0030, 0x0050, 0x5a5a});
-        expected.add(new Integer[]{0xa234, 0x0002, 0x0030, 0x0050, 0x0b4b});
+        expected.add(new Integer[]{0xa234, 0x4000, 0x0030, 0x0050, 0x0b4b});
         expected.add(new Integer[]{0xa234, 0x0000, 0x0030, 0x0050, 0x5a5a});
         expected.add(new Integer[]{0xa234, 0x0000, 0x0030, 0x0050, 0x5a5a});
         expected.add(new Integer[]{0xa234, 0x0000, 0x0030, 0x0050, 0x5a5a});
@@ -290,12 +290,12 @@ public class DcpuTest {
         int i = 0;
         for (String a : aValues) {
             for (String b : bValues) {
-                String assembly = setup + cmd + " " + a + ", " + b + "\n";
+                String assembly = setup + cmd + " " + a + ", " + b + "\n" + "HLT";
                 // System.out.println(assembly);
                 dcpu.reset();
                 dcpu.memzero();
                 dcpu.upload(assembler.assemble(assembly));
-                dcpu.run(11);
+                dcpu.run();
                 assertExpectedValues(assembly, expected.get(i++), setupValues[0], setupValues[2]);
             }
         }
@@ -566,12 +566,12 @@ public class DcpuTest {
     public void testJSR() throws Exception {
         dcpu.upload(assembler.assemble(
                 "           SET X, 1\n" +
-                        "           SET PC, go\n" +
-                        ":f1        SET X, 0\n" +
-                        "           SET PC, POP\n" +
-                        ":go        JSR f1\n" +
-                        "           SET Y, 1\n" +
-                        "HLT"
+                "           SET PC, go\n" +
+                ":f1        SET X, 0\n" +
+                "           SET PC, POP\n" +
+                ":go        JSR f1\n" +
+                "           SET Y, 1\n" +
+                "           HLT"
         ));
         dcpu.run(2);
         assertEquals("x", 1, dcpu.getreg(Dcpu.Reg.X));
@@ -589,15 +589,15 @@ public class DcpuTest {
     public void test_PC_SP_Increminting() throws Exception {
         dcpu.upload(assembler.assemble(
                 "SET A, 0xFF\n" +
-                        "SET A, PC\n" +
-                        "SET PUSH, A\n" +
-                        "SET B, PEEK\n" +
-                        "SET C, SP\n" +
-                        "SET I, POP\n" +
-                        "SET [0x0100], PC\n" +
-                        "SET PUSH, SP\n" +
-                        "SET X, 1\n" +
-                        "HLT"
+                "SET A, PC\n" +
+                "SET PUSH, A\n" +
+                "SET B, PEEK\n" +
+                "SET C, SP\n" +
+                "SET I, POP\n" +
+                "SET [0x0100], PC\n" +
+                "SET PUSH, SP\n" +
+                "SET X, 1\n" +
+                "HLT"
         ));
         dcpu.run(1);
         dcpu.run(1);
@@ -713,7 +713,7 @@ public class DcpuTest {
                 "SHR A, B\n" +
                 "HLT"
         );
-        short[] expected = new short[] {0x7c01, (short) 0xa234, 0x7c21, 0x0023, 0x040c, 0x0000};
+        short[] expected = new short[] {0x7c01, (short) 0xa234, 0x7c21, 0x0023, 0x040d, 0x0000};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run();

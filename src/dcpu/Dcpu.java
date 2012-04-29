@@ -167,12 +167,14 @@ public final class Dcpu {
     
     class Operation {
         int cmd;
+        short pc;
         int opcode;
         int a;
         int b;
         OpType type;
-        Operation(int cmd) {
+        Operation(int cmd, short pc) {
             this.cmd = cmd;
+            this.pc = pc;
             this.opcode = cmd & C_O_MASK;
             this.type = OpType.getOpType(cmd);
             switch (type) {
@@ -425,7 +427,7 @@ public final class Dcpu {
 
         int cmd = mem[(mem[M_PC]++) & 0xffff] & 0xffff; // command value
 
-        Operation op = new Operation(cmd);
+        Operation op = new Operation(cmd, ppc);
         boolean postExecuteCalled = false;
         switch (op.type) {
             case BASIC:
@@ -449,7 +451,7 @@ public final class Dcpu {
 
     private boolean handleBasicOp(Operation op, boolean skip) {
         boolean postExecuteCalled = false;
-        short ppc = mem[M_PC];
+        short ppc = op.pc;
         short psp = mem[M_SP];
 
         BasicOp bop = BasicOp.l(op.opcode);
@@ -530,15 +532,15 @@ public final class Dcpu {
                 break;
             case SHL:
                 rslt = bv << av;
-                exreg = (bv << av) >> 16;
+                exreg = ((bv << av) >> 16) & 0xffff;
                 break;
             case SHR:
-                rslt = av >>> bv;
-                exreg = (bv << 16) >>> av;
+                rslt = bv >>> av;
+                exreg = ((bv << 16) >> av) & 0xffff;
                 break;
             case ASR:
-                rslt = av >> bv;
-                exreg = (bv << 16) >> av;
+                rslt = bv >> av;
+                exreg = ((bv << 16) >>> av) & 0xffff;
                 break;
             case AND:
                 rslt = av & bv;

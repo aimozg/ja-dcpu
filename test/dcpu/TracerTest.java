@@ -76,8 +76,8 @@ public class TracerTest {
         String expected = 
             "0000: SET [0x0800], 1\n" +
             "0002: ADD A, [0x8000]\n" +
-            "0004: SUB [I+0x8000], 1\n" +
-            "0006: MUL [I+0x8000], [I+0x9000]\n" +
+            "0004: SUB [I + 0x8000], 1\n" +
+            "0006: MUL [I + 0x8000], [I + 0x9000]\n" +
             "0009: DIV 0x8000, 1\n" +
             "000b: MOD A, 0x8000\n" +
             "000d: SHL 0x8000, 0x8000\n" +
@@ -109,8 +109,8 @@ public class TracerTest {
         String expected = 
             "0000: SET [0x0800], 1\n" +
             "0002: ADD A, [0x8000]\n" +
-            "0004: SUB [I+0x8000], 1\n" +
-            "0006: MUL [I+0x8000], [I+0x9000]\n" +
+            "0004: SUB [I + 0x8000], 1\n" +
+            "0006: MUL [I + 0x8000], [I + 0x9000]\n" +
             "0009: DIV 0x8000, 1\n" +
             "000b: MOD A, 0x8000\n" +
             "000d: SHL 0x8000, 0x8000\n" +
