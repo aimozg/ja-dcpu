@@ -214,7 +214,6 @@ public class TracerTest {
         dcpu.upload(bin);
         tracer.install(dcpu);
         dcpu.run();
-        System.out.println(baos.toString());
         String expected = 
                 "0000: SET [0xfffc], 0xbeef\n" +
                 "0003: SET A, 1\n" +
