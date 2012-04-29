@@ -744,4 +744,24 @@ public class DcpuTest {
         dcpu.run();
         assertEquals("a", (short) 0x1446, dcpu.getreg(Dcpu.Reg.A));
     }
+
+    @Test
+    public void testMultiBranching() throws Exception {
+        short[] bin = assembler.assemble(
+                "SET A, 1\n" +
+                "SET B, 1\n" +
+                "IFE A, 2\n" +
+                "IFE B, 1\n" +
+                "    SET X, 1\n" +
+                "SET X, 2\n" +
+                "HLT"
+        );
+        short[] expected = new short[] {(short) 0x8801, (short) 0x8821, (short) 0x8c12, (short) 0x8832, (short) 0x8861, (short) 0x8c61, 0x0000};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
+        dcpu.upload(bin);
+        dcpu.run(3);
+        // ensure we skipped all IFX and didn't set X
+        assertEquals("pc", 5, dcpu.getreg(Dcpu.Reg.PC));
+        assertEquals("x", 0, dcpu.getreg(Dcpu.Reg.X));
+    }
 }

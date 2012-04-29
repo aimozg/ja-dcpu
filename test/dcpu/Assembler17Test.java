@@ -6,7 +6,7 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
 
-public class Assembler14Test {
+public class Assembler17Test {
     private Assembler assembler;
 
     @Before
