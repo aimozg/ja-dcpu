@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.internal.ArrayComparisonFailure;
 
 public class DcpuTest {
 
@@ -366,7 +367,6 @@ public class DcpuTest {
 
     @Test
     public void testMulOverflow() throws Exception {
-        /*
         dcpu.upload(assembler.assemble(
                 "SET EX, 1\n" +
                         "SET X, 3\n" +
@@ -377,7 +377,6 @@ public class DcpuTest {
         assertEquals("x", 12, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 4, dcpu.getreg(Dcpu.Reg.Y));
         assertEquals("ex", 0, dcpu.getreg(Dcpu.Reg.EX));
-        */
         dcpu.reset();
         dcpu.memzero();
         short[] bin = assembler.assemble(
@@ -908,4 +907,47 @@ public class DcpuTest {
         assertEquals("X", 0x6b01, (short) dcpu.getreg(Dcpu.Reg.X) & 0xffff);
         assertEquals("SP", 0xffff, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
     }
+    
+    @Test
+    public void testDVI() throws Exception {
+        assertDVI(16, 7, (short) 0x4924, new short[] {(short) 0xc401, (short) 0xa021, (short) 0x0407, 0x0000});
+        assertDVI(-16, 7, (short) 0xb6dc, new short[] {(short) 0x7c01, (short) 0xfff0, (short) 0xa021, (short) 0x0407, 0x0000});
+        assertDVI(16, -7, (short) 0xb6dc, new short[] {(short) 0xc401, (short) 0x7c21, (short) 0xfff9, (short) 0x0407, 0x0000});
+        assertDVI(-16, -7, (short) 0x4924, new short[] {(short) 0x7c01, (short) 0xfff0, (short) 0x7c21, (short) 0xfff9, (short) 0x0407, 0x0000});
+    }
+
+    private void assertDVI(int aValue, int bValue, short expectedValue, short[] expectedBin) throws ArrayComparisonFailure {
+        short[] bin = assembler.assemble(
+                "SET A, " + aValue + "\n" +
+                "SET B, " + bValue + "\n" +
+                "DVI A, B\n" +
+                "HLT\n"
+        );
+        
+        assertArrayEquals(TestUtils.displayExpected(expectedBin, bin), expectedBin, bin);
+        dcpu.reset();
+        dcpu.memzero();
+        dcpu.upload(bin);
+        dcpu.run();
+        assertEquals("ex", (short) expectedValue, (short) dcpu.getreg(Dcpu.Reg.EX));
+    }
+    
+    @Test
+    public void testIagIas() throws Exception {
+        short[] bin = assembler.assemble(
+                "SET A, 0x30\n" +
+                "IAS A\n" +
+                "SET A, 0x0\n" +
+                "IAG A\n" +
+                "HLT"
+        );
+        short[] expected = new short[] {0x7c01, 0x0030, 0x0140, (short) 0x8401, 0x0120, 0x0000};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
+        dcpu.upload(bin);
+        dcpu.run(2);
+        assertEquals("ia", (short) 0x30, dcpu.getreg(Dcpu.Reg.IA));
+        dcpu.run(2);
+        assertEquals("a", (short) 0x30, dcpu.getreg(Dcpu.Reg.A));
+    }
+    
 }

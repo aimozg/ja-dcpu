@@ -416,6 +416,7 @@ public final class Dcpu {
     public static final int M_PC = Reg.PC.address;
     public static final int M_SP = Reg.SP.address;
     public static final int M_EX = Reg.EX.address;
+    public static final int M_IA = Reg.IA.address;
     public static final int M_CV = Reg.BASE_ADDRESS + REGS_COUNT; // constant value
 
     ///////////////////////////////////////////////////////////////
@@ -668,10 +669,10 @@ public final class Dcpu {
                 // TODO INT
                 break;
             case IAG:
-                // TODO IAG
+                rslt = mem[M_IA];
                 break;
             case IAS:
-                // TODO IAS
+                mem[M_IA] = (short) av;
                 break;
             case RFI:
                 // TODO RFI
