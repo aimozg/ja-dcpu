@@ -271,7 +271,9 @@ public class Assembler {
             SimpleParam p2 = simpleParam(false, isA);
             if (p2 == null) fail("Bad parameter2");
             if (neg && !(p2 instanceof SimpleConstParam)) fail("Bad parameter2");
-            if (neg) buffer[counter - 1] = (short) (0x10000 - buffer[counter - 1]);
+            if (neg) {
+                newWords.get(0).value = (short) (0x10000 - newWords.get(0).value);
+            }
             require("]", "parameter");
             return new ParamSum(p, p2);
         }

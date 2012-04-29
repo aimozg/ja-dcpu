@@ -72,19 +72,23 @@ public class AssemblerTest {
         // Test assembling [REG-LITERAL] to same opcode as [REG+0x10000-LITERAL]
         short[] bin = assembler.assemble(
                 "SET A,[A-0x10]\n" +
-                        "SET A,[A+0xfff0]\n"
+                "SET A,[A+0xfff0]\n"
         );
+        short[] expected = new short[] {0x4001, (short) 0xfff0, 0x4001, (short) 0xfff0};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         assertEquals(4, bin.length);
         assertEquals(bin[0], bin[2]);
         assertEquals(bin[1], bin[3]);
         // Test plain negative literals
         bin = assembler.assemble(
-                "SET A,-1\n" +
-                        "SET A,[-1]\n"
+                "SET A,-2\n" +
+                "SET A,[-2]\n"
         );
+        expected = new short[] {0x7c01, (short) 0xfffe, 0x7801, (short) 0xfffe};
+        assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         assertEquals(4, bin.length);
-        assertEquals(-1, bin[1]);
-        assertEquals(-1, bin[3]);
+        assertEquals(-2, bin[1]);
+        assertEquals(-2, bin[3]);
     }
 
     @Test
@@ -113,7 +117,7 @@ public class AssemblerTest {
                 "SET [J + 0x1234], A\n" +
                         "SET B, B\n"
         );
-        short[] expected = new short[]{0x0171, 0x1234, 0x0411};
+        short[] expected = new short[]{0x02e1, 0x1234, 0x0421};
         assertArrayEquals(expected, bin1);
         assertArrayEquals(expected, bin2);
     }
@@ -137,12 +141,12 @@ public class AssemblerTest {
         short[] bin = assembler.assemble(
                 "        SET A, 0\n" +
                         "        SET PC, jump\n" +
-                        ":area   reserve 2 dat 0x00aa" +
+                        ":area   reserve 2 dat 0x00aa\n" +
                         ":jump   SET A, PC"
         );
         short[] expected = new short[]{
-                (short) 0x8001,
-                0x7dc1, 0x0005,
+                (short) 0x8401,
+                0x7f81, 0x0005,
                 0x00aa, 0x00aa,
                 0x7001
         };
@@ -160,10 +164,10 @@ public class AssemblerTest {
                 "           hlt\n"
         );
         short[] expected = new short[]{
-                        0x7dc1, 0x0002,
+                        0x7f81, 0x0002,
+                (short) 0x8801,
+                        0x7f81, 0x0006,
                 (short) 0x8401,
-                        0x7dc1, 0x0006,
-                (short) 0x8001,
                         0x0000
         };
         assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
@@ -177,8 +181,8 @@ public class AssemblerTest {
                 "          hlt\n"
         );
         short[] expected = new short[]{
-                        0x7dc1, 0x0002,
-                (short) 0x8401,
+                        0x7f81, 0x0002,
+                (short) 0x8801,
                         0x0000
         };
         assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
