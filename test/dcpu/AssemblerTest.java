@@ -41,11 +41,10 @@ public class AssemblerTest {
             AVALUES.put("[" + REGISTERS[i].toUpperCase() + " + 0x" + A_BIG_LITERAL.toUpperCase() + " ]", 16 + i);
             BVALUES.put("[" + REGISTERS[i].toUpperCase() + " + 0x" + B_BIG_LITERAL.toUpperCase() + " ]", 16 + i);
         }
-        /* TODO: needs fixing in assembler for POP / PEEK etc
         for (int i = 0; i < VAL_COMMANDS.length; i++) {
-            VALUES.put(VAL_COMMANDS[i].toUpperCase(), 0x18 + i);
+            AVALUES.put(VAL_COMMANDS[i].toUpperCase(), 0x18 + i);
+            BVALUES.put(VAL_COMMANDS[i].toUpperCase(), 0x18 + i);
         }
-        */
         AVALUES.put("[0x" + A_BIG_LITERAL.toUpperCase() + "]", 0x1e);
         AVALUES.put("0x" + A_BIG_LITERAL.toUpperCase(), 0x1f);
         BVALUES.put("[0x" + B_BIG_LITERAL.toUpperCase() + "]", 0x1e);

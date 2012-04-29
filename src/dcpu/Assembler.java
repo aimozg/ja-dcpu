@@ -241,7 +241,7 @@ public class Assembler {
         }
         int op_pc = counter;
         append((short) 0, true);
-        Param pb = param(false);
+        Param pb = param(sop != null); // this is an A param if it's a SOP
         int b = pb.acode();
         if (b == -1) fail("Bad operand b");
         if (bop != null) {

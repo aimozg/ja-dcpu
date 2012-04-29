@@ -26,7 +26,8 @@ public final class Dcpu {
         A("A", 0, A_A), B("B", 1, A_B), C("C", 2, A_C),
         X("X", 3, A_X), Y("Y", 4, A_Y), Z("Z", 5, A_Z),
         I("I", 6, A_I), J("J", 7, A_J),
-        PC("PC", 8, A_PC), SP("SP", 9, A_SP), EX("EX", 10, A_EX), IA("IA", 11, -1);
+        PC("PC", 8, A_PC), SP("SP", 9, A_SP), EX("EX", 10, A_EX), IA("IA", 11, -1),
+        PUSH("PUSH", 12, A_PUSHPOP), POP("POP", 13, A_PUSHPOP), PEEK("PEEK", 14, A_PEEK), PICK("PICK", 15, A_PICK);
 
         public static final int BASE_ADDRESS = 0x10000;
 
@@ -263,7 +264,7 @@ public final class Dcpu {
     public static final int C_NBI_O_SHIFT = C_O_BITLEN;
     public static final int C_NBI_A_SHIFT = C_NBI_O_SHIFT + C_O_BITLEN;
     public static final int C_NBI_O_MASK = ((1 << C_NBI_O_BITLEN) - 1) << C_NBI_O_SHIFT;
-    public static final int C_NBI_A_MASK = ((1 << C_NBI_A_BITLEN) - 1) << C_NBI_A_BITLEN;
+    public static final int C_NBI_A_MASK = ((1 << C_NBI_A_BITLEN) - 1) << C_NBI_A_SHIFT;
     // Command value types (take one and shift with C_x_SHIFT)
     //   Plain register
     public static final int A_REG = 0;// | with REG_x
