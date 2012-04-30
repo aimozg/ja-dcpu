@@ -6,9 +6,9 @@ public class GenericClock extends Dcpu.Device {
 
     public static final int HARDWARE_ID = 0x12d0b402;
 
-    public static final short CLKINT_SETUP = 0;
-    public static final short CLKINT_GETTICKS = 1;
-    public static final short CLKINT_TOGGLEINT = 2;
+    public static final char CLKINT_SETUP = 0;
+    public static final char CLKINT_GETTICKS = 1;
+    public static final char CLKINT_TOGGLEINT = 2;
 
     private final int manufacturerId;
 

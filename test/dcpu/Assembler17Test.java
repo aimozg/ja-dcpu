@@ -33,7 +33,7 @@ public class Assembler17Test {
         char[] bin = assembler.assemble(
                 "SET A, POP\n"
         );
-        char[] exp = new char[]{(short) 0x6001};
+        char[] exp = new char[]{0x6001};
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
@@ -42,7 +42,7 @@ public class Assembler17Test {
         char[] bin = assembler.assemble(
                 "SET 0, A\n"
         );
-        char[] exp = new char[]{(short) 0x03e1, 0};
+        char[] exp = new char[]{0x03e1, 0};
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 

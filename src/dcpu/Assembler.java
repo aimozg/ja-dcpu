@@ -312,10 +312,9 @@ public class Assembler {
                 if (!isA && val < 0) return null;
                 // a const in B should always append the val
                 if (!isA || !canBeShort || val >= 31 || val < -1) {
-                    // append((short) val, true);
                     newWords.add(0, new AppendableWord((char) val, true)); // add at start of list as we need them in reverse order
                 }
-                return new SimpleConstParam((short) val, isA);
+                return new SimpleConstParam((char) val, isA);
             } else {
                 return null;
             }
@@ -346,7 +345,7 @@ public class Assembler {
             buffer = Arrays.copyOf(buffer, buffer.length * 3 / 2);
         }
         if (genMap) {
-            asmmap.binMap.put((short) counter, lineno);
+            asmmap.binMap.put((char) counter, lineno);
             if (code) asmmap.code.set(counter);
             if (!asmmap.srcMap.containsKey(lineno)) {
                 asmmap.srcMap.put(lineno, (char) counter);
@@ -382,10 +381,10 @@ public class Assembler {
     }
 
     private static class SimpleConstParam extends SimpleParam {
-        final short value;
+        final char value;
         final boolean isA;
 
-        public SimpleConstParam(short value, boolean isA) {
+        public SimpleConstParam(char value, boolean isA) {
             this.value = value;
             this.isA = isA;
         }
@@ -393,7 +392,8 @@ public class Assembler {
         @Override
         int acode() {
             // int i = value & 0xffff; // why did value used to be anded with 0xffff?
-            if (isA && (value >= -1 && value <= 30)) return A_CONST + value + 1; // adjust for -1 ... 30
+            if (isA && value == 65535) return A_CONST; // -1
+            if (isA && value <= 30) return A_CONST + value + 1; // adjust for -1 ... 30
             return A_NW;
         }
     }

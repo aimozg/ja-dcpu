@@ -46,7 +46,6 @@ public class InterruptTest {
                 ":inthandler\n" +
                 "   HCF 0\n");
         cpu.run(4); // IAS, SET, INT, <int>
-        //after these two asserts I really started to consider migrating from short to char
         assertEquals(0xface, cpu.mem[cpu.sp()] & 0xffff);
         assertEquals(map.symbol("afterint").charValue(), cpu.mem[cpu.sp() + 1]);
     }

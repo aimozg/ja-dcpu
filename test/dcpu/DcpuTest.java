@@ -30,7 +30,7 @@ public class DcpuTest {
 
         // check register values
         // only value set is the M_SP which is initialised to 0xffff
-        short[] registerStartingValues = new short[Dcpu.REGS_COUNT];
+        char[] registerStartingValues = new char[Dcpu.REGS_COUNT];
         for (int i = 0; i < registerStartingValues.length; i++) {
             assertEquals(registerStartingValues[i], dcpu.memget(Dcpu.M_A + i));
         }
@@ -301,11 +301,11 @@ public class DcpuTest {
     }
 
     private void assertExpectedValues(String assembly, Integer[] expected, String v1, String v2) throws Exception {
-        assertEquals("running '" + assembly + "' : A", expected[0].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.A) & 0xffff));
-        assertEquals("running '" + assembly + "' : EX", expected[1].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.EX) & 0xffff));
-        assertEquals("running '" + assembly + "' : [0xA000]", expected[2].shortValue(), (short) (dcpu.mem[0xA000] & 0xffff));
-        assertEquals("running '" + assembly + "' : [0xA010]", expected[3].shortValue(), (short) (dcpu.mem[0xA000 + Integer.parseInt(v2.substring(2), 16)] & 0xffff));
-        assertEquals("running '" + assembly + "' : [0x0100]", expected[4].shortValue(), (short) (dcpu.mem[Integer.parseInt(v1.substring(2), 16)] & 0xffff));
+        assertEquals("running '" + assembly + "' : A", expected[0].intValue(), (dcpu.getreg(Dcpu.Reg.A) & 0xffff));
+        assertEquals("running '" + assembly + "' : EX", expected[1].intValue(), (dcpu.getreg(Dcpu.Reg.EX) & 0xffff));
+        assertEquals("running '" + assembly + "' : [0xA000]", expected[2].intValue(), (dcpu.mem[0xA000] & 0xffff));
+        assertEquals("running '" + assembly + "' : [0xA010]", expected[3].intValue(), (dcpu.mem[0xA000 + Integer.parseInt(v2.substring(2), 16)] & 0xffff));
+        assertEquals("running '" + assembly + "' : [0x0100]", expected[4].intValue(), (dcpu.mem[Integer.parseInt(v1.substring(2), 16)] & 0xffff));
     }
 
     @Test
@@ -358,9 +358,9 @@ public class DcpuTest {
                         "SUB X, Y\n"
         ));
         dcpu.run(4);
-        assertEquals("x", (short) 0xffff, dcpu.getreg(Dcpu.Reg.X));
+        assertEquals("x", 0xffff, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 1, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("ex", (short) 0xffff, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("ex", 0xffff, dcpu.getreg(Dcpu.Reg.EX));
     }
 
     @Test
@@ -414,9 +414,9 @@ public class DcpuTest {
                         "DIV X, Y\n"
         ));
         dcpu.run(4);
-        assertEquals("x", (short) 0x0000, dcpu.getreg(Dcpu.Reg.X));
+        assertEquals("x", 0x0000, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 0x1234, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("ex", (short) 0x0e02, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("ex", 0x0e02, dcpu.getreg(Dcpu.Reg.EX));
     }
 
     @Test
@@ -822,43 +822,43 @@ public class DcpuTest {
         dcpu.upload(bin);
         dcpu.run(5);
         assertEquals("A", 1, dcpu.getreg(Dcpu.Reg.A));
-        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("SP", 0xfffd, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
         assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
         assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
         dcpu.run(1); // PICK -1 = [0xfffd + (-1)] = [0xfffc]
-        assertEquals("A", 0xbeef, (short) dcpu.getreg(Dcpu.Reg.A) & 0xffff);
-        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("A", 0xbeef, dcpu.getreg(Dcpu.Reg.A) & 0xffff);
+        assertEquals("SP", 0xfffd, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
         assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
         assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
         dcpu.run(1); // PICK 0 = [0xfffd] = 3
         assertEquals("A", 3, dcpu.getreg(Dcpu.Reg.A));
-        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("SP", 0xfffd, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
         assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
         assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
         dcpu.run(1); // PICK 1 = [0xfffd + 1] = 2
         assertEquals("A", 2, dcpu.getreg(Dcpu.Reg.A));
-        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("SP", 0xfffd, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
         assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
         assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
         dcpu.run(1); // PICK 2 = [0xfffd + 2] = 1
         assertEquals("A", 1, dcpu.getreg(Dcpu.Reg.A));
-        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("SP", 0xfffd, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
         assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
         assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
         dcpu.run(1); // PICK 3 = [0xfffd + 3]
-        assertEquals("A", 0x7fc1, (short) dcpu.getreg(Dcpu.Reg.A) & 0xffff);
-        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("A", 0x7fc1, dcpu.getreg(Dcpu.Reg.A) & 0xffff);
+        assertEquals("SP", 0xfffd, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
         assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
         assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
         dcpu.run(1); // PICK 4 = [0xfffd + 4]
-        assertEquals("A", 0xbeef, (short) dcpu.getreg(Dcpu.Reg.A) & 0xffff);
-        assertEquals("SP", 0xfffd, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("A", 0xbeef, dcpu.getreg(Dcpu.Reg.A) & 0xffff);
+        assertEquals("SP", 0xfffd, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         assertEquals("[SP[1]]", 0x0001, dcpu.mem[0xffff]);
         assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
         assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
@@ -886,24 +886,24 @@ public class DcpuTest {
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run(1); // set push, pick 0
-        assertEquals("SP", 0xffff, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("SP", 0xffff, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         assertEquals("[SP[1]]", 0x6b01, dcpu.mem[0xffff]);
         dcpu.run(1); // set push, 1
-        assertEquals("SP", 0xfffe, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("SP", 0xfffe, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         assertEquals("[SP[1]]", 0x6b01, dcpu.mem[0xffff]);
         assertEquals("[SP[2]]", 0x0001, dcpu.mem[0xfffe]);
         dcpu.run(1); // set a, peek
-        assertEquals("A", 0x0001, (short) dcpu.getreg(Dcpu.Reg.A) & 0xffff);
-        assertEquals("SP", 0xfffe, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("A", 0x0001, dcpu.getreg(Dcpu.Reg.A) & 0xffff);
+        assertEquals("SP", 0xfffe, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         dcpu.run(1); // set b, pick 1
-        assertEquals("B", 0x6b01, (short) dcpu.getreg(Dcpu.Reg.B) & 0xffff);
-        assertEquals("SP", 0xfffe, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("B", 0x6b01, dcpu.getreg(Dcpu.Reg.B) & 0xffff);
+        assertEquals("SP", 0xfffe, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         dcpu.run(1); // set c, pop
-        assertEquals("C", 0x0001, (short) dcpu.getreg(Dcpu.Reg.C) & 0xffff);
-        assertEquals("SP", 0xffff, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("C", 0x0001, dcpu.getreg(Dcpu.Reg.C) & 0xffff);
+        assertEquals("SP", 0xffff, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
         dcpu.run(1); // set X, pick 1
-        assertEquals("X", 0x6b01, (short) dcpu.getreg(Dcpu.Reg.X) & 0xffff);
-        assertEquals("SP", 0xffff, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
+        assertEquals("X", 0x6b01, dcpu.getreg(Dcpu.Reg.X) & 0xffff);
+        assertEquals("SP", 0xffff, dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
     }
 
     @Test
@@ -927,7 +927,7 @@ public class DcpuTest {
         dcpu.memzero();
         dcpu.upload(bin);
         dcpu.run();
-        assertEquals("ex", (short) expectedValue, (short) dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("ex", expectedValue, dcpu.getreg(Dcpu.Reg.EX));
     }
 
     @Test

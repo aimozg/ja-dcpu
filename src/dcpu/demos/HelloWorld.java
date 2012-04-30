@@ -22,7 +22,7 @@ public class HelloWorld {
         ///////////
         // LOAD PROGRAM
         char end = 0xffff;
-        char data = (short) 0x2000;
+        char data = 0x2000;
         char video = 0x8000;
         int i_video = video & 0xffff;
         int i_data = data & 0xffff;

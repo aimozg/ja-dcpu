@@ -4,7 +4,7 @@ import javax.imageio.ImageIO;
 import java.io.IOException;
 
 /*
- * Taken from Notch's disassembled application - char changed to short
+ * Taken from Notch's disassembled application
  */
 public class VirtualMonitor {
 

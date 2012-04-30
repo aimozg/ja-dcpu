@@ -611,14 +611,14 @@ public final class Dcpu {
                 if (av == 0) {
                     rslt = 0;
                 } else {
-                    rslt = (short) (bv % av);
+                    rslt = (bv % av);
                 }
                 break;
             case MDI:
                 if (av == 0) {
                     rslt = 0;
                 } else {
-                    rslt = (short) (bsv % asv);
+                    rslt = (bsv % asv);
                 }
                 break;
             case SHL:

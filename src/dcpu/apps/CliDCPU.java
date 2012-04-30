@@ -146,28 +146,28 @@ public class CliDCPU {
                 int numLines = range / numWordsPerLine;
                 int numLeftOver = range - numLines * numWordsPerLine;
                 for (int i = 0; i < numLines; i++) {
-                    System.out.printf("(%04x) :", ((short) start & 0xffff) + i * numWordsPerLine);
+                    System.out.printf("(%04x) :", (start & 0xffff) + i * numWordsPerLine);
                     for (int j = 0; j < numWordsPerLine; j++) {
-                        System.out.printf(" %04x", (int) dcpu.mem[((short) start & 0xffff) + i * numWordsPerLine + j]);
+                        System.out.printf(" %04x", (int) dcpu.mem[(start & 0xffff) + i * numWordsPerLine + j]);
                     }
                     System.out.print(" | ");
                     for (int j = 0; j < numWordsPerLine; j++) {
-                        printShortChars(((short) start & 0xffff) + i * numWordsPerLine + j);
+                        printShortChars((start & 0xffff) + i * numWordsPerLine + j);
                     }
                     System.out.println();
                 }
 
                 if (numLeftOver > 0) {
-                    System.out.printf("(%04x) :", ((short) start & 0xffff) + numLines * numWordsPerLine);
+                    System.out.printf("(%04x) :", (start & 0xffff) + numLines * numWordsPerLine);
                     for (int j = 0; j < numLeftOver; j++) {
-                        System.out.printf(" %04x", (int) dcpu.mem[((short) start & 0xffff) + numLines * numWordsPerLine + j]);
+                        System.out.printf(" %04x", (int) dcpu.mem[(start & 0xffff) + numLines * numWordsPerLine + j]);
                     }
                     for (int i = 0; i < (numWordsPerLine - numLeftOver); i++) {
                         System.out.print("     "); // spacer to make chars line up 
                     }
                     System.out.print(" | ");
                     for (int j = 0; j < numLeftOver; j++) {
-                        printShortChars(((short) start & 0xffff) + numLines * numWordsPerLine + j);
+                        printShortChars((start & 0xffff) + numLines * numWordsPerLine + j);
                     }
                 }
                 System.out.println();
@@ -323,11 +323,11 @@ public class CliDCPU {
             addressString = addressString.toLowerCase();
             int returnAddress;
             if ("pc".equals(addressString)) {
-                returnAddress = (short) dcpu.pc();
+                returnAddress = dcpu.pc();
             } else if ("start".equals(addressString)) {
                 returnAddress = 0;
             } else if ("end".equals(addressString)) {
-                returnAddress = (short) 0xffff;
+                returnAddress = 0xffff;
             } else if ("a".equals(addressString)) {
                 returnAddress = dcpu.getreg(Reg.A);
             } else if ("b".equals(addressString)) {
@@ -345,9 +345,9 @@ public class CliDCPU {
             } else if ("j".equals(addressString)) {
                 returnAddress = dcpu.getreg(Reg.J);
             } else if ("sp".equals(addressString)) {
-                returnAddress = (short) dcpu.sp();
+                returnAddress = dcpu.sp();
             } else {
-                returnAddress = (short) numberToInt(addressString);
+                returnAddress = numberToInt(addressString);
             }
             return returnAddress;
         }

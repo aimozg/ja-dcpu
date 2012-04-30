@@ -10,7 +10,7 @@ import java.util.TreeMap;
 public class AsmMap {
     public final Map<String, Character> symbolMap = new TreeMap<String, Character>();
     public final Map<Integer, Character> srcMap = new TreeMap<Integer, Character>();
-    public final Map<Short, Integer> binMap = new TreeMap<Short, Integer>();
+    public final Map<Character, Integer> binMap = new TreeMap<Character, Integer>();
     public final BitSet code = new BitSet();
 
     /**
