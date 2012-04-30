@@ -3,8 +3,6 @@ package dcpu;
 import java.io.*;
 import java.util.*;
 
-import dcpu.Dcpu.BasicOp;
-
 /**
  * Notch's DCPU-16(tm)(c)(R)(ftw) specs v1.7 implementation.
  * <p/>
@@ -152,20 +150,21 @@ public final class Dcpu {
             this.moda = moda;
         }
     }
-    
+
     public enum OpType {
         BASIC, SPECIAL, INVALID;
+
         public static OpType getOpType(int cmd) {
             int o = (cmd & C_O_MASK);
             if (BasicOp.l(o) != null) return BASIC;
 
             int b = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
             if (o == O_NBI && SpecialOp.l(b) != null) return SPECIAL;
-            
+
             return INVALID;
         }
     }
-    
+
     abstract static class Operation {
         int cmd;
         short pc;
@@ -173,13 +172,14 @@ public final class Dcpu {
         int a;
         int b;
         OpType type;
+
         Operation(int cmd, short pc) {
             this.cmd = cmd;
             this.pc = pc;
         }
-        
+
         abstract int getCycles();
-        
+
         static Operation createOperation(int cmd, short pc) {
             OpType opType = OpType.getOpType(cmd);
             switch (opType) {
@@ -192,24 +192,28 @@ public final class Dcpu {
             }
         }
     }
-    
+
     static class BasicOperation extends Operation {
         BasicOp op;
+
         BasicOperation(int cmd, short pc) {
             super(cmd, pc);
             type = OpType.BASIC;
             opcode = cmd & C_O_MASK;
             op = BasicOp.l(opcode);
             a = (cmd & C_A_MASK) >> C_A_SHIFT;
-            b = (cmd & C_B_MASK) >> C_B_SHIFT;                
+            b = (cmd & C_B_MASK) >> C_B_SHIFT;
         }
-        @Override int getCycles() {
+
+        @Override
+        int getCycles() {
             return op.cycles;
         }
     }
 
     static class SpecialOperation extends Operation {
         SpecialOp op;
+
         SpecialOperation(int cmd, short pc) {
             super(cmd, pc);
             type = OpType.SPECIAL;
@@ -218,21 +222,25 @@ public final class Dcpu {
             a = (cmd & C_NBI_A_MASK) >> C_NBI_A_SHIFT;
             b = opcode;
         }
-        @Override int getCycles() {
+
+        @Override
+        int getCycles() {
             return op.cycles;
         }
     }
-    
+
     static class InvalidOperation extends Operation {
 
         InvalidOperation(int cmd, short pc) {
             super(cmd, pc);
             type = OpType.INVALID;
         }
-        @Override int getCycles() {
+
+        @Override
+        int getCycles() {
             return 0;
         }
-        
+
     }
 
     //////
@@ -381,7 +389,7 @@ public final class Dcpu {
     public static final int A_28 = A_CONST + 29;
     public static final int A_29 = A_CONST + 30;
     public static final int A_30 = A_CONST + 31;
-    
+
     /*
     // Additional instruction length from operand (1 if has NW, 0 otherwise)
     public static final int[] OPERAND_LENGTH = {
@@ -464,7 +472,11 @@ public final class Dcpu {
     private void pauseUntil(long nextTime) {
         if (!turboMode) {
             while (System.nanoTime() < nextTime) {
-                try { Thread.sleep(1); } catch (InterruptedException e) {};
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                }
+                ;
             }
         }
     }
@@ -483,9 +495,20 @@ public final class Dcpu {
     /**
      * Execute one operation (skip = false) or skip one operation.
      * <p/>
-     * TODO delay
+     * If there is an interrupt pending, jump to IA, but don't execute any instruction
      */
     public void step(boolean skip) {
+        if (hasInterrupt() && mem[M_IA] != 0) {
+            short msg = popIntMsg();
+            // TODO maybe call some interrupt listener?
+            // TODO does interrupt cost any cycles?
+            mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
+            mem[(--mem[M_SP]) & 0xffff] = mem[M_A];
+            mem[M_PC] = mem[M_IA];
+            mem[M_A] = msg;
+            return; // so we can catch the stepping into interrupt
+        }
+
         cycles++;
         short ppc = mem[M_PC];
         if (!skip && stepListener != null) stepListener.preExecute(ppc);
@@ -506,7 +529,7 @@ public final class Dcpu {
                 halt = true;
                 break;
         }
-        
+
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }
@@ -676,7 +699,7 @@ public final class Dcpu {
 
         // only overwrite EX if it wasn't being changed itself with (e.g.) "SET EX, ..."
         if (ba != M_EX) mem[M_EX] = (short) exreg;
-        
+
         return postExecuteCalled;
     }
 
@@ -706,7 +729,7 @@ public final class Dcpu {
                 halt = true;
                 break;
             case INT:
-                // TODO INT
+                interrupt((short) av);
                 break;
             case IAG:
                 rslt = mem[M_IA];
@@ -715,10 +738,12 @@ public final class Dcpu {
                 mem[M_IA] = (short) av;
                 break;
             case RFI:
-                // TODO RFI
+                setIntQueuing(false);
+                mem[M_A] = mem[(mem[M_SP]++) & 0xffff];
+                mem[M_PC] = mem[(mem[M_SP]++) & 0xffff];
                 break;
             case IAQ:
-                // TODO IAQ
+                setIntQueuing(asv != 0);
                 break;
             case HWN:
                 // TODO HWN
@@ -732,7 +757,7 @@ public final class Dcpu {
         }
         // overwrite 'a' unless it is constant
         if (aa < M_CV && op.op.moda) memset(aa, (short) rslt);
-    
+
     }
 
     /**
@@ -911,10 +936,16 @@ public final class Dcpu {
 
     }
 
+    /**
+     * Unsigned value of PC register
+     */
     public int pc() {
         return mem[M_PC] & 0xffff;
     }
 
+    /**
+     * Unsigned value of SP register
+     */
     public int sp() {
         return mem[M_SP] & 0xffff;
     }
@@ -922,6 +953,42 @@ public final class Dcpu {
     public void setTurboMode(boolean turboMode) {
         this.turboMode = turboMode;
     }
+
+    // Placeholder interrupt handler (no queueing).
+    // TODO proper queueing
+
+    private boolean intFlag = false;
+    private short intMsg;
+
+    private boolean hasInterrupt() {
+        return intFlag;
+    }
+
+    private void setIntQueuing(boolean queuing) {
+        // TODO setIntQueuing
+    }
+
+    /**
+     * Dequeue interrupt and return its message.
+     */
+    private short popIntMsg() {
+        intFlag = false;
+        return intMsg;
+    }
+
+    /**
+     * Enqueue interrupt
+     */
+    public void interrupt(short message) {
+        if (intFlag) {
+            System.err.println("Interrupt ignored");
+            return;
+        }
+        intFlag = true;
+        intMsg = message;
+    }
+
+    // end of interrupt handler
 
     ///////////////////////////////////////////////////////////////////////////
     //// PERIPHERAL

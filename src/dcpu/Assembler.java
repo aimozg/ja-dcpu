@@ -122,9 +122,11 @@ public class Assembler {
 
     // buffer to hold NextWord values before they are written out
     private List<AppendableWord> newWords = new ArrayList<AppendableWord>();
+
     private class AppendableWord {
         public short value;
         public boolean code;
+
         public AppendableWord(short value, boolean code) {
             this.value = value;
             this.code = code;
@@ -168,6 +170,7 @@ public class Assembler {
                 } else if (acceptIgnoreCase("reserve")) {
                     reserve();
                 } else if (acceptIgnoreCase("hlt")) {
+                    // TODO hlt is deprecated. Use HCF instead
                     append((short) 0, false);
                 } else {
                     oper();
@@ -241,6 +244,7 @@ public class Assembler {
         }
         int op_pc = counter;
         append((short) 0, true);
+        // TODO allow no-args HCF and RFI
         Param pb = param(sop != null); // this is an A param if it's a SOP
         int b = pb.acode();
         if (b == -1) fail("Bad operand b");
