@@ -10,9 +10,9 @@ public class GenericClock extends Dcpu.Device {
     public static final short CLKINT_GETTICKS = 1;
     public static final short CLKINT_TOGGLEINT = 2;
 
-    private final short manufacturerId;
+    private final int manufacturerId;
 
-    public GenericClock(short manufacturerId) {
+    public GenericClock(int manufacturerId) {
         this.manufacturerId = manufacturerId;
     }
 
@@ -27,7 +27,7 @@ public class GenericClock extends Dcpu.Device {
     }
 
     @Override
-    public short getManufacturerId() {
+    public int getManufacturerId() {
         return manufacturerId;
     }
 

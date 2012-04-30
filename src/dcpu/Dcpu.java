@@ -1048,7 +1048,7 @@ public final class Dcpu {
         /**
          * Manufacturer id (saved to Y,X on HWQ)
          */
-        public abstract short getManufacturerId();
+        public abstract int getManufacturerId();
 
         /**
          * This method is called every CPU instruction
@@ -1060,6 +1060,14 @@ public final class Dcpu {
          * HWI
          */
         public abstract void interrupt();
+
+        // handy method for generating hardware/manufacturer ids from 4-char strings
+        public static int str2id(String str) {
+            if (str == null || str.length() != 4) throw new IllegalArgumentException();
+            char[] chars = str.toCharArray();
+            return (chars[0] << 24) | (chars[1] << 16) | (chars[2] << 8) | chars[3];
+        }
+
     }
 
     ///////////////////////////////////////////////////////////////////////////
