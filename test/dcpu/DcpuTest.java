@@ -1,16 +1,14 @@
 package dcpu;
 
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertArrayEquals;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.internal.ArrayComparisonFailure;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.internal.ArrayComparisonFailure;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class DcpuTest {
 
@@ -39,7 +37,7 @@ public class DcpuTest {
 
         // check constants
         for (int i = Dcpu.M_CV; i < Dcpu.M_CV + 32; i++) {
-            assertEquals("at i=" + i, i - Dcpu.M_CV - 1, dcpu.memget(i));
+            assertEquals("at i=" + i, (char) (i - Dcpu.M_CV - 1), dcpu.memget(i));
         }
     }
 
@@ -303,11 +301,11 @@ public class DcpuTest {
     }
 
     private void assertExpectedValues(String assembly, Integer[] expected, String v1, String v2) throws Exception {
-        assertEquals("running '"+ assembly + "' : A", expected[0].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.A) & 0xffff));
-        assertEquals("running '"+ assembly + "' : EX", expected[1].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.EX) & 0xffff));
-        assertEquals("running '"+ assembly + "' : [0xA000]", expected[2].shortValue(), (short) (dcpu.mem[0xA000] & 0xffff));
-        assertEquals("running '"+ assembly + "' : [0xA010]", expected[3].shortValue(), (short) (dcpu.mem[0xA000 + Integer.parseInt(v2.substring(2), 16)] & 0xffff));
-        assertEquals("running '"+ assembly + "' : [0x0100]", expected[4].shortValue(), (short) (dcpu.mem[Integer.parseInt(v1.substring(2), 16)] & 0xffff));
+        assertEquals("running '" + assembly + "' : A", expected[0].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.A) & 0xffff));
+        assertEquals("running '" + assembly + "' : EX", expected[1].shortValue(), (short) (dcpu.getreg(Dcpu.Reg.EX) & 0xffff));
+        assertEquals("running '" + assembly + "' : [0xA000]", expected[2].shortValue(), (short) (dcpu.mem[0xA000] & 0xffff));
+        assertEquals("running '" + assembly + "' : [0xA010]", expected[3].shortValue(), (short) (dcpu.mem[0xA000 + Integer.parseInt(v2.substring(2), 16)] & 0xffff));
+        assertEquals("running '" + assembly + "' : [0x0100]", expected[4].shortValue(), (short) (dcpu.mem[Integer.parseInt(v1.substring(2), 16)] & 0xffff));
     }
 
     @Test
@@ -379,19 +377,19 @@ public class DcpuTest {
         assertEquals("ex", 0, dcpu.getreg(Dcpu.Reg.EX));
         dcpu.reset();
         dcpu.memzero();
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET EX, 0\n" +
                         "SET X, 0xffff\n" +
                         "SET Y, 0x10\n" +
                         "MUL X, Y\n"
         );
-        short[] expected = new short[] {(short) 0x87a1, (short) 0x8061, (short) 0xc481, 0x1064};
+        char[] expected = new char[]{0x87a1, 0x8061, 0xc481, 0x1064};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run(4);
-        assertEquals("x", (short) 0xfff0, dcpu.getreg(Dcpu.Reg.X));
+        assertEquals("x", 0xfff0, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("y", 0x10, dcpu.getreg(Dcpu.Reg.Y));
-        assertEquals("ex", (short) 0x000f, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("ex", 0x000f, dcpu.getreg(Dcpu.Reg.EX));
     }
 
     @Test
@@ -563,20 +561,20 @@ public class DcpuTest {
 
     @Test
     public void testJSR() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "           SET X, 1\n" +
-                "           SET PC, go\n" +
-                ":f1        SET X, 0\n" +
-                "           SET PC, POP\n" +
-                ":go        JSR f1\n" +
-                "           SET Y, 1\n" +
-                "           HLT"
+                        "           SET PC, go\n" +
+                        ":f1        SET X, 0\n" +
+                        "           SET PC, POP\n" +
+                        ":go        JSR f1\n" +
+                        "           SET Y, 1\n" +
+                        "           HLT"
         );
-        
-        short[] expected = new short[] {(short) 0x8861, 0x7f81, 0x0005, (short) 0x8461, 0x6381, (short) 0x7c20, 0x0003, (short) 0x8881, 0x0000};
+
+        char[] expected = new char[]{0x8861, 0x7f81, 0x0005, 0x8461, 0x6381, 0x7c20, 0x0003, 0x8881, 0x0000};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
-        
+
         dcpu.run(2);
         assertEquals("x", 1, dcpu.getreg(Dcpu.Reg.X));
         assertEquals("pc", 5, dcpu.getreg(Dcpu.Reg.PC));
@@ -591,14 +589,14 @@ public class DcpuTest {
 
     @Test
     public void testSimpleJSR() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "           JSR go\n" +
-                "           SET X, 1\n" +
-                "           HLT\n" +
-                ":go        SET X, 2\n" +
-                "           SET PC, POP\n"
+                        "           SET X, 1\n" +
+                        "           HLT\n" +
+                        ":go        SET X, 2\n" +
+                        "           SET PC, POP\n"
         );
-        short[] expected = new short[] {0x7c20, 0x0004, (short) 0x8861, 0x0000, (short) 0x8c61, 0x6381};
+        char[] expected = new char[]{0x7c20, 0x0004, 0x8861, 0x0000, 0x8c61, 0x6381};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
 
         dcpu.upload(bin);
@@ -617,15 +615,15 @@ public class DcpuTest {
     public void test_PC_SP_Increminting() throws Exception {
         dcpu.upload(assembler.assemble(
                 "SET A, 0xFF\n" +
-                "SET A, PC\n" +
-                "SET PUSH, A\n" +
-                "SET B, PEEK\n" +
-                "SET C, SP\n" +
-                "SET I, POP\n" +
-                "SET [0x0100], PC\n" +
-                "SET PUSH, SP\n" +
-                "SET X, 1\n" +
-                "HLT"
+                        "SET A, PC\n" +
+                        "SET PUSH, A\n" +
+                        "SET B, PEEK\n" +
+                        "SET C, SP\n" +
+                        "SET I, POP\n" +
+                        "SET [0x0100], PC\n" +
+                        "SET PUSH, SP\n" +
+                        "SET X, 1\n" +
+                        "HLT"
         ));
         dcpu.run(1);
         dcpu.run(1);
@@ -633,129 +631,129 @@ public class DcpuTest {
         assertEquals("pc", 3, dcpu.getreg(Dcpu.Reg.PC));
         assertEquals("sp", 0, dcpu.getreg(Dcpu.Reg.SP));
         dcpu.run(2);
-        assertEquals("sp", -1, dcpu.getreg(Dcpu.Reg.SP));
+        assertEquals("sp", (char) -1, dcpu.getreg(Dcpu.Reg.SP));
         assertEquals("b", 3, dcpu.getreg(Dcpu.Reg.B));
         dcpu.run(1);
-        assertEquals("c", -1, dcpu.getreg(Dcpu.Reg.C));
+        assertEquals("c", (char) -1, dcpu.getreg(Dcpu.Reg.C));
         dcpu.run(1);
         assertEquals("i", 3, dcpu.getreg(Dcpu.Reg.I));
         assertEquals("sp", 0, dcpu.getreg(Dcpu.Reg.SP));
         dcpu.run(1);
         assertEquals("0x0100", 9, dcpu.mem[0x0100]);
         dcpu.run(1);
-        assertEquals("sp", -1, dcpu.getreg(Dcpu.Reg.SP));
-        assertEquals("stack[0]", -1, dcpu.mem[0xffff]);
+        assertEquals("sp", (char) -1, dcpu.getreg(Dcpu.Reg.SP));
+        assertEquals("stack[0]", (char) -1, dcpu.mem[0xffff]);
 
     }
 
     @Test
     public void testFibonaciSeriesGeneratedCode() throws Exception {
         dcpu.upload(assembler.assemble(
-            ":autoinit\n" +
-            "      SET C, SP\n" +
-            "      SUB C, 256\n" +
-            "\n" +
-            ":autostart\n" +
-            "  JSR main\n" +
-            ":autohalt HLT\n" +
-            ":fib\n" +
-            "  SUB  C, 12\n" +
-            "  SET  [10+C], X\n" +
-            "  SET  [8+C], 1\n" +
-            "  SET  [6+C], 1\n" +
-            "  SET  [4+C], 0\n" +
-            "  SET  [0+C], X\n" +
-            ":.LBB0_1\n" +
-            "  SET  J, [4+C]\n" +
-            "  SET  Z, [10+C]\n" +
-            "  SET  EX, 65535\n" +
-            "  IFE  J, Z\n" +
-            "  SET  EX, 0\n" +
-            "  IFG  J, Z\n" +
-            "  SET  EX, 1\n" +
-            "  IFN  EX, 65535\n" +
-            "  SET  PC, .LBB0_4\n" +
-            "  SET  PC, .LBB0_2\n" +
-            ":.LBB0_2\n" +
-            "  SET  J, [8+C]\n" +
-            "  SET  Z, [6+C]\n" +
-            "  ADD  J, Z\n" +
-            "  SET  [2+C], J\n" +
-            "  SET  J, [8+C]\n" +
-            "  SET  [6+C], J\n" +
-            "  SET  J, [2+C]\n" +
-            "  SET  [8+C], J\n" +
-            "  SET  J, [4+C]\n" +
-            "  ADD  J, 1\n" +
-            "  SET  [4+C], J\n" +
-            "  SET  PC, .LBB0_1\n" +
-            ":.LBB0_4\n" +
-            "  SET  X, [8+C]\n" +
-            "  ADD  C, 12\n" +
-            "  SET PC, POP\n" +
-            "\n" +
-            ":main\n" +
-            "  SUB  C, 2\n" +
-            "  SET  [0+C], 0\n" +
-            "  SET  X, 5\n" +
-            "  JSR  fib\n" +
-            "  ADD  C, 2\n" +
-            "  SET PC, POP\n"
+                ":autoinit\n" +
+                        "      SET C, SP\n" +
+                        "      SUB C, 256\n" +
+                        "\n" +
+                        ":autostart\n" +
+                        "  JSR main\n" +
+                        ":autohalt HLT\n" +
+                        ":fib\n" +
+                        "  SUB  C, 12\n" +
+                        "  SET  [10+C], X\n" +
+                        "  SET  [8+C], 1\n" +
+                        "  SET  [6+C], 1\n" +
+                        "  SET  [4+C], 0\n" +
+                        "  SET  [0+C], X\n" +
+                        ":.LBB0_1\n" +
+                        "  SET  J, [4+C]\n" +
+                        "  SET  Z, [10+C]\n" +
+                        "  SET  EX, 65535\n" +
+                        "  IFE  J, Z\n" +
+                        "  SET  EX, 0\n" +
+                        "  IFG  J, Z\n" +
+                        "  SET  EX, 1\n" +
+                        "  IFN  EX, 65535\n" +
+                        "  SET  PC, .LBB0_4\n" +
+                        "  SET  PC, .LBB0_2\n" +
+                        ":.LBB0_2\n" +
+                        "  SET  J, [8+C]\n" +
+                        "  SET  Z, [6+C]\n" +
+                        "  ADD  J, Z\n" +
+                        "  SET  [2+C], J\n" +
+                        "  SET  J, [8+C]\n" +
+                        "  SET  [6+C], J\n" +
+                        "  SET  J, [2+C]\n" +
+                        "  SET  [8+C], J\n" +
+                        "  SET  J, [4+C]\n" +
+                        "  ADD  J, 1\n" +
+                        "  SET  [4+C], J\n" +
+                        "  SET  PC, .LBB0_1\n" +
+                        ":.LBB0_4\n" +
+                        "  SET  X, [8+C]\n" +
+                        "  ADD  C, 12\n" +
+                        "  SET PC, POP\n" +
+                        "\n" +
+                        ":main\n" +
+                        "  SUB  C, 2\n" +
+                        "  SET  [0+C], 0\n" +
+                        "  SET  X, 5\n" +
+                        "  JSR  fib\n" +
+                        "  ADD  C, 2\n" +
+                        "  SET PC, POP\n"
         ));
         dcpu.run();
         assertEquals("x", 13, dcpu.getreg(Dcpu.Reg.X));
     }
-    
+
     @Test
     public void testSettingEX() throws Exception {
         dcpu.upload(assembler.assemble(
                 "SET EX, 0xffff\n" +
-                "HLT"
+                        "HLT"
         ));
         dcpu.run();
-        assertEquals("ex", (short) 0xffff, dcpu.getreg(Dcpu.Reg.EX));
+        assertEquals("ex", 0xffff, dcpu.getreg(Dcpu.Reg.EX));
     }
-    
+
     @Test
     public void testValueOfNW() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET [0xA000], 0x30\n" +
-                "HLT"
+                        "HLT"
         );
-        short[] expected = new short[] {0x7fc1, 0x0030, (short) 0xa000, 0x0000};
+        char[] expected = new char[]{0x7fc1, 0x0030, 0xa000, 0x0000};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run();
-        assertEquals("mem [a0000]", (short) 0x30, (short) (dcpu.mem[0xa000] & 0xffff));
+        assertEquals("mem [a0000]", 0x30, (char) (dcpu.mem[0xa000] & 0xffff));
     }
-    
+
     @Test
     public void testSimpleSHR() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET A, 0xA234\n" +
-                "SET B, 0x23\n" +
-                "SHR A, B\n" +
-                "HLT"
+                        "SET B, 0x23\n" +
+                        "SHR A, B\n" +
+                        "HLT"
         );
-        short[] expected = new short[] {0x7c01, (short) 0xa234, 0x7c21, 0x0023, 0x040d, 0x0000};
+        char[] expected = new char[]{0x7c01, 0xa234, 0x7c21, 0x0023, 0x040d, 0x0000};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run();
-        assertEquals("a", (short) 0x1446, dcpu.getreg(Dcpu.Reg.A));
+        assertEquals("a", 0x1446, dcpu.getreg(Dcpu.Reg.A));
     }
 
     @Test
     public void testMultiBranching() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET A, 1\n" +
-                "SET B, 1\n" +
-                "IFE A, 2\n" +
-                "IFE B, 1\n" +
-                "    SET X, 1\n" +
-                "SET X, 2\n" +
-                "HLT"
+                        "SET B, 1\n" +
+                        "IFE A, 2\n" +
+                        "IFE B, 1\n" +
+                        "    SET X, 1\n" +
+                        "SET X, 2\n" +
+                        "HLT"
         );
-        short[] expected = new short[] {(short) 0x8801, (short) 0x8821, (short) 0x8c12, (short) 0x8832, (short) 0x8861, (short) 0x8c61, 0x0000};
+        char[] expected = new char[]{0x8801, 0x8821, 0x8c12, 0x8832, 0x8861, 0x8c61, 0x0000};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run(3);
@@ -766,59 +764,59 @@ public class DcpuTest {
 
     @Test
     public void testMDI() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET A, -7\n" +
-                "SET B, -16\n" +
-                "MDI A, B\n" +
-                "HLT"
+                        "SET B, -16\n" +
+                        "MDI A, B\n" +
+                        "HLT"
         );
-        short[] expected = new short[] {0x7c01, (short) 0xfff9, 0x7c21, (short) 0xfff0, 0x0409, 0x0000};
+        char[] expected = new char[]{0x7c01, 0xfff9, 0x7c21, 0xfff0, 0x0409, 0x0000};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run(3);
-        assertEquals("a", -7, dcpu.getreg(Dcpu.Reg.A));
+        assertEquals("a", (char) -7, dcpu.getreg(Dcpu.Reg.A));
     }
-    
+
     @Test
     public void testHCF() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET A, 1\n" +
-                "HCF 0\n" +
-                "SET A, 2\n"
+                        "HCF 0\n" +
+                        "SET A, 2\n"
         );
-        short[] expected = new short[] {(short) 0x8801, (short) 0x84e0, (short) 0x8c01};
+        char[] expected = new char[]{0x8801, 0x84e0, 0x8c01};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run();
         assertEquals("a", 1, dcpu.getreg(Dcpu.Reg.A));
         assertEquals("pc", 2, dcpu.getreg(Dcpu.Reg.PC));
     }
-    
+
     @Test
     public void testStackPICK() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET [0xfffc], 0xBEEF\n" + // eventual SP - 1
-                "SET A, 1\n" +
-                "SET PUSH, 1\n" +
-                "SET PUSH, 2\n" +
-                "SET PUSH, 3\n" +
-                "SET A, PICK -1\n" +
-                "SET A, PICK 0\n" +
-                "SET A, PICK 1\n" +
-                "SET A, PICK 2\n" +
-                "SET A, PICK 3\n" +
-                "SET A, PICK 4\n" +
-                "HLT\n"
+                        "SET A, 1\n" +
+                        "SET PUSH, 1\n" +
+                        "SET PUSH, 2\n" +
+                        "SET PUSH, 3\n" +
+                        "SET A, PICK -1\n" +
+                        "SET A, PICK 0\n" +
+                        "SET A, PICK 1\n" +
+                        "SET A, PICK 2\n" +
+                        "SET A, PICK 3\n" +
+                        "SET A, PICK 4\n" +
+                        "HLT\n"
         );
-        short[] expected = new short[] {
-                0x7fc1, (short) 0xbeef, (short) 0xfffc,
-                (short) 0x8801, (short) 0x8b01, (short) 0x8f01, (short) 0x9301, 
-                0x6801, (short) 0xffff, 
-                0x6801, 0x0000, 
-                0x6801, 0x0001, 
-                0x6801, 0x0002, 
-                0x6801, 0x0003, 
-                0x6801, 0x0004, 
+        char[] expected = new char[]{
+                0x7fc1, 0xbeef, 0xfffc,
+                0x8801, 0x8b01, 0x8f01, 0x9301,
+                0x6801, 0xffff,
+                0x6801, 0x0000,
+                0x6801, 0x0001,
+                0x6801, 0x0002,
+                0x6801, 0x0003,
+                0x6801, 0x0004,
                 0x0000};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
@@ -865,22 +863,22 @@ public class DcpuTest {
         assertEquals("[SP[2]]", 0x0002, dcpu.mem[0xfffe]);
         assertEquals("[SP[3]]", 0x0003, dcpu.mem[0xfffd]);
     }
-    
+
     @Test
     public void testPushPopPick() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET PUSH, PICK 0\n" + // push first word of program 
-                "SET PUSH, 1\n" +
-                "SET A, PEEK\n" +
-                "SET B, PICK 1\n" +
-                "SET C, POP\n" +
-                "SET X, PICK 1\n" +
-                "HLT\n"
+                        "SET PUSH, 1\n" +
+                        "SET A, PEEK\n" +
+                        "SET B, PICK 1\n" +
+                        "SET C, POP\n" +
+                        "SET X, PICK 1\n" +
+                        "HLT\n"
         );
-        short[] expected = new short[] {
-                0x6b01, 0x0000, 
-                (short) 0x8b01, 
-                0x6401, 
+        char[] expected = new char[]{
+                0x6b01, 0x0000,
+                0x8b01,
+                0x6401,
                 0x6821, 0x0001,
                 0x6041,
                 0x6861, 0x0001,
@@ -907,23 +905,23 @@ public class DcpuTest {
         assertEquals("X", 0x6b01, (short) dcpu.getreg(Dcpu.Reg.X) & 0xffff);
         assertEquals("SP", 0xffff, (short) dcpu.getreg(Dcpu.Reg.SP) & 0xffff);
     }
-    
+
     @Test
     public void testDVI() throws Exception {
-        assertDVI(16, 7, (short) 0x4924, new short[] {(short) 0xc401, (short) 0xa021, (short) 0x0407, 0x0000});
-        assertDVI(-16, 7, (short) 0xb6dc, new short[] {(short) 0x7c01, (short) 0xfff0, (short) 0xa021, (short) 0x0407, 0x0000});
-        assertDVI(16, -7, (short) 0xb6dc, new short[] {(short) 0xc401, (short) 0x7c21, (short) 0xfff9, (short) 0x0407, 0x0000});
-        assertDVI(-16, -7, (short) 0x4924, new short[] {(short) 0x7c01, (short) 0xfff0, (short) 0x7c21, (short) 0xfff9, (short) 0x0407, 0x0000});
+        assertDVI(16, 7, (char) 0x4924, new char[]{0xc401, 0xa021, 0x0407, 0x0000});
+        assertDVI(-16, 7, (char) 0xb6dc, new char[]{0x7c01, 0xfff0, 0xa021, 0x0407, 0x0000});
+        assertDVI(16, -7, (char) 0xb6dc, new char[]{0xc401, 0x7c21, 0xfff9, 0x0407, 0x0000});
+        assertDVI(-16, -7, (char) 0x4924, new char[]{0x7c01, 0xfff0, 0x7c21, 0xfff9, 0x0407, 0x0000});
     }
 
-    private void assertDVI(int aValue, int bValue, short expectedValue, short[] expectedBin) throws ArrayComparisonFailure {
-        short[] bin = assembler.assemble(
+    private void assertDVI(int aValue, int bValue, char expectedValue, char[] expectedBin) throws ArrayComparisonFailure {
+        char[] bin = assembler.assemble(
                 "SET A, " + aValue + "\n" +
-                "SET B, " + bValue + "\n" +
-                "DVI A, B\n" +
-                "HLT\n"
+                        "SET B, " + bValue + "\n" +
+                        "DVI A, B\n" +
+                        "HLT\n"
         );
-        
+
         assertArrayEquals(TestUtils.displayExpected(expectedBin, bin), expectedBin, bin);
         dcpu.reset();
         dcpu.memzero();
@@ -931,23 +929,23 @@ public class DcpuTest {
         dcpu.run();
         assertEquals("ex", (short) expectedValue, (short) dcpu.getreg(Dcpu.Reg.EX));
     }
-    
+
     @Test
     public void testIagIas() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET A, 0x30\n" +
-                "IAS A\n" +
-                "SET A, 0x0\n" +
-                "IAG A\n" +
-                "HLT"
+                        "IAS A\n" +
+                        "SET A, 0x0\n" +
+                        "IAG A\n" +
+                        "HLT"
         );
-        short[] expected = new short[] {0x7c01, 0x0030, 0x0140, (short) 0x8401, 0x0120, 0x0000};
+        char[] expected = new char[]{0x7c01, 0x0030, 0x0140, 0x8401, 0x0120, 0x0000};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run(2);
-        assertEquals("ia", (short) 0x30, dcpu.getreg(Dcpu.Reg.IA));
+        assertEquals("ia", 0x30, dcpu.getreg(Dcpu.Reg.IA));
         dcpu.run(2);
-        assertEquals("a", (short) 0x30, dcpu.getreg(Dcpu.Reg.A));
+        assertEquals("a", 0x30, dcpu.getreg(Dcpu.Reg.A));
     }
-    
+
 }

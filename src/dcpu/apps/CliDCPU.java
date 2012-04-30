@@ -1,40 +1,29 @@
 package dcpu.apps;
 
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import jline.ArgumentCompletor;
-import jline.Completor;
-import jline.ConsoleReader;
-import jline.FileNameCompletor;
-import jline.History;
-import jline.SimpleCompletor;
-
 import computer.AWTKeyMapping;
 import computer.VirtualKeyboard;
 import computer.VirtualMonitor;
-
 import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Dcpu.Reg;
 import dcpu.Disassembler;
 import dcpu.Tracer;
 import dcpu.io.PanelPeripheral;
+import jline.*;
+
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CliDCPU {
-    
+
     private static final Pattern commandParser = Pattern.compile("\\s*([^\\s]+)\\s*(.*)"); // capture a word followed by its args 
-    
+
     // is there a better way to do this? All static else the ENUMs can't access them.
     private static Assembler assembler;
     private static Dcpu dcpu;
@@ -42,19 +31,23 @@ public class CliDCPU {
     private static Tracer tracer;
     private static PanelPeripheral panelPeripheral;
     private static boolean showingDisplay = false;
-    
+
     public enum Cmd {
         QUIT("quit") {
-            @Override public void execute(String[] args) {
+            @Override
+            public void execute(String[] args) {
                 System.exit(0);
             }
-            @Override public String usage() {
+
+            @Override
+            public String usage() {
                 return formatHelp(name, "exit application.");
             }
         },
-        
+
         LOAD("load") {
-            @Override public void execute(String[] args) {
+            @Override
+            public void execute(String[] args) {
                 if ("".equals(args[0]) || args.length > 1) {
                     System.err.println(usage());
                     return;
@@ -66,7 +59,7 @@ public class CliDCPU {
                 }
                 try {
                     assembler = new Assembler();
-                    short[] bin = assembler.assemble(new FileReader(in));
+                    char[] bin = assembler.assemble(new FileReader(in));
                     dcpu.reset();
                     dcpu.memzero();
                     dcpu.upload(bin);
@@ -75,13 +68,16 @@ public class CliDCPU {
                     e.printStackTrace(System.err);
                 }
             }
-            @Override public String usage() {
+
+            @Override
+            public String usage() {
                 return formatHelp(name + " <infile.asm>", "loads and assembles input file.");
             }
         },
-        
+
         RUN("run") {
-            @Override public void execute(String[] args) {
+            @Override
+            public void execute(String[] args) {
                 int steps;
                 try {
                     steps = getNextArgAsNumber(args[0]);
@@ -91,23 +87,29 @@ public class CliDCPU {
                 }
                 dcpu.run(steps);
             }
-            @Override public String usage() {
+
+            @Override
+            public String usage() {
                 return formatHelp(name + " [n]", "run n instructions (default = 1). Hitting enter on blank line will run 1 instruction.");
             }
         },
-        
+
         RESET("reset") {
-            @Override public void execute(String[] args) {
+            @Override
+            public void execute(String[] args) {
                 dcpu.reset();
                 dcpu.memzero();
             }
-            @Override public String usage() {
+
+            @Override
+            public String usage() {
                 return formatHelp(name, "reset dcpu");
             }
         },
-        
+
         MEM("mem") {
-            @Override public void execute(String[] args) {
+            @Override
+            public void execute(String[] args) {
                 int start;
                 int end;
                 int numWordsPerLine = 16;
@@ -146,7 +148,7 @@ public class CliDCPU {
                 for (int i = 0; i < numLines; i++) {
                     System.out.printf("(%04x) :", ((short) start & 0xffff) + i * numWordsPerLine);
                     for (int j = 0; j < numWordsPerLine; j++) {
-                        System.out.printf(" %04x", dcpu.mem[((short) start & 0xffff) + i * numWordsPerLine + j]);
+                        System.out.printf(" %04x", (int) dcpu.mem[((short) start & 0xffff) + i * numWordsPerLine + j]);
                     }
                     System.out.print(" | ");
                     for (int j = 0; j < numWordsPerLine; j++) {
@@ -158,7 +160,7 @@ public class CliDCPU {
                 if (numLeftOver > 0) {
                     System.out.printf("(%04x) :", ((short) start & 0xffff) + numLines * numWordsPerLine);
                     for (int j = 0; j < numLeftOver; j++) {
-                        System.out.printf(" %04x", dcpu.mem[((short) start & 0xffff) + numLines * numWordsPerLine + j]);
+                        System.out.printf(" %04x", (int) dcpu.mem[((short) start & 0xffff) + numLines * numWordsPerLine + j]);
                     }
                     for (int i = 0; i < (numWordsPerLine - numLeftOver); i++) {
                         System.out.print("     "); // spacer to make chars line up 
@@ -169,47 +171,53 @@ public class CliDCPU {
                     }
                 }
                 System.out.println();
-                
+
             }
 
             private void printShortChars(int addr) {
-                short s = dcpu.mem[addr];
+                char s = dcpu.mem[addr];
                 char c1 = (char) ((s & 0xff00) >> 8);
                 char c2 = (char) (s & 0x00ff);
                 if (c1 < 0x20 || c1 > 0x7e) c1 = '.';
                 if (c2 < 0x20 || c2 > 0x7e) c2 = '.';
                 System.out.printf(" %c%c", c1, c2);
             }
-            
-            @Override public String usage() {
+
+            @Override
+            public String usage() {
                 return formatHelp(name + " <start> [end [wordsPerLine]]", "displays memory and ascii. if end isn't specified, shows only start word. default 16 words per line");
             }
         },
-        
+
         REG("reg") {
-            @Override public void execute(String[] args) {
+            @Override
+            public void execute(String[] args) {
                 Tracer.outputRegisters(System.out, dcpu);
             }
 
-            @Override public String usage() {
+            @Override
+            public String usage() {
                 return formatHelp(name, "displays register values");
             }
-            
+
         },
 
         TOGGLEREG("togglereg") {
-            @Override public void execute(String[] args) {
+            @Override
+            public void execute(String[] args) {
                 boolean isPrintRegisters = tracer.togglePrintRegisters();
                 System.out.println("register printing is " + (isPrintRegisters ? "on" : "off"));
             }
 
-            @Override public String usage() {
+            @Override
+            public String usage() {
                 return formatHelp(name, "toggles automatic register printing on execution, currently " + (tracer.getPrintRegisters() ? "on" : "off"));
             }
         },
-        
+
         NEXTINSTRUCTION("next") {
-            @Override public void execute(String[] args) {
+            @Override
+            public void execute(String[] args) {
                 int num;
                 try {
                     num = getNextArgAsNumber(args[0]);
@@ -222,13 +230,16 @@ public class CliDCPU {
                     System.out.println(disassembler.next(true));
                 }
             }
-            @Override public String usage() {
+
+            @Override
+            public String usage() {
                 return formatHelp(name + " [n]", "displays next [n] instructions, default = 1");
             }
         },
-        
+
         DISPLAY("display") {
-            @Override public void execute(String[] args) {
+            @Override
+            public void execute(String[] args) {
                 if (showingDisplay == false) {
                     VirtualMonitor display = new VirtualMonitor(dcpu.mem, 0x8000);
                     VirtualKeyboard keyboard = new VirtualKeyboard(dcpu.mem, 0x9000, new AWTKeyMapping());
@@ -247,23 +258,28 @@ public class CliDCPU {
                     showingDisplay = false;
                 }
             }
-            @Override public String usage() {
+
+            @Override
+            public String usage() {
                 return formatHelp(name, "toggle VDU display");
             }
         },
-        
+
         HELP("help") {
-            @Override public void execute(String[] args) {
+            @Override
+            public void execute(String[] args) {
                 System.out.println();
                 for (String cmd : Cmd.getCmds()) {
                     System.out.println(Cmd.l(cmd).usage());
                 }
             }
-            @Override public String usage() {
+
+            @Override
+            public String usage() {
                 return formatHelp("help", "display supported commands.");
             }
         };
-        
+
         private static final Map<String, Cmd> LOOKUP = new TreeMap<String, Cmd>();
         public final String name;
 
@@ -272,15 +288,19 @@ public class CliDCPU {
                 LOOKUP.put(c.name, c);
             }
         }
+
         public static Cmd l(String name) {
             return LOOKUP.get(name);
         }
+
         public static String[] getCmds() {
             return LOOKUP.keySet().toArray(new String[0]);
         }
+
         private static String formatHelp(String cmdWithArgs, String helpText) {
             return String.format("%-20s ; %s", cmdWithArgs, helpText);
         }
+
         private static int getNextArgAsNumber(String numToTest) {
             int num = 1;
             if (!"".equals(numToTest)) {
@@ -335,14 +355,16 @@ public class CliDCPU {
         Cmd(String name) {
             this.name = name;
         }
+
         public abstract void execute(String[] args);
+
         public abstract String usage();
     }
-    
+
     public static void main(String[] args) throws IOException {
         new CliDCPU().startCli();
     }
-    
+
     public void startCli() throws IOException {
         System.out.println("CliDCPU by fraoch using ja-dcpu by aimozg.\nPress tab for command list. Can do command and file completion.\nType 'help' for commands supported.\n");
         File historyFile = new File(System.getProperty("user.home"), ".clidcpu_history");
@@ -359,7 +381,7 @@ public class CliDCPU {
         disassembler = new Disassembler();
         disassembler.init(dcpu.mem);
         assembler = new Assembler();
-        
+
         List<Completor> completors = new LinkedList<Completor>();
         completors.add(new SimpleCompletor(Cmd.getCmds()));
         completors.add(new FileNameCompletor());

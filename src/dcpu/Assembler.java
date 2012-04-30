@@ -20,17 +20,17 @@ public class Assembler {
     private int itoken;
     // current line number. Cannot use StringTokenizer's one because it switches to next line too early
     // (since we are actually analyzing its previous token)
-    private int lineno;
+    private Integer lineno;
 
     /**
      * Reference to label
      */
     private class Reference {
         final String name;
-        final short position;
+        final char position;
         final int lineat;
 
-        Reference(String name, short position, int lineat) {
+        Reference(String name, char position, int lineat) {
             this.name = name;
             this.position = position;
             this.lineat = lineat;
@@ -38,8 +38,8 @@ public class Assembler {
     }
 
     private List<Reference> references = new LinkedList<Reference>();
-    private Map<String, Short> symbols = new HashMap<String, Short>();
-    private short[] buffer = new short[256];
+    private Map<String, Character> symbols = new HashMap<String, Character>();
+    private char[] buffer = new char[256];
     private int counter;
 
     boolean eof() {
@@ -109,7 +109,7 @@ public class Assembler {
         asmmap = new AsmMap();
         references.clear();
         symbols.clear();
-        buffer = new short[256];
+        buffer = new char[256];
         counter = 0;
     }
 
@@ -124,20 +124,20 @@ public class Assembler {
     private List<AppendableWord> newWords = new ArrayList<AppendableWord>();
 
     private class AppendableWord {
-        public short value;
+        public char value;
         public boolean code;
 
-        public AppendableWord(short value, boolean code) {
+        public AppendableWord(char value, boolean code) {
             this.value = value;
             this.code = code;
         }
     }
 
-    public short[] assemble(String s) {
+    public char[] assemble(String s) {
         return assemble(new StringReader(s));
     }
 
-    public short[] assemble(Reader r) {
+    public char[] assemble(Reader r) {
         reset();
         stokizer = new StreamTokenizer(r);
         stokizer.commentChar(';');
@@ -171,7 +171,7 @@ public class Assembler {
                     reserve();
                 } else if (acceptIgnoreCase("hlt")) {
                     // TODO hlt is deprecated. Use HCF instead
-                    append((short) 0, false);
+                    append((char) 0, false);
                 } else {
                     oper();
                 }
@@ -186,7 +186,7 @@ public class Assembler {
         } */
         for (Reference reference : references) {
             //System.out.printf("ref to %s @ %04x\n",reference.name,reference.position);
-            Short value = symbols.get(reference.name.toLowerCase());
+            Character value = symbols.get(reference.name.toLowerCase());
             if (value == null)
                 fail("Unresolved reference to " + reference.name.toLowerCase() + " at [" + reference.lineat + "]");
             buffer[reference.position] = value;
@@ -204,13 +204,13 @@ public class Assembler {
             cm = true;
             if (accept(strPattern)) {
                 for (char c : token.substring(1, token.length() - 1).toCharArray()) {
-                    append((short) c, false);
+                    append(c, false);
                 }
             } else if (accept(numPattern)) {
-                append((short) tokenToInt(), false);
+                append((char) tokenToInt(), false);
             } else if (accept(idPattern)) {
-                append((short) 0, false);
-                references.add(new Reference(token, (short) (counter - 1), stokizer.lineno()));
+                append((char) 0, false);
+                references.add(new Reference(token, (char) (counter - 1), stokizer.lineno()));
             }
         }
     }
@@ -222,7 +222,7 @@ public class Assembler {
             int numBytes = tokenToInt();
             if (accept("dat")) {
                 if (accept(numPattern)) {
-                    short value = (short) tokenToInt();
+                    char value = (char) tokenToInt();
                     for (int i = 0; i < numBytes; i++) {
                         append(value, false);
                     }
@@ -243,7 +243,7 @@ public class Assembler {
             }
         }
         int op_pc = counter;
-        append((short) 0, true);
+        append((char) 0, true);
         // TODO allow no-args HCF and RFI
         Param pb = param(sop != null); // this is an A param if it's a SOP
         int b = pb.acode();
@@ -276,7 +276,7 @@ public class Assembler {
             if (p2 == null) fail("Bad parameter2");
             if (neg && !(p2 instanceof SimpleConstParam)) fail("Bad parameter2");
             if (neg) {
-                newWords.get(0).value = (short) (0x10000 - newWords.get(0).value);
+                newWords.get(0).value = (char) (0x10000 - newWords.get(0).value);
             }
             require("]", "parameter");
             return new ParamSum(p, p2);
@@ -293,15 +293,15 @@ public class Assembler {
                     int sgn = accept("-") ? -1 : 1;
                     if (accept(numPattern)) {
                         int pickValue = tokenToInt() * sgn;
-                        newWords.add(0, new AppendableWord((short) pickValue, true));
+                        newWords.add(0, new AppendableWord((char) pickValue, true));
                     } else {
                         return null;
                     }
                 }
                 return new SimpleRegisterParam(reg);
             }
-            append((short) 0, true);
-            Reference ref = new Reference(token, (short) (counter - 1), stokizer.lineno());
+            append((char) 0, true);
+            Reference ref = new Reference(token, (char) (counter - 1), stokizer.lineno());
             references.add(ref);
             return new SimpleSymbolParam(token);
         } else {
@@ -313,7 +313,7 @@ public class Assembler {
                 // a const in B should always append the val
                 if (!isA || !canBeShort || val >= 31 || val < -1) {
                     // append((short) val, true);
-                    newWords.add(0, new AppendableWord((short) val, true)); // add at start of list as we need them in reverse order
+                    newWords.add(0, new AppendableWord((char) val, true)); // add at start of list as we need them in reverse order
                 }
                 return new SimpleConstParam((short) val, isA);
             } else {
@@ -333,15 +333,15 @@ public class Assembler {
 
     private void label() throws IOException {
         require(idPattern, "label name");
-        symbols.put(token.toLowerCase(), (short) counter);
-        if (genMap) asmmap.symbolMap.put(token.toLowerCase(), (short) counter);
+        symbols.put(token.toLowerCase(), (char) counter);
+        if (genMap) asmmap.symbolMap.put(token.toLowerCase(), (char) counter);
     }
 
     private void macro() {
         throw new UnsupportedOperationException(); // TODO write Assembler.macro method body
     }
 
-    private void append(short s, boolean code) {
+    private void append(char s, boolean code) {
         if (counter == buffer.length) {
             buffer = Arrays.copyOf(buffer, buffer.length * 3 / 2);
         }
@@ -349,7 +349,7 @@ public class Assembler {
             asmmap.binMap.put((short) counter, lineno);
             if (code) asmmap.code.set(counter);
             if (!asmmap.srcMap.containsKey(lineno)) {
-                asmmap.srcMap.put(lineno, (short) counter);
+                asmmap.srcMap.put(lineno, (char) counter);
             }
         }
         buffer[counter++] = s;

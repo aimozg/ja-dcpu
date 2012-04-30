@@ -46,7 +46,7 @@ public class Muxer extends Dcpu.Peripheral {
     }
 
     @Override
-    public void onMemset(int offset, short newval, short oldval) {
+    public void onMemset(int offset, char newval, char oldval) {
         int line = offset >> m_bits;
         if (peripherals[line] != null) {
             peripherals[line].onMemset(offset & m_mask, newval, oldval);
@@ -56,7 +56,7 @@ public class Muxer extends Dcpu.Peripheral {
     }
 
     @Override
-    public short onMemget(int offset) {
+    public char onMemget(int offset) {
         int line = offset >> m_bits;
         if (peripherals[line] != null) {
             return peripherals[line].onMemget(offset & m_mask);

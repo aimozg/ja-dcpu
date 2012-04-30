@@ -56,7 +56,7 @@ public class IdeMain {
     private Dcpu cpu;
     private AsmMap asmMap;
     private Debugger debugger;
-    private short[] binary = {};
+    private char[] binary = {};
     private Set<Integer> srcBreakpoints = new HashSet<Integer>(); // Line starts from 1
     private Thread cpuThread;
 
@@ -85,8 +85,8 @@ public class IdeMain {
     public IdeMain() {
         cpu = new Dcpu();
         debugger = new Debugger();
-        debugger.breakpointListener = new PreListener<Short>() {
-            public void preExecute(Short arg) {
+        debugger.breakpointListener = new PreListener<Character>() {
+            public void preExecute(Character arg) {
                 breakpointHit(arg);
             }
         };
@@ -203,7 +203,7 @@ public class IdeMain {
         });
     }
 
-    private void breakpointHit(Short pc) {
+    private void breakpointHit(char pc) {
         registersModel.fireUpdate();
         memoryModel.fireUpdate(0, RAM_SIZE - 1);//TODO optimize
         Integer srcline = asmMap.bin2src(pc);
@@ -242,7 +242,7 @@ public class IdeMain {
     private void toggleBreakpoint() {
         try {
             int lineno = sourceTextarea.getLineOfOffset(sourceTextarea.getCaretPosition()) + 1;
-            Short asmaddr = asmMap.src2bin(lineno);
+            Character asmaddr = asmMap.src2bin(lineno);
             if (srcBreakpoints.contains(lineno)) {
                 srcBreakpoints.remove(lineno);
                 if (asmaddr != null) debugger.setBreakpoint(asmaddr, false);
@@ -275,12 +275,12 @@ public class IdeMain {
                 if (len % 2 == 1) throw new IOException(String.format("Odd file size (0x%x)\n", len));
                 len /= 2;
                 if (len > 0x10000) throw new IOException(String.format("Too large file (0x%x)\n", len));
-                binary = new short[len];
+                binary = new char[len];
                 for (int i = 0; i < len; i++) {
                     int lo = inbinf.read();
                     int hi = inbinf.read();
                     if (lo == -1 || hi == -1) throw new IOException("Unable to read\n");
-                    binary[i] = (short) ((hi << 8) | lo);
+                    binary[i] = (char) ((hi << 8) | lo);
                 }
                 asmMap = new AsmMap();
                 Disassembler dasm = new Disassembler();
@@ -292,8 +292,8 @@ public class IdeMain {
                     sb.append(String.format("%-26s ; [%04x] =", dasm.next(true), addr));
                     int addr2 = dasm.getAddress();
                     while (addr < addr2) {
-                        short i = binary[addr++];
-                        sb.append(String.format(" %04x '%s'", i, (i >= 0x20 && i < 0x7f) ? (char) i : '.'));
+                        char i = binary[addr++];
+                        sb.append(String.format(" %04x '%s'", (int) i, (i >= 0x20 && i < 0x7f) ? (char) i : '.'));
                     }
                     sb.append("\n");
                 }
@@ -324,7 +324,7 @@ public class IdeMain {
                     }
                 }
                 FileOutputStream output = new FileOutputStream(file);
-                for (short i : binary) {
+                for (char i : binary) {
                     output.write(i & 0xff);
                     output.write((i >> 8) & 0xff);
                 }
@@ -375,7 +375,7 @@ public class IdeMain {
                 sourceRowHeader.breakpointsChanged();
                 sourceTextarea.setText(new String(csources));
                 asmMap = new AsmMap();
-                binary = new short[0];
+                binary = new char[0];
             } catch (IOException e1) {
                 JOptionPane.showMessageDialog(frame, "Unable to open file", "Error", JOptionPane.ERROR_MESSAGE);
                 e1.printStackTrace();
@@ -387,16 +387,16 @@ public class IdeMain {
         Assembler assembler = new Assembler();
         assembler.genMap = true;
         try {
-            binary = new short[]{};
+            binary = new char[]{};
             binary = assembler.assemble(sourceTextarea.getText());
             cpu.upload(binary);
             memoryModel.fireUpdate(0, binary.length);
             asmMap = assembler.asmmap;
-            for (Short addr : debugger.getBreakpoints()) {
+            for (Character addr : debugger.getBreakpoints()) {
                 debugger.setBreakpoint(addr, false);
             }
             for (Integer breakpoint : srcBreakpoints) {
-                Short addr = asmMap.src2bin(breakpoint);
+                Character addr = asmMap.src2bin(breakpoint);
                 if (addr != null) {// TODO if null, mark breakpoint somehow
                     debugger.setBreakpoint(addr, true);
                 }

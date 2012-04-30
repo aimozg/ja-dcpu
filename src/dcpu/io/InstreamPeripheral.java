@@ -23,7 +23,7 @@ public class InstreamPeripheral extends Dcpu.Peripheral {
                     while (attached) {
                         int c = input.read();
                         if (c != -1 && (wo + 1) % bufsize != ro) synchronized (buffer) {
-                            buffer[wo] = (short) c;
+                            buffer[wo] = (char) c;
                             wo = (wo + 1) % bufsize;
                         }
                     }
@@ -54,7 +54,7 @@ public class InstreamPeripheral extends Dcpu.Peripheral {
     public InstreamPeripheral(InputStream input, int bufsize) {
         this.input = input;
         if (bufsize < 2) bufsize = 2;
-        buffer = new short[bufsize];
+        buffer = new char[bufsize];
         this.bufsize = bufsize;
         ro = 0;
         wo = 0;
@@ -62,15 +62,15 @@ public class InstreamPeripheral extends Dcpu.Peripheral {
 
     int ro, wo;
     InputStream input;
-    final short[] buffer;
+    final char[] buffer;
 
     @Override
-    public short onMemget(int offset) {
+    public char onMemget(int offset) {
         if (ro != wo) synchronized (buffer) {
-            short result = buffer[ro];
+            char result = buffer[ro];
             ro = (ro + 1) % bufsize;
             return result;
         }
-        else return (short) 0xffff;
+        else return 0xffff;
     }
 }

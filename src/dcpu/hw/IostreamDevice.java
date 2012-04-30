@@ -37,7 +37,7 @@ public class IostreamDevice extends Dcpu.Device {
     }
 
     @Override
-    public short getHardwareVersion() {
+    public char getHardwareVersion() {
         return 1;
     }
 
@@ -59,19 +59,19 @@ public class IostreamDevice extends Dcpu.Device {
             case SIOINT_GETC:
                 try {
                     if (input.available() > 0) {
-                        cpu.setreg(Dcpu.Reg.B, (short) input.read());
+                        cpu.setreg(Dcpu.Reg.B, (char) input.read());
                     } else {
-                        cpu.setreg(Dcpu.Reg.B, (short) -1);
+                        cpu.setreg(Dcpu.Reg.B, (char) -1);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
-                    cpu.setreg(Dcpu.Reg.B, (short) -1);
+                    cpu.setreg(Dcpu.Reg.B, (char) -1);
                 }
                 break;
             case SIOINT_PUTS:
                 int addr = cpu.getreg(Dcpu.Reg.B) & 0xffff;
                 while (true) {
-                    short val = cpu.mem[addr];
+                    char val = cpu.mem[addr];
                     if (val == 0) break;
                     try {
                         output.write(val & 0xffff);

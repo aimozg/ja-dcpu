@@ -1,11 +1,5 @@
 package dcpu.demos;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-
 import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Disassembler;
@@ -101,7 +95,7 @@ public class ExtAsmDemo {
         }
         ////////////////////////////////
         try {
-            short[] bytecode;
+            char[] bytecode;
             if (srcin != null) {
                 FileInputStream insrcf = new FileInputStream(srcin);
                 char[] csources = new char[insrcf.available()];
@@ -122,13 +116,13 @@ public class ExtAsmDemo {
                     PrintStream mapoutf = new PrintStream(mapout);
                     mapoutf.println(";;;;MAPSTART");
                     mapoutf.println(";;;;SYMBOLS");
-                    for (Map.Entry<String, Short> symbol : assembler.asmmap.symbolMap.entrySet()) {
-                        mapoutf.printf(";; \"%s\"=0x%04x", symbol.getKey(), symbol.getValue());
+                    for (Map.Entry<String, Character> symbol : assembler.asmmap.symbolMap.entrySet()) {
+                        mapoutf.printf(";; \"%s\"=0x%04x", symbol.getKey(), (int) symbol.getValue());
                         mapoutf.println();
                     }
                     mapoutf.println(";;;;SRCMAP");
-                    for (Map.Entry<Integer, Short> line : assembler.asmmap.srcMap.entrySet()) {
-                        mapoutf.printf(";; %d=0x%04x", line.getKey(), line.getValue());
+                    for (Map.Entry<Integer, Character> line : assembler.asmmap.srcMap.entrySet()) {
+                        mapoutf.printf(";; %d=0x%04x", line.getKey(), (int) line.getValue());
                         mapoutf.println();
                     }
                     mapoutf.println(";;;;CODE");
@@ -148,18 +142,18 @@ public class ExtAsmDemo {
                 if (len % 2 == 1) fail("Odd file size (0x%x)\n", len);
                 len /= 2;
                 if (len > 0x10000) fail("Too large file (0x%x)\n", len);
-                bytecode = new short[len];
+                bytecode = new char[len];
                 for (int i = 0; i < len; i++) {
                     int lo = inbinf.read();
                     int hi = inbinf.read();
                     if (lo == -1 || hi == -1) fail("IO Exception\n");
-                    bytecode[i] = (short) ((hi << 8) | lo);
+                    bytecode[i] = (char) ((hi << 8) | lo);
                 }
-            } else bytecode = new short[1];
+            } else bytecode = new char[1];
 
             if (binout != null) {
                 FileOutputStream outfile = new FileOutputStream(binout);
-                for (short i : bytecode) {
+                for (char i : bytecode) {
                     outfile.write(i & 0xff);
                     outfile.write((i >> 8) & 0xff);
                 }
@@ -175,8 +169,8 @@ public class ExtAsmDemo {
                     outsrcf.printf("%-26s ; [%04x] =", das.next(true), addr);
                     int addr2 = das.getAddress();
                     while (addr < addr2) {
-                        short i = bytecode[addr++];
-                        outsrcf.printf(" %04x '%s'", i, (i >= 0x20 && i < 0x7f) ? (char) i : '.');
+                        char i = bytecode[addr++];
+                        outsrcf.printf(" %04x '%s'", (int) i, (i >= 0x20 && i < 0x7f) ? i : '.');
                     }
                     outsrcf.println();
                 }
@@ -208,7 +202,7 @@ public class ExtAsmDemo {
     }
 
     @SuppressWarnings("unused")
-	private static void print(String s) {
+    private static void print(String s) {
         System.out.print(s);
     }
 

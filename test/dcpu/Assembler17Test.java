@@ -1,10 +1,10 @@
 package dcpu;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class Assembler17Test {
     private Assembler assembler;
@@ -16,33 +16,33 @@ public class Assembler17Test {
 
     @Test
     public void testSetEXToMinusOne() {
-        short[] bin = assembler.assemble("SET EX, -1\n");
-        short[] exp = new short[]{(short) 0x83A1};
+        char[] bin = assembler.assemble("SET EX, -1\n");
+        char[] exp = new char[]{0x83A1};
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
     @Test
     public void testSetToFFFFIsMinusOne() {
-        short[] bin = assembler.assemble("SET X, 0xFFFF\n");
-        short[] exp = new short[]{(short) 0x8061};
+        char[] bin = assembler.assemble("SET X, 0xFFFF\n");
+        char[] exp = new char[]{0x8061};
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
     @Test
     public void testSetAtoPOP() {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET A, POP\n"
         );
-        short[] exp = new short[]{(short) 0x6001};
+        char[] exp = new char[]{(short) 0x6001};
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
     @Test
     public void testSetSmallMemoryAddressUsesExtraWord() {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "SET 0, A\n"
         );
-        short[] exp = new short[]{(short) 0x03e1, 0};
+        char[] exp = new char[]{(short) 0x03e1, 0};
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
@@ -59,20 +59,20 @@ public class Assembler17Test {
 
     @Test
     public void testSimpleNWValues() throws Exception {
-        short[] bin = assembler.assemble("SET [A + 0x0100], [B + 0x0200]\n");
-        short[] exp = new short[]{0x4601, 0x0200, 0x0100};
+        char[] bin = assembler.assemble("SET [A + 0x0100], [B + 0x0200]\n");
+        char[] exp = new char[]{0x4601, 0x0200, 0x0100};
         assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
     @Test
     public void testPickX() throws Exception {
-        short[] bin = assembler.assemble(
+        char[] bin = assembler.assemble(
                 "set A, PICK 1\n" +
-                "hlt\n"
+                        "hlt\n"
         );
-        short[] expected = new short[]{
-                        0x6801, 0x0001,
-                        0x0000
+        char[] expected = new char[]{
+                0x6801, 0x0001,
+                0x0000
         };
         assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
     }

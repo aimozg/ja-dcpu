@@ -32,7 +32,7 @@ public class InterruptTest {
         cpu.run(4); // IAS, SET, INT, <int>
         assertEquals(1, cpu.getreg(Reg.B));
         assertEquals(2, cpu.getreg(Reg.A));
-        assertEquals(map.symbol("inthandler").shortValue(), cpu.getreg(Reg.PC));//don't use cpu.pc() - it returns unsigned
+        assertEquals(map.symbol("inthandler").charValue(), cpu.getreg(Reg.PC));//don't use cpu.pc() - it returns unsigned
     }
 
     @Test
@@ -48,7 +48,7 @@ public class InterruptTest {
         cpu.run(4); // IAS, SET, INT, <int>
         //after these two asserts I really started to consider migrating from short to char
         assertEquals(0xface, cpu.mem[cpu.sp()] & 0xffff);
-        assertEquals(map.symbol("afterint").shortValue(), cpu.mem[cpu.sp() + 1]);
+        assertEquals(map.symbol("afterint").charValue(), cpu.mem[cpu.sp() + 1]);
     }
 
     @Test
@@ -62,7 +62,7 @@ public class InterruptTest {
                 "   HCF 0\n"
         );
         cpu.run(2); // IAS, SET 1
-        cpu.interrupt((short) 3);
+        cpu.interrupt((char) 3);
         cpu.step(false); // <int>
         assertEquals(1, cpu.getreg(Reg.B));
         assertEquals(3, cpu.getreg(Reg.A));

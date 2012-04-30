@@ -16,7 +16,7 @@ public class AssemblerDemo {
         //////////////////////////////////
         // Hello World test
         System.out.println("\nHello World demo\n");
-        short[] bytecode = assembler.assemble(";1 Assembler test for DCPU\n" +
+        char[] bytecode = assembler.assemble(";1 Assembler test for DCPU\n" +
                 ";2 by Markus Persson\n" +
                 "\n" +
                 "             set a, 0xbeef                        ;4 Assign 0xbeef to register a\n" +
@@ -41,7 +41,7 @@ public class AssemblerDemo {
         System.out.println("Video memory:");
         int v = 0x8000;
         while (dcpu.mem[v] > 0) {
-            System.out.print((char) dcpu.mem[v]);
+            System.out.print(dcpu.mem[v]);
             v++;
         }
         System.out.println();
@@ -77,7 +77,7 @@ public class AssemblerDemo {
         dcpu.reset();
         dcpu.upload(bytecode);
         dcpu.run();
-        System.out.printf("X = %04x\n", dcpu.mem[Dcpu.M_X]);
+        System.out.printf("X = %04x\n", (int) dcpu.mem[Dcpu.M_X]);
 
         ///////////////////////////////////////////////////////////////////////////////////
         // Macros - not supported yet
@@ -112,8 +112,8 @@ public class AssemblerDemo {
         printBytecode(bytecode);
     }
 
-    private static void printBytecode(short[] bytecode) {
-        for (short i : bytecode) {
+    private static void printBytecode(char[] bytecode) {
+        for (char i : bytecode) {
             System.out.printf("%04x ", i & 0xffff);
         }
         System.out.println();

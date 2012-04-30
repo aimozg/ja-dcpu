@@ -1,10 +1,10 @@
 package dcpu.io;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
 import dcpu.Dcpu;
 import dcpu.Listener;
+
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Simple peripheral that outputs all characters written to its line
@@ -24,7 +24,7 @@ public class OutstreamPeripheral extends Dcpu.Peripheral {
     }
 
     @Override
-    public void onMemset(int offset, short newval, short oldval) {
+    public void onMemset(int offset, char newval, char oldval) {
         try {
             output.write(newval);
             output.flush();

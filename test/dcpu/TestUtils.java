@@ -1,11 +1,10 @@
-
 package dcpu;
 
 public class TestUtils {
-    public static String shortsToString(short[] data) {
+    public static String shortsToString(char[] data) {
         StringBuffer sb = new StringBuffer();
-        for (short s : data) {
-            sb.append(String.format("0x%04x ", s));
+        for (char s : data) {
+            sb.append(String.format("0x%04x ", (int) s));
         }
         return sb.toString();
     }
@@ -16,9 +15,9 @@ public class TestUtils {
         }
         System.out.println();
     }
-    
-    public static String displayExpected(short[] expected, short[] actual) {
+
+    public static String displayExpected(char[] expected, char[] actual) {
         return "expected " + TestUtils.shortsToString(expected) + ", but got " + TestUtils.shortsToString(actual);
     }
-    
+
 }

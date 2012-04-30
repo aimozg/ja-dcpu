@@ -21,11 +21,11 @@ public class Debugger {
     /**
      * Executed each step. Argument = PC of the instruction
      */
-    public Listener<Short> stepListener = null;
+    public Listener<Character> stepListener = null;
     /**
      * Executed when breakpoint is hit. Argument = PC of the instruction
      */
-    public Listener<Short> breakpointListener = null;
+    public Listener<Character> breakpointListener = null;
     /**
      * Calculate modregs on each manual step
      */
@@ -65,17 +65,17 @@ public class Debugger {
     public static final int DREG_PC = M_PC - M_A;
     public static final int DREG_O = M_EX - M_A;
 
-    private short[] oldRegs = new short[REGS_COUNT];
+    private char[] oldRegs = new char[REGS_COUNT];
     private BitSet modifiedRegisters = new BitSet(REGS_COUNT);
     private Dcpu cpu;
-    private Set<Short> breakpoints = new LinkedHashSet<Short>();
+    private Set<Character> breakpoints = new LinkedHashSet<Character>();
 
     /**
      * Sets (brk=true) or releases (brk=false) breakpoint on instruction with specific address.
      * <p/>
      * Breakpoints will fire BEFORE the execution of instruction
      */
-    public void setBreakpoint(short address, boolean brk) {
+    public void setBreakpoint(Character address, boolean brk) {
         if (brk) {
             breakpoints.add(address);
         } else {
@@ -83,7 +83,7 @@ public class Debugger {
         }
     }
 
-    public Set<Short> getBreakpoints() {
+    public Set<Character> getBreakpoints() {
         return Collections.unmodifiableSet(breakpoints);
     }
 
@@ -102,7 +102,7 @@ public class Debugger {
         cpu.run();
     }
 
-    private void stepHandler(Short pc) {
+    private void stepHandler(Character pc) {
         if (onehitModregs || modregsOnRun) updModRegs();
         if (breakpointsEnabled && breakpoints.contains(pc)) {
             if (modregsOnBreakpoint) updModRegs();
@@ -125,9 +125,9 @@ public class Debugger {
     public void attachTo(Dcpu cpu) {
         if (this.cpu != null) detach();
         this.cpu = cpu;
-        cpu.stepListener = new PreListener<Short>() {
+        cpu.stepListener = new PreListener<Character>() {
             @Override
-            public void preExecute(Short arg) {
+            public void preExecute(Character arg) {
                 Debugger.this.stepHandler(arg);
             }
         };

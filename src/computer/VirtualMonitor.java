@@ -1,15 +1,14 @@
 package computer;
 
-import java.io.IOException;
-
 import javax.imageio.ImageIO;
+import java.io.IOException;
 
 /*
  * Taken from Notch's disassembled application - char changed to short
  */
 public class VirtualMonitor {
 
-    public VirtualMonitor(short ram[], int offset) {
+    public VirtualMonitor(char[] ram, int offset) {
         this.pixels = new int[0x4000];
         this.ram = ram;
         this.offset = offset;
@@ -100,12 +99,12 @@ public class VirtualMonitor {
         }
 
         int borderPixels = 100;
-        reds   += (color & 0xff0000) * borderPixels;
+        reds += (color & 0xff0000) * borderPixels;
         greens += (color & 0x00ff00) * borderPixels;
-        blues  += (color & 0x0000ff) * borderPixels;
-        reds   =   reds / (long) (0x003000 + borderPixels) & 0xff0000L;
+        blues += (color & 0x0000ff) * borderPixels;
+        reds = reds / (long) (0x003000 + borderPixels) & 0xff0000L;
         greens = greens / (long) (0x003000 + borderPixels) & 0x00ff00L;
-        blues  =  blues / (long) (0x003000 + borderPixels) & 0x0000ffL;
+        blues = blues / (long) (0x003000 + borderPixels) & 0x0000ffL;
         lightColor = (int) (reds | greens | blues);
     }
 
@@ -125,7 +124,7 @@ public class VirtualMonitor {
     public static final int HEIGHT_CHARS = 12;
     public static final int WIDTH_PIXELS = 128;
     public static final int HEIGHT_PIXELS = 96;
-    private final short ram[];
+    private final char[] ram;
     private final int offset;
     private final int charOffset;
     private final int miscDataOffset;

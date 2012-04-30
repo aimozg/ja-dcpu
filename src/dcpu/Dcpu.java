@@ -167,20 +167,20 @@ public final class Dcpu {
 
     abstract static class Operation {
         int cmd;
-        short pc;
+        Character pc;
         int opcode;
         int a;
         int b;
         OpType type;
 
-        Operation(int cmd, short pc) {
+        Operation(int cmd, Character pc) {
             this.cmd = cmd;
             this.pc = pc;
         }
 
         abstract int getCycles();
 
-        static Operation createOperation(int cmd, short pc) {
+        static Operation createOperation(int cmd, char pc) {
             OpType opType = OpType.getOpType(cmd);
             switch (opType) {
                 case BASIC:
@@ -196,7 +196,7 @@ public final class Dcpu {
     static class BasicOperation extends Operation {
         BasicOp op;
 
-        BasicOperation(int cmd, short pc) {
+        BasicOperation(int cmd, Character pc) {
             super(cmd, pc);
             type = OpType.BASIC;
             opcode = cmd & C_O_MASK;
@@ -214,7 +214,7 @@ public final class Dcpu {
     static class SpecialOperation extends Operation {
         SpecialOp op;
 
-        SpecialOperation(int cmd, short pc) {
+        SpecialOperation(int cmd, Character pc) {
             super(cmd, pc);
             type = OpType.SPECIAL;
             opcode = (cmd & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
@@ -231,7 +231,7 @@ public final class Dcpu {
 
     static class InvalidOperation extends Operation {
 
-        InvalidOperation(int cmd, short pc) {
+        InvalidOperation(int cmd, Character pc) {
             super(cmd, pc);
             type = OpType.INVALID;
         }
@@ -445,7 +445,7 @@ public final class Dcpu {
     ///////////////////////////////////////////////////////////////
 
     // Memory cells: 64k RAM + 8 general-purpose regs + SP + PC + EX + 32 constants
-    public final short[] mem = new short[M_CV + 32];
+    public final char[] mem = new char[M_CV + 32];
     public boolean reserved = false; // true if reserved operation executed
     public volatile boolean halt = false;// halt execution
     public long cycles = 0;
@@ -490,7 +490,7 @@ public final class Dcpu {
         }
     }
 
-    public Listener<Short> stepListener;
+    public Listener<Character> stepListener;
 
     /**
      * Execute one operation (skip = false) or skip one operation.
@@ -499,7 +499,7 @@ public final class Dcpu {
      */
     public void step(boolean skip) {
         if (hasInterrupt() && mem[M_IA] != 0) {
-            short msg = popIntMsg();
+            char msg = popIntMsg();
             // TODO maybe call some interrupt listener?
             // TODO does interrupt cost any cycles?
             mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
@@ -510,7 +510,7 @@ public final class Dcpu {
         }
 
         cycles++;
-        short ppc = mem[M_PC];
+        char ppc = mem[M_PC];
         if (!skip && stepListener != null) stepListener.preExecute(ppc);
 
         int cmd = mem[(mem[M_PC]++) & 0xffff] & 0xffff; // command value
@@ -544,8 +544,8 @@ public final class Dcpu {
 
     private boolean handleBasicOp(BasicOperation op, boolean skip) {
         boolean postExecuteCalled = false;
-        short ppc = op.pc;
-        short psp = mem[M_SP];
+        Character ppc = op.pc;
+        char psp = mem[M_SP];
 
         int aa, ba, av, bv, asv, bsv;
         aa = getaddr(op.a, true) & 0x1ffff;
@@ -561,10 +561,10 @@ public final class Dcpu {
             return false;
         }
 
-        asv = memget(aa);
-        bsv = memget(ba);
-        av = asv & 0xffff;
-        bv = bsv & 0xffff;
+        av = memget(aa);
+        bv = memget(ba);
+        asv = (short) av;
+        bsv = (short) bv;
 
         int rslt = mem[ba]; // new 'b' value
         int exreg = mem[M_EX]; // new 'EX' value
@@ -695,10 +695,10 @@ public final class Dcpu {
         }
 
         // overwrite 'b' unless it is constant
-        if (ba < M_CV && op.op.modb) memset(ba, (short) rslt);
+        if (ba < M_CV && op.op.modb) memset(ba, (char) rslt);
 
         // only overwrite EX if it wasn't being changed itself with (e.g.) "SET EX, ..."
-        if (ba != M_EX) mem[M_EX] = (short) exreg;
+        if (ba != M_EX) mem[M_EX] = (char) exreg;
 
         return postExecuteCalled;
     }
@@ -707,7 +707,7 @@ public final class Dcpu {
         // a,b: raw codes, addresses, values, signed values
         // in NBI: b stores NBO
         int aa, ba, av, bv, asv, bsv;
-        short psp = mem[M_SP];
+        char psp = mem[M_SP];
 
         aa = getaddr(op.a, true) & 0x1ffff;
         if (skip) {
@@ -723,19 +723,19 @@ public final class Dcpu {
         switch (op.op) {
             case JSR:
                 mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
-                mem[M_PC] = (short) av;
+                mem[M_PC] = (char) av;
                 break;
             case HCF:
                 halt = true;
                 break;
             case INT:
-                interrupt((short) av);
+                interrupt((char) av);
                 break;
             case IAG:
                 rslt = mem[M_IA];
                 break;
             case IAS:
-                mem[M_IA] = (short) av;
+                mem[M_IA] = (char) av;
                 break;
             case RFI:
                 setIntQueuing(false);
@@ -753,11 +753,11 @@ public final class Dcpu {
                     Device device = devices.get(av);
                     int hwid = device.getHardwareId();
                     int mfid = device.getManufacturerId();
-                    mem[M_A] = (short) (hwid & 0xffff);
-                    mem[M_B] = (short) ((hwid >> 16) & 0xffff);
+                    mem[M_A] = (char) (hwid & 0xffff);
+                    mem[M_B] = (char) ((hwid >> 16) & 0xffff);
                     mem[M_C] = device.getHardwareVersion();
-                    mem[M_X] = (short) (mfid & 0xffff);
-                    mem[M_Y] = (short) ((mfid >> 16) & 0xffff);
+                    mem[M_X] = (char) (mfid & 0xffff);
+                    mem[M_Y] = (char) ((mfid >> 16) & 0xffff);
                 } else {
                     mem[M_A] = mem[M_B] = mem[M_C] = mem[M_X] = mem[M_Y] = 0;
                 }
@@ -769,7 +769,7 @@ public final class Dcpu {
                 break;
         }
         // overwrite 'a' unless it is constant
-        if (aa < M_CV && op.op.moda) memset(aa, (short) rslt);
+        if (aa < M_CV && op.op.moda) memset(aa, (char) rslt);
 
     }
 
@@ -779,8 +779,8 @@ public final class Dcpu {
      * TODO add "debugger" parameter, which also passed to peripheral,
      * so its state is not changed (e.g. key buffer not erased when debugger views memory)
      */
-    public void memset(int addr, short value) {
-        short oldval = mem[addr];
+    public void memset(int addr, char value) {
+        char oldval = mem[addr];
         int line = addr >>> 12;
         mem[addr] = value;
         if (line < memlines.length && memlines[line] != null) {
@@ -788,7 +788,7 @@ public final class Dcpu {
         }
     }
 
-    public short memget(int addr) {
+    public char memget(int addr) {
         int line = addr >>> 12;
         if (line < memlines.length && memlines[line] != null) {
             return memlines[line].onMemget(addr & 0x0fff);
@@ -802,7 +802,7 @@ public final class Dcpu {
         halt = false;
         for (int i = 0; i < M_CV - M_A; i++) mem[M_A + i] = 0;
         for (int i = 0; i < 32; i++) {
-            mem[M_CV + i] = (short) ((i - 1) & 0xffff);
+            mem[M_CV + i] = (char) ((i - 1) & 0xffff);
         }
     }
 
@@ -810,7 +810,7 @@ public final class Dcpu {
      * Zeroizes memory
      */
     public void memzero() {
-        Arrays.fill(mem, 0, RAM_SIZE, (short) 0);
+        Arrays.fill(mem, 0, RAM_SIZE, (char) 0);
     }
 
     public Dcpu() {
@@ -825,17 +825,17 @@ public final class Dcpu {
      * <p/>
      * Example: gencmd(O_SET, A_PC, A_NW) for "set PC, next_word_of_ram"
      */
-    public static short gencmd(int opcode, int b, int a) {
+    public static char gencmd(int opcode, int b, int a) {
         if (opcode < 0 || opcode > 1 << C_O_BITLEN || b < 0 || b > 1 << C_B_BITLEN || a < 0 || a > 1 << C_A_BITLEN)
             throw new IllegalArgumentException("Bad arguments");
-        return (short) (opcode | a << C_A_SHIFT | b << C_B_SHIFT);
+        return (char) (opcode | a << C_A_SHIFT | b << C_B_SHIFT);
     }
 
     /**
      * Generates command code for non-basic instruction
      */
-    public static short gencmd_nbi(int opcode, int a) {
-        return (short) (opcode << C_NBI_O_SHIFT | a << C_NBI_A_SHIFT);
+    public static char gencmd_nbi(int opcode, int a) {
+        return (char) (opcode << C_NBI_O_SHIFT | a << C_NBI_A_SHIFT);
     }
 
     // debug
@@ -848,8 +848,8 @@ public final class Dcpu {
      */
     public String _dregs() {
         return String.format("R A=%04x B=%04x C=%04x X=%04x Y=%04x Z=%04x I=%04x J=%04x  PC=%04x SP=%04x EX=%04x",
-                mem[M_A], mem[M_B], mem[M_C], mem[M_X], mem[M_Y], mem[M_Z], mem[M_I], mem[M_J],
-                mem[M_PC], mem[M_SP], mem[M_EX]);
+                (int) mem[M_A], (int) mem[M_B], (int) mem[M_C], (int) mem[M_X], (int) mem[M_Y], (int) mem[M_Z], (int) mem[M_I], (int) mem[M_J],
+                (int) mem[M_PC], (int) mem[M_SP], (int) mem[M_EX]);
     }
 
     public String _dmem(int addr) {
@@ -862,7 +862,7 @@ public final class Dcpu {
 
     public String _dvalmem(int addr) {
         if (addr < M_A) {
-            return String.format("(%04x) : %04x (%s)", addr, mem[addr], Character.toString((char) mem[addr]));
+            return String.format("(%04x) : %04x (%c)", addr, (int) mem[addr], mem[addr]);
         } else if (addr < M_CV) {
             return Reg.l(addr - M_A).name;
         } else {
@@ -914,21 +914,21 @@ public final class Dcpu {
         }
     }
 
-    public short getreg(Reg reg) {
-        return (short) (mem[reg.address] & 0xffff);
+    public char getreg(Reg reg) {
+        return (char) (mem[reg.address] & 0xffff);
     }
 
-    public void setreg(Reg reg, short value) {
+    public void setreg(Reg reg, char value) {
         mem[reg.address] = value;
     }
 
-    public void upload(short[] buffer, int srcoff, int len, int dstoff) {
+    public void upload(char[] buffer, int srcoff, int len, int dstoff) {
         if (srcoff < 0 || len < 0 || srcoff + len >= RAM_SIZE)
             throw new IllegalArgumentException("Bad offset/length");
         System.arraycopy(buffer, srcoff, mem, dstoff, len);
     }
 
-    public void upload(short[] buffer) {
+    public void upload(char[] buffer) {
         upload(buffer, 0, buffer.length, 0);
     }
 
@@ -942,12 +942,12 @@ public final class Dcpu {
         if (len % 2 == 1) throw new IOException(String.format("Odd file size (0x%x)\n", len));
         len /= 2;
         if (len > 0x10000) throw new IOException(String.format("Too large file (0x%x)\n", len));
-        short[] bytecode = new short[len];
+        char[] bytecode = new char[len];
         for (int i = 0; i < len; i++) {
             int lo = instream.read();
             int hi = instream.read();
             if (lo == -1 || hi == -1) throw new IOException(String.format("Failed to read data from file\n"));
-            bytecode[i] = (short) ((hi << 8) | lo);
+            bytecode[i] = (char) ((hi << 8) | lo);
         }
         upload(bytecode);
 
@@ -975,7 +975,7 @@ public final class Dcpu {
     // TODO proper queueing
 
     private boolean intFlag = false;
-    private short intMsg;
+    private char intMsg;
 
     private boolean hasInterrupt() {
         return intFlag;
@@ -988,7 +988,7 @@ public final class Dcpu {
     /**
      * Dequeue interrupt and return its message.
      */
-    private short popIntMsg() {
+    private char popIntMsg() {
         intFlag = false;
         return intMsg;
     }
@@ -996,7 +996,7 @@ public final class Dcpu {
     /**
      * Enqueue interrupt
      */
-    public void interrupt(short message) {
+    public void interrupt(char message) {
         if (intFlag) {
             System.err.println("Interrupt ignored");
             return;
@@ -1043,7 +1043,7 @@ public final class Dcpu {
         /**
          * Hardware version (save to C on HWQ)
          */
-        public abstract short getHardwareVersion();
+        public abstract char getHardwareVersion();
 
         /**
          * Manufacturer id (saved to Y,X on HWQ)
@@ -1093,7 +1093,7 @@ public final class Dcpu {
          * This method is called when program or other peripheral writes "newval" to
          * memory address "baseaddr"+"offset". Note that cpu.mem[baseaddr+offset] already contains newval
          */
-        public void onMemset(int offset, short newval, short oldval) {
+        public void onMemset(int offset, char newval, char oldval) {
 
         }
 
@@ -1101,7 +1101,7 @@ public final class Dcpu {
          * This method is called when program or other peripheral reads value from
          * memory address "baseaddr"+"offset".
          */
-        public short onMemget(int offset) {
+        public char onMemget(int offset) {
             return cpu.mem[baseaddr + offset];
         }
 

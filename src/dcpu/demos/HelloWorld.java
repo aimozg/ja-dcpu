@@ -21,21 +21,21 @@ public class HelloWorld {
 
         ///////////
         // LOAD PROGRAM
-        short end = (short) 0xffff;
-        short data = (short) 0x2000;
-        short video = (short) 0x8000;
+        char end = 0xffff;
+        char data = (short) 0x2000;
+        char video = 0x8000;
         int i_video = video & 0xffff;
         int i_data = data & 0xffff;
 
         //set a, 0xbeef
         cpu.mem[0] = gencmd(O_SET, A_A, A_NW);
-        cpu.mem[1] = (short) 0xbeef;
+        cpu.mem[1] = 0xbeef;
         // set (0x1000), a
         cpu.mem[2] = gencmd(O_SET, A_M_NW, A_A);
-        cpu.mem[3] = (short) 0x1000;
+        cpu.mem[3] = 0x1000;
         // ifn a, (0x1000)
         cpu.mem[4] = gencmd(O_IFN, A_A, A_M_NW);
-        cpu.mem[5] = (short) 0x1000;
+        cpu.mem[5] = 0x1000;
         // set PC, end
         cpu.mem[6] = gencmd(O_SET, A_PC, A_NW);
         cpu.mem[7] = end;
@@ -60,11 +60,11 @@ public class HelloWorld {
         // end
         // cpu.mem[0xffff] = gencmd_nbi(O__HCF, 0); // HCF (halt catch fire) is removed from spec
         cpu.mem[0xffff] = 0;
-        
+
 
         int i = i_data;
         for (char c : "Hello_world!".toCharArray()) { // copy to data
-            cpu.mem[i] = (short) c;
+            cpu.mem[i] = c;
             i++;
         }
         cpu.mem[i] = 0;
@@ -86,7 +86,7 @@ public class HelloWorld {
         for (i = 0; i < 25; i++) {
             System.out.print("#");
             for (int j = 0; j < 80; j++) {
-                short m = cpu.mem[i_video + i * 80 + j];
+                char m = cpu.mem[i_video + i * 80 + j];
                 System.out.print((m >= 0x20 && m <= 0x80) ? (char) m : ' ');
             }
             System.out.println("#");

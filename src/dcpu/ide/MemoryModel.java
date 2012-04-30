@@ -55,18 +55,18 @@ public class MemoryModel implements TableModel {
 
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
         if (columnIndex != 0 && aValue != null) {
-            short value;
+            char value;
             if (aValue instanceof Number) {
-                value = ((Number) aValue).shortValue();
+                value = (char) ((Number) aValue).intValue();
             } else if (aValue instanceof String) {
                 String sValue = (String) aValue;
                 try {
                     if (sValue.startsWith("0x")) {
-                        value = (short) Integer.parseInt(sValue.substring(2), 16);
+                        value = (char) Integer.parseInt(sValue.substring(2), 16);
                     } else if (sValue.startsWith("0b")) {
-                        value = (short) Integer.parseInt(sValue.substring(2), 2);
+                        value = (char) Integer.parseInt(sValue.substring(2), 2);
                     } else {
-                        value = (short) Integer.parseInt(sValue);
+                        value = (char) Integer.parseInt(sValue);
                     }
                 } catch (NumberFormatException ignored) {
                     return;

@@ -22,7 +22,7 @@ public class GenericClock extends Dcpu.Device {
     }
 
     @Override
-    public short getHardwareVersion() {
+    public char getHardwareVersion() {
         return 1;
     }
 
@@ -34,7 +34,7 @@ public class GenericClock extends Dcpu.Device {
     protected long timerTicks = 0; // number of timer ticks (INT 1)
     protected long lastShot = 0; // cpu cycles from last timer shot
     protected int period = 0;
-    protected short intMsg = 0;
+    protected char intMsg = 0;
 
     // Same as Dcpu.CYCLES_PER_FRAME, but don't want to rely on that
     protected static final long CYCLES_PER_SHOT = Dcpu.CPU_FREQUENCY / 60;
@@ -58,7 +58,7 @@ public class GenericClock extends Dcpu.Device {
                 timerTicks = 0;
                 break;
             case CLKINT_GETTICKS:
-                cpu.setreg(Dcpu.Reg.B, (short) timerTicks);
+                cpu.setreg(Dcpu.Reg.B, (char) timerTicks);
                 break;
             case CLKINT_TOGGLEINT:
                 intMsg = cpu.getreg(Dcpu.Reg.B);

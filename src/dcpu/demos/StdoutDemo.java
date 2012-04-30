@@ -11,8 +11,8 @@ public class StdoutDemo {
         OutstreamPeripheral stdout = new OutstreamPeripheral(System.out);
         cpu.attach(stdout, 0xe); // stdout gets writes to 0xe000-0xefff
 
-        short data = 0x1000;
-        short tgt = (short) 0xe123;
+        char data = 0x1000;
+        char tgt = 0xe123;
 
         // :loop
         // ife (data+i),0
@@ -31,7 +31,7 @@ public class StdoutDemo {
 
         int i_tgt = data & 0xffff;
         for (char c : "Hi universe!".toCharArray()) {
-            cpu.mem[i_tgt] = (short) c;
+            cpu.mem[i_tgt] = c;
             i_tgt++;
         }
 

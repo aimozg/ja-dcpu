@@ -5,7 +5,7 @@ package computer;
  */
 public class VirtualKeyboard {
 
-    public VirtualKeyboard(short ram[], int offset, KeyMapping keyMapping) {
+    public VirtualKeyboard(char ram[], int offset, KeyMapping keyMapping) {
         pp = 0;
         this.ram = ram;
         this.offset = offset;
@@ -18,7 +18,7 @@ public class VirtualKeyboard {
         if (ram[offset + pp] != 0) {
             return;
         } else {
-            ram[offset + pp] = (short) i;
+            ram[offset + pp] = (char) i;
             pp = (pp + 1) & 0xf;
             return;
         }
@@ -32,7 +32,7 @@ public class VirtualKeyboard {
         if (ram[offset + pp] != 0) {
             return;
         } else {
-            ram[offset + pp] = (short) i;
+            ram[offset + pp] = (char) i;
             pp = (pp + 1) & 0xf;
             return;
         }
@@ -46,7 +46,7 @@ public class VirtualKeyboard {
         if (ram[offset + pp] != 0) {
             return;
         } else {
-            ram[offset + pp] = (short) (i | 0x100);
+            ram[offset + pp] = (char) (i | 0x100);
             pp = (pp + 1) & 0xf;
             return;
         }
@@ -56,7 +56,7 @@ public class VirtualKeyboard {
     public static final int KEY_DOWN = 129;
     public static final int KEY_LEFT = 130;
     public static final int KEY_RIGHT = 131;
-    private final short ram[];
+    private final char ram[];
     private final int offset;
     private int pp;
     private KeyMapping keyMapping;

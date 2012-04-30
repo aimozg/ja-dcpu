@@ -1,9 +1,9 @@
 package dcpu;
 
-import static dcpu.Dcpu.*;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import static dcpu.Dcpu.*;
 
 /**
  * Converts opcodes to strings
@@ -11,7 +11,7 @@ import java.util.List;
 public class Disassembler {
 
     int address;
-    private short[] mem;
+    private char[] mem;
 
     public int getAddress() {
         return address;
@@ -21,7 +21,7 @@ public class Disassembler {
         this.address = address;
     }
 
-    public void init(short[] mem) {
+    public void init(char[] mem) {
         this.mem = mem;
     }
 
@@ -33,7 +33,7 @@ public class Disassembler {
             int a = (instr & C_A_MASK) >> C_A_SHIFT;
             int b = (instr & C_B_MASK) >> C_B_SHIFT;
             BasicOp bop = BasicOp.l(opcode);
-            
+
             // Words come in order : OPERATION_WORD NW_A NW_B
             // but we print B first, so need to store up the NW_ values before printing them in case there's multiple
             StringBuilder sb = new StringBuilder();
@@ -53,7 +53,7 @@ public class Disassembler {
             opcode = (instr & C_NBI_O_MASK) >> C_NBI_O_SHIFT;
             SpecialOp sop = SpecialOp.l(opcode);
             if (sop == null) return String.format("DAT 0x%04x", instr);
-            
+
             StringBuilder sb = new StringBuilder();
             sb.append(sop.name).append(' ');
             operand(a, sb, nextWords, true);
@@ -73,7 +73,7 @@ public class Disassembler {
         } else if (code <= 0x0F) {
             sb.append("[" + Reg.l(code - 8).name + "]");
         } else if (code <= 0x17) {
-            nextWords.add(0, String.format("0x%04x", mem[address++]));
+            nextWords.add(0, String.format("0x%04x", (int) mem[address++]));
             sb.append(String.format("[%s + __NEXT_WORD_%d__]", Reg.l(code - 16).name, nextWords.size()));
         } else if (code >= 0x20 && code <= 0x3F) {
             sb.append(String.valueOf(code - 0x20 - 1));
@@ -85,7 +85,7 @@ public class Disassembler {
                 sb.append("PEEK");
                 break;
             case A_PICK:
-                nextWords.add(0, String.format("%d", mem[address++]));
+                nextWords.add(0, String.format("%d", (int) mem[address++]));
                 sb.append(String.format("PICK __NEXT_WORD_%d__", nextWords.size()));
                 break;
             case A_SP:
@@ -98,11 +98,11 @@ public class Disassembler {
                 sb.append("EX");
                 break;
             case A_M_NW:
-                nextWords.add(0, String.format("0x%04x", mem[address++]));
+                nextWords.add(0, String.format("0x%04x", (int) mem[address++]));
                 sb.append(String.format("[__NEXT_WORD_%d__]", nextWords.size()));
                 break;
             case A_NW:
-                nextWords.add(0, String.format("0x%04x", mem[address++]));
+                nextWords.add(0, String.format("0x%04x", (int) mem[address++]));
                 sb.append(String.format("__NEXT_WORD_%d__", nextWords.size()));
                 break;
             default:
