@@ -391,7 +391,6 @@ public class Assembler {
 
         @Override
         int acode() {
-            // int i = value & 0xffff; // why did value used to be anded with 0xffff?
             if (isA && value == 65535) return A_CONST; // -1
             if (isA && value <= 30) return A_CONST + value + 1; // adjust for -1 ... 30
             return A_NW;

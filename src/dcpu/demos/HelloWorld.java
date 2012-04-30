@@ -24,8 +24,6 @@ public class HelloWorld {
         char end = 0xffff;
         char data = 0x2000;
         char video = 0x8000;
-        int i_video = video & 0xffff;
-        int i_data = data & 0xffff;
 
         //set a, 0xbeef
         cpu.mem[0] = gencmd(O_SET, A_A, A_NW);
@@ -62,7 +60,7 @@ public class HelloWorld {
         cpu.mem[0xffff] = 0;
 
 
-        int i = i_data;
+        int i = data;
         for (char c : "Hello_world!".toCharArray()) { // copy to data
             cpu.mem[i] = c;
             i++;
@@ -86,7 +84,7 @@ public class HelloWorld {
         for (i = 0; i < 25; i++) {
             System.out.print("#");
             for (int j = 0; j < 80; j++) {
-                char m = cpu.mem[i_video + i * 80 + j];
+                char m = cpu.mem[video + i * 80 + j];
                 System.out.print((m >= 0x20 && m <= 0x80) ? (char) m : ' ');
             }
             System.out.println("#");

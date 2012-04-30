@@ -51,7 +51,7 @@ public class IostreamDevice extends Dcpu.Device {
         switch (cpu.getreg(Dcpu.Reg.A)) {
             case SIOINT_PUTC:
                 try {
-                    output.write(cpu.getreg(Dcpu.Reg.B) & 0xffff);
+                    output.write(cpu.getreg(Dcpu.Reg.B));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -69,12 +69,12 @@ public class IostreamDevice extends Dcpu.Device {
                 }
                 break;
             case SIOINT_PUTS:
-                int addr = cpu.getreg(Dcpu.Reg.B) & 0xffff;
+                int addr = cpu.getreg(Dcpu.Reg.B);
                 while (true) {
                     char val = cpu.mem[addr];
                     if (val == 0) break;
                     try {
-                        output.write(val & 0xffff);
+                        output.write(val);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

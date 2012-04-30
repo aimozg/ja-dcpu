@@ -27,7 +27,7 @@ public class Disassembler {
 
     public String next(boolean incrementMemory) {
         List<String> nextWords = new ArrayList<String>();
-        int instr = (incrementMemory ? mem[address++] : mem[address]) & 0xffff;
+        int instr = (incrementMemory ? mem[address++] : mem[address]);
         int opcode = instr & C_O_MASK;
         if (opcode != O_NBI) {
             int a = (instr & C_A_MASK) >> C_A_SHIFT;

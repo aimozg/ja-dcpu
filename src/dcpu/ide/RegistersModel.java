@@ -53,7 +53,7 @@ public class RegistersModel implements TableModel {
 
     public Object getValueAt(int rowIndex, int columnIndex) {
         if (columnIndex == 0) return Reg.l(rowIndex).name;
-        return Integer.toHexString(cpu.memget(M_A + rowIndex) & 0xffff);//TODO debugger flag
+        return Integer.toHexString(cpu.memget(M_A + rowIndex));//TODO debugger flag
     }
 
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {

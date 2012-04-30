@@ -114,7 +114,7 @@ public class AssemblerDemo {
 
     private static void printBytecode(char[] bytecode) {
         for (char i : bytecode) {
-            System.out.printf("%04x ", i & 0xffff);
+            System.out.printf("%04x ", (int) i);
         }
         System.out.println();
     }

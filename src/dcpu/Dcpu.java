@@ -502,8 +502,8 @@ public final class Dcpu {
             char msg = popIntMsg();
             // TODO maybe call some interrupt listener?
             // TODO does interrupt cost any cycles?
-            mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
-            mem[(--mem[M_SP]) & 0xffff] = mem[M_A];
+            mem[--mem[M_SP]] = mem[M_PC];
+            mem[--mem[M_SP]] = mem[M_A];
             mem[M_PC] = mem[M_IA];
             mem[M_A] = msg;
             return; // so we can catch the stepping into interrupt
@@ -513,7 +513,7 @@ public final class Dcpu {
         char ppc = mem[M_PC];
         if (!skip && stepListener != null) stepListener.preExecute(ppc);
 
-        int cmd = mem[(mem[M_PC]++) & 0xffff] & 0xffff; // command value
+        int cmd = mem[mem[M_PC]++]; // command value
 
         Operation op = Operation.createOperation(cmd, ppc);
         boolean postExecuteCalled = false;
@@ -623,15 +623,15 @@ public final class Dcpu {
                 break;
             case SHL:
                 rslt = bv << av;
-                exreg = ((bv << av) >> 16) & 0xffff;
+                exreg = ((bv << av) >> 16);
                 break;
             case SHR:
                 rslt = bv >>> av;
-                exreg = ((bv << 16) >> av) & 0xffff;
+                exreg = ((bv << 16) >> av);
                 break;
             case ASR:
                 rslt = bv >> av;
-                exreg = ((bv << 16) >>> av) & 0xffff;
+                exreg = ((bv << 16) >>> av);
                 break;
             case AND:
                 rslt = av & bv;
@@ -709,20 +709,20 @@ public final class Dcpu {
         int aa, ba, av, bv, asv, bsv;
         char psp = mem[M_SP];
 
-        aa = getaddr(op.a, true) & 0x1ffff;
+        aa = getaddr(op.a, true);
         if (skip) {
             mem[M_SP] = psp;
             return;
         }
         ba = 0;
-        asv = memget(aa);
-        av = asv & 0xffff;
+        av = memget(aa);
+        asv = (short) av;
         bv = bsv = 0;
 
         int rslt = mem[aa]; // new 'a' value
         switch (op.op) {
             case JSR:
-                mem[(--mem[M_SP]) & 0xffff] = mem[M_PC];
+                mem[(--mem[M_SP])] = mem[M_PC];
                 mem[M_PC] = (char) av;
                 break;
             case HCF:
@@ -739,8 +739,8 @@ public final class Dcpu {
                 break;
             case RFI:
                 setIntQueuing(false);
-                mem[M_A] = mem[(mem[M_SP]++) & 0xffff];
-                mem[M_PC] = mem[(mem[M_SP]++) & 0xffff];
+                mem[M_A] = mem[(mem[M_SP]++)];
+                mem[M_PC] = mem[(mem[M_SP]++)];
                 break;
             case IAQ:
                 setIntQueuing(asv != 0);
@@ -883,7 +883,7 @@ public final class Dcpu {
             return M_A + cmd;
         } else if (cmd <= 0x0f) {
             // [register]
-            return mem[M_A + cmd - 8] & 0xffff;
+            return mem[M_A + cmd - 8];
         } else if (cmd <= 0x17) {
             // [next word + register]
             return (mem[M_A + cmd - 16] + mem[mem[M_PC]++]) & 0xffff;
@@ -893,9 +893,9 @@ public final class Dcpu {
         } else switch (cmd) {
             case A_PUSHPOP:
                 // isa?POP:PUSH
-                return (isa ? (mem[M_SP]++) : (--mem[M_SP])) & 0xffff;
+                return (isa ? (mem[M_SP]++) : (--mem[M_SP]));
             case A_PEEK:
-                return mem[M_SP] & 0xffff;
+                return mem[M_SP];
             case A_PICK:
                 return (mem[M_SP] + mem[mem[M_PC]++]) & 0xffff;
             case A_SP:
@@ -905,17 +905,17 @@ public final class Dcpu {
             case A_EX:
                 return M_EX;
             case A_M_NW:
-                return mem[mem[M_PC]++] & 0xffff;
+                return mem[mem[M_PC]++];
             case A_NW:
                 // next word (literal)
-                return mem[M_PC]++ & 0xffff;
+                return mem[M_PC]++;
             default:
                 throw new RuntimeException("Unknown cmd value: " + cmd);
         }
     }
 
     public char getreg(Reg reg) {
-        return (char) (mem[reg.address] & 0xffff);
+        return (mem[reg.address]);
     }
 
     public void setreg(Reg reg, char value) {
@@ -953,18 +953,12 @@ public final class Dcpu {
 
     }
 
-    /**
-     * Unsigned value of PC register
-     */
     public int pc() {
-        return mem[M_PC] & 0xffff;
+        return mem[M_PC];
     }
 
-    /**
-     * Unsigned value of SP register
-     */
     public int sp() {
-        return mem[M_SP] & 0xffff;
+        return mem[M_SP];
     }
 
     public void setTurboMode(boolean turboMode) {

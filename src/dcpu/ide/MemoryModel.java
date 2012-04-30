@@ -50,7 +50,7 @@ public class MemoryModel implements TableModel {
 
     public Object getValueAt(int rowIndex, int columnIndex) {
         if (columnIndex == 0) return String.format("%04x-", rowIndex * 16);
-        return Integer.toHexString(cpu.memget(rowIndex * 16 + columnIndex - 1) & 0xffff);
+        return Integer.toHexString(cpu.memget(rowIndex * 16 + columnIndex - 1));
     }
 
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {

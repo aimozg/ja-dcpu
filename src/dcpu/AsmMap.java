@@ -17,14 +17,14 @@ public class AsmMap {
      * true if addr contains code (not necessary instruction start)
      */
     public boolean code(int addr) {
-        return code.get(addr & 0xffff);
+        return code.get(addr);
     }
 
     /**
      * true if addr contains data
      */
     public boolean data(int addr) {
-        return !code.get(addr & 0xffff);
+        return !code.get(addr);
     }
 
     /**

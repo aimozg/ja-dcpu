@@ -213,7 +213,7 @@ public class AssemblerTest {
                     int secondExtraWords = EXTRA_WORDS[aaaaaa];
                     // OP B, A = (6 bits for A) (5 bits for B) (5 bits for opcode)
                     int actualOpcode = opCode;
-                    char expectedCode = (char) (((0x001f & actualOpcode) + (0x03e0 & (bbbbb << 5)) + (0xfc00 & (aaaaaa << 10))) & 0xffff);
+                    char expectedCode = (char) (((0x001f & actualOpcode) + (0x03e0 & (bbbbb << 5)) + (0xfc00 & (aaaaaa << 10))));
                     if (firstKey.equals("PUSHPOP")) firstKey = "PUSH";
                     if (secondKey.equals("PUSHPOP")) secondKey = "POP";
                     String assemblyLower = op.name.toLowerCase() + " " + firstKey + ", " + secondKey;
@@ -234,9 +234,9 @@ public class AssemblerTest {
         expected[0] = expectedCode;
 
         String firstLiteralToUse = aExtraWords > 0 ? A_BIG_LITERAL : B_BIG_LITERAL; // decide if the first extra word is on A or B when we only have 1 extra word
-        if (numWords > 1) expected[1] = (char) (Integer.parseInt(firstLiteralToUse, 16) & 0xffff);
+        if (numWords > 1) expected[1] = (char) (Integer.parseInt(firstLiteralToUse, 16));
         if (numWords > 2)
-            expected[2] = (char) (Integer.parseInt(B_BIG_LITERAL, 16) & 0xffff); // will always be B if we get 3 words
+            expected[2] = (char) (Integer.parseInt(B_BIG_LITERAL, 16)); // will always be B if we get 3 words
         assertArrayEquals("Testing '" + assembly + "', " + TestUtils.displayExpected(expected, code), expected, code);
     }
 

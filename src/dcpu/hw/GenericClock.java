@@ -53,7 +53,7 @@ public class GenericClock extends Dcpu.Device {
     public void interrupt() {
         switch (cpu.getreg(Dcpu.Reg.A)) {
             case CLKINT_SETUP:
-                period = cpu.getreg(Dcpu.Reg.B) & 0xffff;
+                period = cpu.getreg(Dcpu.Reg.B);
                 lastShot = cpu.totalCycles;
                 timerTicks = 0;
                 break;

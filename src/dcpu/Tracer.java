@@ -33,7 +33,7 @@ public class Tracer extends PostListener<Character> {
     }
 
     private void printTrace(char pc) {
-        disassembler.setAddress(pc & 0xffff);
+        disassembler.setAddress(pc);
         out.printf("%04x: %s\n", (int) pc, disassembler.next(true));
         if (printRegisters)
             Tracer.outputRegisters(out, dcpu);
@@ -41,7 +41,7 @@ public class Tracer extends PostListener<Character> {
             Tracer.outputRegMem(out, dcpu);
         }
         if (printStack > 0) {
-            int sp = dcpu.mem[M_SP] & 0xffff;
+            int sp = dcpu.mem[M_SP];
             out.printf("  S: ");
             for (int i = 0; i < printStack; i++) {
                 out.printf(" %04x", (int) dcpu.mem[sp]);
@@ -53,10 +53,10 @@ public class Tracer extends PostListener<Character> {
 
     public static void outputRegMem(PrintStream out, Dcpu dcpu) {
         outputRegMem(out,
-                dcpu.mem[0xffff & dcpu.mem[M_A]], dcpu.mem[0xffff & dcpu.mem[M_B]], dcpu.mem[0xffff & dcpu.mem[M_C]],
-                dcpu.mem[0xffff & dcpu.mem[M_X]], dcpu.mem[0xffff & dcpu.mem[M_Y]], dcpu.mem[0xffff & dcpu.mem[M_Z]],
-                dcpu.mem[0xffff & dcpu.mem[M_I]], dcpu.mem[0xffff & dcpu.mem[M_J]],
-                dcpu.mem[0xffff & dcpu.mem[M_SP]], dcpu.mem[0xffff & dcpu.mem[M_EX]]);
+                dcpu.mem[dcpu.mem[M_A]], dcpu.mem[dcpu.mem[M_B]], dcpu.mem[dcpu.mem[M_C]],
+                dcpu.mem[dcpu.mem[M_X]], dcpu.mem[dcpu.mem[M_Y]], dcpu.mem[dcpu.mem[M_Z]],
+                dcpu.mem[dcpu.mem[M_I]], dcpu.mem[dcpu.mem[M_J]],
+                dcpu.mem[dcpu.mem[M_SP]], dcpu.mem[dcpu.mem[M_EX]]);
     }
 
     public static void outputRegMem(PrintStream out, char aM, char bM, char cM, char xM, char yM, char zM, char iM, char jM, char spM, char oM) {

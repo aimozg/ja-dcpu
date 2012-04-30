@@ -29,7 +29,7 @@ public class StdoutDemo {
         cpu.mem[6] = gencmd(O_ADD, A_I, A_1);
         cpu.mem[7] = gencmd(O_SET, A_PC, 0);
 
-        int i_tgt = data & 0xffff;
+        int i_tgt = data;
         for (char c : "Hi universe!".toCharArray()) {
             cpu.mem[i_tgt] = c;
             i_tgt++;

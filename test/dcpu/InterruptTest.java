@@ -46,7 +46,7 @@ public class InterruptTest {
                 ":inthandler\n" +
                 "   HCF 0\n");
         cpu.run(4); // IAS, SET, INT, <int>
-        assertEquals(0xface, cpu.mem[cpu.sp()] & 0xffff);
+        assertEquals(0xface, cpu.mem[cpu.sp()]);
         assertEquals(map.symbol("afterint").charValue(), cpu.mem[cpu.sp() + 1]);
     }
 
@@ -65,7 +65,7 @@ public class InterruptTest {
         cpu.step(false); // <int>
         assertEquals(1, cpu.getreg(Reg.B));
         assertEquals(3, cpu.getreg(Reg.A));
-        assertEquals(map.symbol("inthandler") & 0xffff, cpu.pc());
+        assertEquals(map.symbol("inthandler").charValue(), cpu.pc());
     }
 
     @Test
@@ -84,7 +84,7 @@ public class InterruptTest {
         cpu.run(1);//<int>
         assertEquals(2, cpu.getreg(Reg.A));
         cpu.step(false);//RFI
-        assertEquals(map.symbol("afterint") & 0xffff, cpu.pc());
+        assertEquals(map.symbol("afterint").charValue(), cpu.pc());
         assertEquals(oldSp, cpu.sp());
         assertEquals(3, cpu.getreg(Reg.A));
     }
@@ -100,7 +100,7 @@ public class InterruptTest {
         cpu.run(3);// SET, INT, SET
         // if there were an interrupt, 3rd call would result in <int>, and B would be 1
         assertEquals(2, cpu.getreg(Reg.B));
-        assertEquals(map.symbol("run3") & 0xffff, cpu.pc());
+        assertEquals(map.symbol("run3").charValue(), cpu.pc());
     }
 
     // TODO maybe extract this helper method, cpu, assembler, and 'map' fields to some kind of DcpuTest superclass?
