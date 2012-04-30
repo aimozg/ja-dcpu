@@ -746,13 +746,26 @@ public final class Dcpu {
                 setIntQueuing(asv != 0);
                 break;
             case HWN:
-                // TODO HWN
+                rslt = devices.size();
                 break;
             case HWQ:
-                // TODO HWQ
+                if (av >= 0 && av < devices.size()) {
+                    Device device = devices.get(av);
+                    int hwid = device.getHardwareId();
+                    int mfid = device.getManufacturerId();
+                    mem[M_A] = (short) (hwid & 0xffff);
+                    mem[M_B] = (short) ((hwid >> 16) & 0xffff);
+                    mem[M_C] = device.getHardwareVersion();
+                    mem[M_X] = (short) (mfid & 0xffff);
+                    mem[M_Y] = (short) ((mfid >> 16) & 0xffff);
+                } else {
+                    mem[M_A] = mem[M_B] = mem[M_C] = mem[M_X] = mem[M_Y] = 0;
+                }
                 break;
             case HWI:
-                // TODO HWI
+                if (av >= 0 && av < devices.size()) {
+                    devices.get(av).interrupt();
+                }
                 break;
         }
         // overwrite 'a' unless it is constant
@@ -989,6 +1002,61 @@ public final class Dcpu {
     }
 
     // end of interrupt handler
+
+    public final ArrayList<Device> devices = new ArrayList<Device>();
+
+    public void attach(Device device) {
+        device.cpu = this;
+        device.index = devices.size();
+        devices.add(device);
+        device.attached();
+    }
+
+    public void detach(Device device) {
+        devices.remove(device);
+        device.cpu = null;
+        device.index = 0;
+        device.detached();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    //// DEVICE (new Peripheral)
+    public abstract static class Device {
+        protected Dcpu cpu;
+        protected int index;
+
+        public void attached() {
+        }
+
+        public void detached() {
+        }
+
+        /**
+         * Hardware id (saved to B,A on HWQ)
+         */
+        public abstract int getHardwareId();
+
+        /**
+         * Hardware version (save to C on HWQ)
+         */
+        public abstract short getHardwareVersion();
+
+        /**
+         * Manufacturer id (saved to Y,X on HWQ)
+         */
+        public abstract short getManufacturerId();
+
+        /**
+         * This method is called every CPU instruction
+         */
+        public void tick() {
+        }
+
+        /**
+         * HWI
+         */
+        public abstract void interrupt();
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     //// PERIPHERAL
