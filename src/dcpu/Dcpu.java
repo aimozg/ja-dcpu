@@ -448,8 +448,8 @@ public final class Dcpu {
     public final short[] mem = new short[M_CV + 32];
     public boolean reserved = false; // true if reserved operation executed
     public volatile boolean halt = false;// halt execution
-    public int cycles = 0;
-    public int totalCycles = 0;
+    public long cycles = 0;
+    public long totalCycles = 0;
     private boolean turboMode = false;
 
 
@@ -916,6 +916,10 @@ public final class Dcpu {
 
     public short getreg(Reg reg) {
         return (short) (mem[reg.address] & 0xffff);
+    }
+
+    public void setreg(Reg reg, short value) {
+        mem[reg.address] = value;
     }
 
     public void upload(short[] buffer, int srcoff, int len, int dstoff) {
