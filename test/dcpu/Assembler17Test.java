@@ -68,11 +68,11 @@ public class Assembler17Test {
     public void testPickX() throws Exception {
         char[] bin = assembler.assemble(
                 "set A, PICK 1\n" +
-                        "hlt\n"
+                        "HCF 0\n"
         );
         char[] expected = new char[]{
                 0x6801, 0x0001,
-                0x0000
+                0x84e0
         };
         assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
     }

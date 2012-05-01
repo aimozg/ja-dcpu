@@ -289,7 +289,7 @@ public class DcpuTest {
         int i = 0;
         for (String a : aValues) {
             for (String b : bValues) {
-                String assembly = setup + cmd + " " + a + ", " + b + "\n" + "HLT";
+                String assembly = setup + cmd + " " + a + ", " + b + "\n" + "HCF 0";
                 // System.out.println(assembly);
                 dcpu.reset();
                 dcpu.memzero();
@@ -454,7 +454,7 @@ public class DcpuTest {
                         "IFE X, 1\n" +
                         "  SET X, 2\n" +
                         "SET Y, 1\n" +
-                        "HLT"
+                        "HCF 0"
         ));
         dcpu.run();
         assertEquals("x", 2, dcpu.getreg(Dcpu.Reg.X));
@@ -468,7 +468,7 @@ public class DcpuTest {
                         "IFE X, 2\n" +
                         "  SET X, 2\n" +
                         "SET Y, 1\n" +
-                        "HLT"
+                        "HCF 0"
         ));
         dcpu.run();
         assertEquals("x", 1, dcpu.getreg(Dcpu.Reg.X));
@@ -482,7 +482,7 @@ public class DcpuTest {
                         "IFN X, 2\n" +
                         "  SET X, 2\n" +
                         "SET Y, 1\n" +
-                        "HLT"
+                        "HCF 0"
         ));
         dcpu.run();
         assertEquals("x", 2, dcpu.getreg(Dcpu.Reg.X));
@@ -496,7 +496,7 @@ public class DcpuTest {
                         "IFN X, 1\n" +
                         "  SET X, 2\n" +
                         "SET Y, 1\n" +
-                        "HLT"
+                        "HCF 0"
         ));
         dcpu.run();
         assertEquals("x", 1, dcpu.getreg(Dcpu.Reg.X));
@@ -510,7 +510,7 @@ public class DcpuTest {
                         "IFG X, 1\n" +
                         "  SET X, 1\n" +
                         "SET Y, 1\n" +
-                        "HLT"
+                        "HCF 0"
         ));
         dcpu.run();
         assertEquals("x", 1, dcpu.getreg(Dcpu.Reg.X));
@@ -524,7 +524,7 @@ public class DcpuTest {
                         "IFG X, 2\n" +
                         "  SET X, -1\n" +
                         "SET Y, 1\n" +
-                        "HLT"
+                        "HCF 0"
         ));
         dcpu.run();
         assertEquals("x", 1, dcpu.getreg(Dcpu.Reg.X));
@@ -538,7 +538,7 @@ public class DcpuTest {
                         "IFB X, 3\n" +
                         "  SET X, 0\n" +
                         "SET Y, 1\n" +
-                        "HLT"
+                        "HCF 0"
         ));
         dcpu.run();
         assertEquals("x", 0, dcpu.getreg(Dcpu.Reg.X));
@@ -552,7 +552,7 @@ public class DcpuTest {
                         "IFB X, 2\n" +
                         "  SET X, 0\n" +
                         "SET Y, 1\n" +
-                        "HLT"
+                        "HCF 0"
         ));
         dcpu.run();
         assertEquals("x", 1, dcpu.getreg(Dcpu.Reg.X));
@@ -568,10 +568,10 @@ public class DcpuTest {
                         "           SET PC, POP\n" +
                         ":go        JSR f1\n" +
                         "           SET Y, 1\n" +
-                        "           HLT"
+                        "           HCF 0"
         );
 
-        char[] expected = new char[]{0x8861, 0x7f81, 0x0005, 0x8461, 0x6381, 0x7c20, 0x0003, 0x8881, 0x0000};
+        char[] expected = new char[]{0x8861, 0x7f81, 0x0005, 0x8461, 0x6381, 0x7c20, 0x0003, 0x8881, 0x84e0};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
 
@@ -592,11 +592,11 @@ public class DcpuTest {
         char[] bin = assembler.assemble(
                 "           JSR go\n" +
                         "           SET X, 1\n" +
-                        "           HLT\n" +
+                        "           HCF 0\n" +
                         ":go        SET X, 2\n" +
                         "           SET PC, POP\n"
         );
-        char[] expected = new char[]{0x7c20, 0x0004, 0x8861, 0x0000, 0x8c61, 0x6381};
+        char[] expected = new char[]{0x7c20, 0x0004, 0x8861, 0x84e0, 0x8c61, 0x6381};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
 
         dcpu.upload(bin);
@@ -623,7 +623,7 @@ public class DcpuTest {
                         "SET [0x0100], PC\n" +
                         "SET PUSH, SP\n" +
                         "SET X, 1\n" +
-                        "HLT"
+                        "HCF 0"
         ));
         dcpu.run(1);
         dcpu.run(1);
@@ -655,7 +655,7 @@ public class DcpuTest {
                         "\n" +
                         ":autostart\n" +
                         "  JSR main\n" +
-                        ":autohalt HLT\n" +
+                        ":autohalt HCF 0\n" +
                         ":fib\n" +
                         "  SUB  C, 12\n" +
                         "  SET  [10+C], X\n" +
@@ -708,7 +708,7 @@ public class DcpuTest {
     public void testSettingEX() throws Exception {
         dcpu.upload(assembler.assemble(
                 "SET EX, 0xffff\n" +
-                        "HLT"
+                        "HCF 0"
         ));
         dcpu.run();
         assertEquals("ex", 0xffff, dcpu.getreg(Dcpu.Reg.EX));
@@ -718,9 +718,9 @@ public class DcpuTest {
     public void testValueOfNW() throws Exception {
         char[] bin = assembler.assemble(
                 "SET [0xA000], 0x30\n" +
-                        "HLT"
+                        "HCF 0"
         );
-        char[] expected = new char[]{0x7fc1, 0x0030, 0xa000, 0x0000};
+        char[] expected = new char[]{0x7fc1, 0x0030, 0xa000, 0x84e0};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run();
@@ -733,9 +733,9 @@ public class DcpuTest {
                 "SET A, 0xA234\n" +
                         "SET B, 0x23\n" +
                         "SHR A, B\n" +
-                        "HLT"
+                        "HCF 0"
         );
-        char[] expected = new char[]{0x7c01, 0xa234, 0x7c21, 0x0023, 0x040d, 0x0000};
+        char[] expected = new char[]{0x7c01, 0xa234, 0x7c21, 0x0023, 0x040d, 0x84e0};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run();
@@ -751,9 +751,9 @@ public class DcpuTest {
                         "IFE B, 1\n" +
                         "    SET X, 1\n" +
                         "SET X, 2\n" +
-                        "HLT"
+                        "HCF 0"
         );
-        char[] expected = new char[]{0x8801, 0x8821, 0x8c12, 0x8832, 0x8861, 0x8c61, 0x0000};
+        char[] expected = new char[]{0x8801, 0x8821, 0x8c12, 0x8832, 0x8861, 0x8c61, 0x84e0};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run(3);
@@ -768,9 +768,9 @@ public class DcpuTest {
                 "SET A, -7\n" +
                         "SET B, -16\n" +
                         "MDI A, B\n" +
-                        "HLT"
+                        "HCF 0"
         );
-        char[] expected = new char[]{0x7c01, 0xfff9, 0x7c21, 0xfff0, 0x0409, 0x0000};
+        char[] expected = new char[]{0x7c01, 0xfff9, 0x7c21, 0xfff0, 0x0409, 0x84e0};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run(3);
@@ -806,7 +806,7 @@ public class DcpuTest {
                         "SET A, PICK 2\n" +
                         "SET A, PICK 3\n" +
                         "SET A, PICK 4\n" +
-                        "HLT\n"
+                        "HCF 0\n"
         );
         char[] expected = new char[]{
                 0x7fc1, 0xbeef, 0xfffc,
@@ -817,7 +817,7 @@ public class DcpuTest {
                 0x6801, 0x0002,
                 0x6801, 0x0003,
                 0x6801, 0x0004,
-                0x0000};
+                0x84e0};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run(5);
@@ -873,7 +873,7 @@ public class DcpuTest {
                         "SET B, PICK 1\n" +
                         "SET C, POP\n" +
                         "SET X, PICK 1\n" +
-                        "HLT\n"
+                        "HCF 0\n"
         );
         char[] expected = new char[]{
                 0x6b01, 0x0000,
@@ -882,7 +882,7 @@ public class DcpuTest {
                 0x6821, 0x0001,
                 0x6041,
                 0x6861, 0x0001,
-                0x0000};
+                0x84e0};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run(1); // set push, pick 0
@@ -908,10 +908,10 @@ public class DcpuTest {
 
     @Test
     public void testDVI() throws Exception {
-        assertDVI(16, 7, (char) 0x4924, new char[]{0xc401, 0xa021, 0x0407, 0x0000});
-        assertDVI(-16, 7, (char) 0xb6dc, new char[]{0x7c01, 0xfff0, 0xa021, 0x0407, 0x0000});
-        assertDVI(16, -7, (char) 0xb6dc, new char[]{0xc401, 0x7c21, 0xfff9, 0x0407, 0x0000});
-        assertDVI(-16, -7, (char) 0x4924, new char[]{0x7c01, 0xfff0, 0x7c21, 0xfff9, 0x0407, 0x0000});
+        assertDVI(16, 7, (char) 0x4924, new char[]{0xc401, 0xa021, 0x0407, 0x84e0});
+        assertDVI(-16, 7, (char) 0xb6dc, new char[]{0x7c01, 0xfff0, 0xa021, 0x0407, 0x84e0});
+        assertDVI(16, -7, (char) 0xb6dc, new char[]{0xc401, 0x7c21, 0xfff9, 0x0407, 0x84e0});
+        assertDVI(-16, -7, (char) 0x4924, new char[]{0x7c01, 0xfff0, 0x7c21, 0xfff9, 0x0407, 0x84e0});
     }
 
     private void assertDVI(int aValue, int bValue, char expectedValue, char[] expectedBin) throws ArrayComparisonFailure {
@@ -919,7 +919,7 @@ public class DcpuTest {
                 "SET A, " + aValue + "\n" +
                         "SET B, " + bValue + "\n" +
                         "DVI A, B\n" +
-                        "HLT\n"
+                        "HCF 0\n"
         );
 
         assertArrayEquals(TestUtils.displayExpected(expectedBin, bin), expectedBin, bin);
@@ -937,9 +937,9 @@ public class DcpuTest {
                         "IAS A\n" +
                         "SET A, 0x0\n" +
                         "IAG A\n" +
-                        "HLT"
+                        "HCF 0"
         );
-        char[] expected = new char[]{0x7c01, 0x0030, 0x0140, 0x8401, 0x0120, 0x0000};
+        char[] expected = new char[]{0x7c01, 0x0030, 0x0140, 0x8401, 0x0120, 0x84e0};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
         dcpu.upload(bin);
         dcpu.run(2);

@@ -27,7 +27,7 @@ public class AssemblerTest {
             0, 0, 0, 0, 0, 0, 0, 0, // [Register]
             1, 1, 1, 1, 1, 1, 1, 1, // [Register + NW]
             0, 0, 1, 0, 0, 0, 1, 1, // PUSHPOP, PEEK, PICK x, SP, PC, EX, [NW], NW
-            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, // ... constants
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0};
@@ -55,9 +55,8 @@ public class AssemblerTest {
         AVALUES.put("0x" + A_BIG_LITERAL.toUpperCase(), 0x1f);
         BVALUES.put("[0x" + B_BIG_LITERAL.toUpperCase() + "]", 0x1e);
         BVALUES.put("0x" + B_BIG_LITERAL.toUpperCase(), 0x1f);
-        for (int i = 0; i < 0x20; i++) { // TODO: FIX 0 case (== -1 constant)
+        for (int i = 0; i < 0x20; i++) {
             AVALUES.put(String.format("%s", Integer.toString(i - 1)), 0x20 + i); // -1 .. 30
-            // if (i > 0) BVALUES.put(String.format("%s", Integer.toString(i - 1)), 0x1F); // 0 .. 30 in B should be treated as NW
         }
     }
 
@@ -166,14 +165,14 @@ public class AssemblerTest {
                         "           set pc, endOfFile\n" +
                         "           set a, 0\n" +
                         ":endoffile\n" +
-                        "           hlt\n"
+                        "           HCF 0\n"
         );
         char[] expected = new char[]{
                 0x7f81, 0x0002,
                 0x8801,
                 0x7f81, 0x0006,
                 0x8401,
-                0x0000
+                0x84e0
         };
         assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
     }
@@ -183,12 +182,12 @@ public class AssemblerTest {
         char[] bin = assembler.assemble(
                 "          set pc, .LBB0_.1\n" +
                         ":.LBB0_.1 set a, 1\n" +
-                        "          hlt\n"
+                        "          HCF 0\n"
         );
         char[] expected = new char[]{
                 0x7f81, 0x0002,
                 0x8801,
-                0x0000
+                0x84e0
         };
         assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
     }

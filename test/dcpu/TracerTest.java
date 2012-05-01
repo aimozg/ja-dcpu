@@ -33,7 +33,7 @@ public class TracerTest {
                         "AND a, 1\n" +
                         "BOR a, 1\n" +
                         "XOR a, 1\n" +
-                        "HLT"
+                        "HCF 0"
         );
         ByteArrayOutputStream baos = new ByteArrayOutputStream(256);
         tracer = new Tracer(new PrintStream(baos));
@@ -52,7 +52,7 @@ public class TracerTest {
                         "0008: AND A, 1\n" +
                         "0009: BOR A, 1\n" +
                         "000a: XOR A, 1\n" +
-                        "000b: DAT 0x0000\n";
+                        "000b: HCF 0\n";
         assertEquals("trace", expected, baos.toString());
     }
 
@@ -66,7 +66,7 @@ public class TracerTest {
                         "DIV 0x8000, 1\n" +
                         "MOD a, 0x8000\n" +
                         "SHL 0x8000, 0x8000\n" +
-                        "HLT"
+                        "HCF 0"
         );
         ByteArrayOutputStream baos = new ByteArrayOutputStream(256);
         tracer = new Tracer(new PrintStream(baos));
@@ -81,7 +81,7 @@ public class TracerTest {
                         "0009: DIV 0x8000, 1\n" +
                         "000b: MOD A, 0x8000\n" +
                         "000d: SHL 0x8000, 0x8000\n" +
-                        "0010: DAT 0x0000\n";
+                        "0010: HCF 0\n";
         assertEquals("trace", expected, baos.toString());
     }
 
@@ -98,7 +98,7 @@ public class TracerTest {
                         "              DIV 0x8000, 1\n" +
                         "              MOD a, 0x8000\n" +
                         "              SHL 0x8000, 0x8000\n" +
-                        "              HLT\n" +
+                        "              HCF 0\n" +
                         ":at_end"
         );
         ByteArrayOutputStream baos = new ByteArrayOutputStream(256);
@@ -114,7 +114,7 @@ public class TracerTest {
                         "0009: DIV 0x8000, 1\n" +
                         "000b: MOD A, 0x8000\n" +
                         "000d: SHL 0x8000, 0x8000\n" +
-                        "0010: DAT 0x0000\n";
+                        "0010: HCF 0\n";
         assertEquals("trace", expected, baos.toString());
     }
 
@@ -133,7 +133,7 @@ public class TracerTest {
                         "    SET J, 2\n" +
                         "IFB J, 2\n" +
                         "    SET J, 1\n" +
-                        "HLT"
+                        "HCF 0"
         );
         ByteArrayOutputStream baos = new ByteArrayOutputStream(256);
         tracer = new Tracer(new PrintStream(baos));
@@ -152,7 +152,7 @@ public class TracerTest {
                         "0008: SET J, 2\n" +
                         "0009: IFB J, 2\n" +
                         "000a: SET J, 1\n" +
-                        "000b: DAT 0x0000\n";
+                        "000b: HCF 0\n";
         assertEquals("trace", expected, baos.toString());
     }
 
@@ -173,7 +173,7 @@ public class TracerTest {
                         "SET J, 0\n" +
                         "IFB J, 0\n" +
                         "    SET J, 1\n" +
-                        "HLT"
+                        "HCF 0"
         );
         ByteArrayOutputStream baos = new ByteArrayOutputStream(256);
         tracer = new Tracer(new PrintStream(baos));
@@ -189,7 +189,7 @@ public class TracerTest {
                         "0007: IFG A, 1\n" +
                         "0009: SET J, 0\n" +
                         "000a: IFB J, 0\n" +
-                        "000c: DAT 0x0000\n";
+                        "000c: HCF 0\n";
         assertEquals("trace", expected, baos.toString());
     }
 
@@ -207,7 +207,7 @@ public class TracerTest {
                         "SET A, PICK 2\n" +
                         "SET A, PICK 3\n" +
                         "SET A, PICK 4\n" +
-                        "HLT\n"
+                        "HCF 0\n"
         );
         ByteArrayOutputStream baos = new ByteArrayOutputStream(256);
         tracer = new Tracer(new PrintStream(baos));
@@ -227,7 +227,7 @@ public class TracerTest {
                         "000d: SET A, PICK 2\n" +
                         "000f: SET A, PICK 3\n" +
                         "0011: SET A, PICK 4\n" +
-                        "0013: DAT 0x0000\n";
+                        "0013: HCF 0\n";
         assertEquals("trace", expected, baos.toString());
     }
 }

@@ -33,7 +33,7 @@ public class AssemblerDemo {
                 "  \n" +
                 ":data        dat \"Hello_world!\", 0                ;16 Zero terminated string\n" +
                 "\n" +
-                ":end         hlt");
+                ":end         HCF 0");
         printBytecode(bytecode);
         Dcpu dcpu = new Dcpu();
         dcpu.upload(bytecode);
@@ -72,7 +72,7 @@ public class AssemblerDemo {
                 "                      SET PC, POP              ; 61c1\n" +
                 "                        \n" +
                 "        ; Stop DCPU.\n" +
-                "        :crash        HLT            ; 0000 0000\n" +
+                "        :crash        HCF 0            ; 0000 0000\n" +
                 "        ");
         dcpu.reset();
         dcpu.upload(bytecode);
