@@ -7,15 +7,17 @@ public class ListenerList<T> implements Listener<T> {
 
     private final List<Listener<T>> listeners = new LinkedList<Listener<T>>();
 
-    @Override public void preExecute(T arg) {
+    @Override
+    public void preExecute(T arg) {
         for (Listener<T> listener : listeners) {
             listener.preExecute(arg);
         }
     }
 
-    @Override public void postExecute(T arg) {
+    @Override
+    public void postExecute(T arg) {
         for (Listener<T> listener : listeners) {
-            listener.preExecute(arg);
+            listener.postExecute(arg);
         }
     }
 

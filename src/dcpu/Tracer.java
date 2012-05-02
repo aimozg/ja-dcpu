@@ -22,7 +22,7 @@ public class Tracer extends PostListener<Character> {
 
     public void install(Dcpu dcpu) {
         this.dcpu = dcpu;
-        dcpu.stepListener = this;
+        dcpu.stepListener.addListener(this);
         disassembler = new Disassembler();
         disassembler.init(dcpu.mem);
     }

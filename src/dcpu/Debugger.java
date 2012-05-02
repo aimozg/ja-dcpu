@@ -122,19 +122,22 @@ public class Debugger {
         }
     }
 
+    private PreListener<Character> listener;
+
     public void attachTo(Dcpu cpu) {
         if (this.cpu != null) detach();
         this.cpu = cpu;
-        cpu.stepListener = new PreListener<Character>() {
+        listener = new PreListener<Character>() {
             @Override
             public void preExecute(Character arg) {
                 Debugger.this.stepHandler(arg);
             }
         };
+        cpu.stepListener.addListener(listener);
     }
 
     public void detach() {
-        cpu.stepListener = null;
+        cpu.stepListener.removeListener(listener);
     }
 
 }

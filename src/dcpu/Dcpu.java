@@ -482,6 +482,13 @@ public final class Dcpu {
     }
 
     /**
+     * Sleep for specified number of cycles. Cycle counter is incremented too
+     */
+    public void tickWait(long nCycles) {
+        cycles += nCycles;//postpone delay
+    }
+
+    /**
      * Executes specified number of steps - doesn't sleep
      */
     public void run(int nsteps) {
@@ -490,7 +497,7 @@ public final class Dcpu {
         }
     }
 
-    public Listener<Character> stepListener;
+    public final ListenerList<Character> stepListener = new ListenerList<Character>();
 
     /**
      * Execute one operation (skip = false) or skip one operation.
