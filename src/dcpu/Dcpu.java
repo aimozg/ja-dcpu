@@ -284,18 +284,7 @@ public final class Dcpu {
     public static final int O__IAQ = SpecialOp.IAQ.code;
     public static final int O__HWN = SpecialOp.HWN.code;
     public static final int O__HWQ = SpecialOp.HWQ.code;
-    /*
-    public static final boolean[] OPCODE0_MODMEM = {
-            false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false
-    };
-    */
+
     // Register constants
     public static final int REGS_COUNT = Reg.values().length; ///< Number of registers
 
@@ -390,38 +379,8 @@ public final class Dcpu {
     public static final int A_29 = A_CONST + 30;
     public static final int A_30 = A_CONST + 31;
 
-    /*
-    // Additional instruction length from operand (1 if has NW, 0 otherwise)
-    public static final int[] OPERAND_LENGTH = {
-            // Register
-            0, 0, 0, 0, 0, 0, 0, 0,
-            // [Register]
-            0, 0, 0, 0, 0, 0, 0, 0,
-            // [NW+register]
-            1, 1, 1, 1, 1, 1, 1, 1,
-            // PUSHPOP PEEK PICK SP PC EX [NW] NW
-            0, 0, 1, 0, 0, 0, 1, 1,
-            // literal
-            0, 0, 0, 0, 0, 0, 0, 0
-    };
-    // True if instruction accesses memory (false for literals and registers)
-    public static final boolean[] OPERAND_MEMACCESS = {
-            // Register
-            false, false, false, false, false, false, false, false,
-            // [Register]
-            true, true, true, true, true, true, true, true,
-            // [NW+register]
-            true, true, true, true, true, true, true, true,
-            // PUSHPOP PEEK PICK SP PC EX [NW] NW
-            true, true, true, false, false, false, true, true,
-            // literal
-            false, false, false, false, false, false, false, false
-    };
-    */
-
     public static final int RAM_SIZE = 0x10000;
     public static final long CPU_FREQUENCY = 100 * 1000;
-    public static final long NANO_TICK = 1000 * 1000 * 1000 / CPU_FREQUENCY;
     public static final int CYCLES_PER_FRAME = (int) (CPU_FREQUENCY / 60);
     public static final long NANOS_PER_PRAME = CPU_FREQUENCY * 10000 / 60;
     //////
@@ -449,9 +408,7 @@ public final class Dcpu {
     public boolean reserved = false; // true if reserved operation executed
     public volatile boolean halt = false;// halt execution
     public long cycles = 0;
-    public long totalCycles = 0;
     private boolean turboMode = false;
-
 
     /**
      * Runs until hitting Opcode 0
@@ -459,24 +416,24 @@ public final class Dcpu {
     public void run() {
         long nextTime = System.nanoTime();
         halt = false;
+        long nextCyclesFrame = CYCLES_PER_FRAME;
         while (!halt) {
-            pauseUntil(nextTime);
-            while (!halt && (cycles < CYCLES_PER_FRAME)) {
+            sleepUntil(nextTime);
+            while (!halt && (cycles < nextCyclesFrame)) {
                 step(false);
             }
-            cycles -= CYCLES_PER_FRAME;
+            nextCyclesFrame += CYCLES_PER_FRAME;
             nextTime += NANOS_PER_PRAME;
         }
     }
 
-    private void pauseUntil(long nextTime) {
+    private void sleepUntil(long nextTime) {
         if (!turboMode) {
             while (System.nanoTime() < nextTime) {
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
                 }
-                ;
             }
         }
     }
@@ -541,12 +498,7 @@ public final class Dcpu {
             peripheral.tick(cmd);
         }
         if (!postExecuteCalled && !skip && stepListener != null) stepListener.postExecute(ppc);
-        incrementCycles(postExecuteCalled ? 1 : op.getCycles());
-    }
-
-    private void incrementCycles(int numCycles) {
-        cycles += numCycles;
-        totalCycles += numCycles;
+        cycles += postExecuteCalled ? 1 : op.getCycles();
     }
 
     private boolean handleBasicOp(BasicOperation op, boolean skip) {
@@ -559,7 +511,7 @@ public final class Dcpu {
         ba = getaddr(op.b, false) & 0x1ffff;
 
         if (skip) {
-            incrementCycles(1);
+            cycles++;
             mem[M_SP] = psp;
             if (BasicOp.OPS_IF.contains(op.op)) {
                 // Chaining IF - skip one more instruction
@@ -695,7 +647,7 @@ public final class Dcpu {
                 throw new RuntimeException("DCPU Opcode not implemented: " + op.op);
         }
         if (conditionalOpMiss) {
-            incrementCycles(1);
+            cycles++;
             postExecuteCalled = true;
             if (!skip && stepListener != null) stepListener.postExecute(ppc);
             step(true);
@@ -972,6 +924,10 @@ public final class Dcpu {
         this.turboMode = turboMode;
     }
 
+    public boolean getTurboMode() {
+        return turboMode;
+    }
+
     // Placeholder interrupt handler (no queueing).
     // TODO proper queueing
 
@@ -1147,4 +1103,5 @@ public final class Dcpu {
         peripherals.remove(peripheral);
         peripheral.detached();
     }
+
 }

@@ -1,24 +1,39 @@
 package dcpu.apps;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import jline.ArgumentCompletor;
+import jline.Completor;
+import jline.ConsoleReader;
+import jline.FileNameCompletor;
+import jline.History;
+import jline.SimpleCompletor;
+import jline.Terminal;
+
 import computer.AWTKeyMapping;
 import computer.VirtualKeyboard;
 import computer.VirtualMonitor;
+
 import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Dcpu.Reg;
 import dcpu.Disassembler;
 import dcpu.Tracer;
 import dcpu.io.PanelPeripheral;
-import jline.*;
-
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class CliDCPU {
 
@@ -106,7 +121,7 @@ public class CliDCPU {
                 return formatHelp(name, "reset dcpu");
             }
         },
-
+        
         MEM("mem") {
             @Override
             public void execute(String[] args) {
@@ -146,28 +161,28 @@ public class CliDCPU {
                 int numLines = range / numWordsPerLine;
                 int numLeftOver = range - numLines * numWordsPerLine;
                 for (int i = 0; i < numLines; i++) {
-                    System.out.printf("(%04x) :", (start & 0xffff) + i * numWordsPerLine);
+                    System.out.printf("(%04x) :", start + i * numWordsPerLine);
                     for (int j = 0; j < numWordsPerLine; j++) {
-                        System.out.printf(" %04x", (int) dcpu.mem[(start & 0xffff) + i * numWordsPerLine + j]);
+                        System.out.printf(" %04x", (int) dcpu.mem[start + i * numWordsPerLine + j]);
                     }
                     System.out.print(" | ");
                     for (int j = 0; j < numWordsPerLine; j++) {
-                        printShortChars((start & 0xffff) + i * numWordsPerLine + j);
+                        printShortChars(start + i * numWordsPerLine + j);
                     }
                     System.out.println();
                 }
 
                 if (numLeftOver > 0) {
-                    System.out.printf("(%04x) :", (start & 0xffff) + numLines * numWordsPerLine);
+                    System.out.printf("(%04x) :", start + numLines * numWordsPerLine);
                     for (int j = 0; j < numLeftOver; j++) {
-                        System.out.printf(" %04x", (int) dcpu.mem[(start & 0xffff) + numLines * numWordsPerLine + j]);
+                        System.out.printf(" %04x", (int) dcpu.mem[start + numLines * numWordsPerLine + j]);
                     }
                     for (int i = 0; i < (numWordsPerLine - numLeftOver); i++) {
                         System.out.print("     "); // spacer to make chars line up 
                     }
                     System.out.print(" | ");
                     for (int j = 0; j < numLeftOver; j++) {
-                        printShortChars((start & 0xffff) + numLines * numWordsPerLine + j);
+                        printShortChars(start + numLines * numWordsPerLine + j);
                     }
                 }
                 System.out.println();
@@ -238,6 +253,7 @@ public class CliDCPU {
         },
 
         DISPLAY("display") {
+            @SuppressWarnings("deprecation")
             @Override
             public void execute(String[] args) {
                 if (showingDisplay == false) {

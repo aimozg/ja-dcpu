@@ -169,9 +169,6 @@ public class Assembler {
                     dat();
                 } else if (acceptIgnoreCase("reserve")) {
                     reserve();
-                } else if (acceptIgnoreCase("hlt")) {
-                    // TODO hlt is deprecated. Use HCF instead
-                    append((char) 0, false);
                 } else {
                     oper();
                 }

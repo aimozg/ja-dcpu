@@ -42,7 +42,7 @@ public class GenericClock extends Dcpu.Device {
     @Override
     public void tick() {
         if (period == 0) return;
-        if (cpu.totalCycles - lastShot > period * CYCLES_PER_SHOT) {
+        if (cpu.cycles - lastShot > period * CYCLES_PER_SHOT) {
             lastShot += period * CYCLES_PER_SHOT;
             timerTicks++;
             if (intMsg != 0) cpu.interrupt(intMsg);
@@ -54,7 +54,7 @@ public class GenericClock extends Dcpu.Device {
         switch (cpu.getreg(Dcpu.Reg.A)) {
             case CLKINT_SETUP:
                 period = cpu.getreg(Dcpu.Reg.B);
-                lastShot = cpu.totalCycles;
+                lastShot = cpu.cycles;
                 timerTicks = 0;
                 break;
             case CLKINT_GETTICKS:
