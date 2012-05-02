@@ -32,11 +32,16 @@ public class MonitorCanvas extends JComponent {
 
     public void setMonitor(IMonitor monitor, int scale) {
         this.monitor = monitor;
+        setScale(monitor, scale);
+        screen = new BufferedImage(monitor.getWidth(), monitor.getHeight(), BufferedImage.TYPE_INT_RGB);
+        screenPixels = ((DataBufferInt) screen.getRaster().getDataBuffer()).getData();
+    }
+
+    public void setScale(IMonitor monitor, int scale) {
         this.scale = scale;
         sbwidth = monitor.getWidth() * scale;
         sbheight = monitor.getHeight() * scale;
-        screen = new BufferedImage(monitor.getWidth(), monitor.getHeight(), BufferedImage.TYPE_INT_RGB);
-        screenPixels = ((DataBufferInt) screen.getRaster().getDataBuffer()).getData();
+        invalidate();
     }
 
     @Override
