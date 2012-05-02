@@ -37,6 +37,7 @@ public class MonitorWindow {
 
     public void show() {
         frame.setVisible(true);
+        // TODO maybe move to MonitorCanvas?
         Thread renderThread = new Thread(new Runnable() {
             @Override
             public void run() {
