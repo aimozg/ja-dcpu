@@ -33,22 +33,7 @@ public class HelloWorldPanel {
         });
         dcpu.attach(panelPeripheral, -1); // don't care about the line, just want it to render the screen from cpu memory
         
-        dcpu.upload(new Assembler().assemble(
-                "            set a, 1\n" +
-                "            add a, 1\n" +
-                "            ife a, 2\n" +
-                "                set a, 3\n" +
-        		":mainloop\n" +
-                "            ife [message + I], 0\n" +
-        		"                set pc, end\n" +
-                "            set a, [message + I]\n" +
-        		"            add a, 0xA100\n" +
-                "            set [0x8000 + I], a\n" +
-        		"            add i, 1\n" +
-                "            set pc, mainloop\n" +
-        		":message    dat \"Hello, world!\", 0\n" +
-                ":end        set pc, end\n"
-        ));
+        dcpu.upload(new Assembler().assemble(DemoUtils.getDemoAsmReader(HelloWorldPanel.class)));
         
         dcpu.reset();
         dcpu.run();
