@@ -3,6 +3,7 @@ package dcpu.hw;
 import dcpu.Dcpu;
 
 import javax.swing.*;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -23,6 +24,7 @@ public class MonitorWindow {
         frame.setDefaultCloseOperation(exitOnClose ? WindowConstants.EXIT_ON_CLOSE : WindowConstants.DO_NOTHING_ON_CLOSE);
         canvas = new MonitorCanvas();
         canvas.setMonitor(monitor, 4);
+        canvas.setFocusable(true);
         frame.add(canvas);
         frame.pack();
         frame.setLocationRelativeTo(null);
@@ -35,9 +37,14 @@ public class MonitorWindow {
         });
     }
 
+    public void addKeyListener(KeyListener listener) {
+        canvas.addKeyListener(listener);
+    }
+
     public void show() {
         frame.setVisible(true);
-        // TODO maybe move to MonitorCanvas?
+        canvas.requestFocus();
+        // TODO maybe move thread to MonitorCanvas?
         Thread renderThread = new Thread(new Runnable() {
             @Override
             public void run() {
