@@ -494,6 +494,9 @@ public final class Dcpu {
                 break;
         }
 
+        for (Device device : devices) {
+            device.tick();
+        }
         for (Peripheral peripheral : peripherals) {
             peripheral.tick(cmd);
         }

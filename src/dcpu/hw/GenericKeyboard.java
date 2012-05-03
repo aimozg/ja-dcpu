@@ -105,9 +105,16 @@ public class GenericKeyboard extends Dcpu.Device implements KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) {
-        if (e.getKeyChar() != CHAR_UNDEFINED) {
+        char keyChar = e.getKeyChar();
+        if (keyChar != CHAR_UNDEFINED) {
+            for (int i = 0; i < VK_TO_KN_MAP.length; i += 2) {
+                if (keyChar == VK_TO_KN_MAP[i]) {
+                    keyChar = (char) VK_TO_KN_MAP[i + 1];
+                    break;
+                }
+            }
             if (buffer.size() < bufferSize) {
-                buffer.add(e.getKeyChar());
+                buffer.add(keyChar);
             }
         }
     }
