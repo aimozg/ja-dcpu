@@ -497,9 +497,6 @@ public final class Dcpu {
         for (Device device : devices) {
             device.tick();
         }
-        for (Peripheral peripheral : peripherals) {
-            peripheral.tick(cmd);
-        }
         if (!postExecuteCalled && !skip && stepListener != null) stepListener.postExecute(ppc);
         cycles += postExecuteCalled ? 1 : op.getCycles();
     }
@@ -742,19 +739,10 @@ public final class Dcpu {
      * so its state is not changed (e.g. key buffer not erased when debugger views memory)
      */
     public void memset(int addr, char value) {
-        char oldval = mem[addr];
-        int line = addr >>> 12;
         mem[addr] = value;
-        if (line < memlines.length && memlines[line] != null) {
-            memlines[line].onMemset(addr & 0x0fff, value, oldval);
-        }
     }
 
     public char memget(int addr) {
-        int line = addr >>> 12;
-        if (line < memlines.length && memlines[line] != null) {
-            return memlines[line].onMemget(addr & 0x0fff);
-        }
         return mem[addr];
     }
 
@@ -1028,83 +1016,6 @@ public final class Dcpu {
             return (chars[0] << 24) | (chars[1] << 16) | (chars[2] << 8) | chars[3];
         }
 
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    //// PERIPHERAL
-
-    /**
-     * Peripheral to DCPU.
-     */
-    @Deprecated
-    public abstract static class Peripheral {
-
-        public Dcpu cpu;
-        public int baseaddr;
-
-        /**
-         * This method is called every CPU cycle. cmd is last command code
-         */
-        public void tick(int cmd) {
-
-        }
-
-        /**
-         * This method is called when program or other peripheral writes "newval" to
-         * memory address "baseaddr"+"offset". Note that cpu.mem[baseaddr+offset] already contains newval
-         */
-        public void onMemset(int offset, char newval, char oldval) {
-
-        }
-
-        /**
-         * This method is called when program or other peripheral reads value from
-         * memory address "baseaddr"+"offset".
-         */
-        public char onMemget(int offset) {
-            return cpu.mem[baseaddr + offset];
-        }
-
-        /**
-         * Called when attached to cpu
-         */
-        public void attachedTo(Dcpu cpu, int baseaddr) {
-            this.cpu = cpu;
-            this.baseaddr = baseaddr;
-        }
-
-        /**
-         * Called when detached from cpu
-         */
-        public void detached() {
-            this.cpu = null;
-        }
-    }
-
-    @Deprecated
-    final Peripheral[] memlines = new Peripheral[16];
-    @Deprecated
-    final List<Peripheral> peripherals = new LinkedList<Peripheral>();
-
-    @Deprecated
-    public void attach(Peripheral peripheral, int line) {
-        if (line != -1) {
-            if (memlines[line] != null) {
-                throw new IllegalStateException("Peripheral already attached to line");
-            }
-            memlines[line] = peripheral;
-        }
-        peripherals.add(peripheral);
-        peripheral.attachedTo(this, line << 12);
-    }
-
-    @Deprecated
-    public void detach(Peripheral peripheral) {
-        if (peripheral.baseaddr != -1) {
-            memlines[peripheral.baseaddr >> 12] = null;
-        }
-        peripherals.remove(peripheral);
-        peripheral.detached();
     }
 
 }
