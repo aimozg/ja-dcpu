@@ -24,6 +24,20 @@
         <element id="extracted-dir" path="$APPLICATION_HOME_DIR$/redist/forms_rt.jar" path-in-jar="/" />
       </root>
     </artifact>
+    <artifact type="jar" name="CliDCPU:jar">
+      <output-path>$PROJECT_DIR$/out/artifacts/</output-path>
+      <root id="archive" name="CliDCPU.jar">
+        <element id="directory" name="META-INF">
+          <element id="file-copy" path="$PROJECT_DIR$/CliDCPU.META-INF/META-INF/MANIFEST.MF" />
+        </element>
+        <element id="module-output" name="DCPU" />
+        <element id="extracted-dir" path="$PROJECT_DIR$/lib/jline-1.0-src.zip" path-in-jar="/" />
+        <element id="extracted-dir" path="$PROJECT_DIR$/lib/forms_rt.jar" path-in-jar="/" />
+        <element id="extracted-dir" path="$PROJECT_DIR$/lib/jline-1.0.jar" path-in-jar="/" />
+        <element id="extracted-dir" path="$APPLICATION_HOME_DIR$/lib/junit-4.10.jar" path-in-jar="/" />
+        <element id="library" level="application" name="IntelliJ IDEA GridLayout" />
+      </root>
+    </artifact>
   </component>
   <component name="ClearCaseSharedConfig">
     <option name="myUseUcmModel" value="true" />
