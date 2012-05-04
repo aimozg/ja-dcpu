@@ -1,39 +1,23 @@
 package dcpu.apps;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import jline.ArgumentCompletor;
-import jline.Completor;
-import jline.ConsoleReader;
-import jline.FileNameCompletor;
-import jline.History;
-import jline.SimpleCompletor;
-import jline.Terminal;
-
-import computer.AWTKeyMapping;
-import computer.VirtualKeyboard;
-import computer.VirtualMonitor;
-
 import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Dcpu.Reg;
 import dcpu.Disassembler;
 import dcpu.Tracer;
-import dcpu.io.PanelPeripheral;
+import dcpu.hw.GenericKeyboard;
+import dcpu.hw.MonitorLEM1802;
+import dcpu.hw.MonitorWindow;
+import jline.*;
+
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CliDCPU {
 
@@ -44,8 +28,10 @@ public class CliDCPU {
     private static Dcpu dcpu;
     private static Disassembler disassembler;
     private static Tracer tracer;
-    private static PanelPeripheral panelPeripheral;
     private static boolean showingDisplay = false;
+    private static MonitorWindow monitorWindow;
+    private static MonitorLEM1802 monitorDevice;
+    private static GenericKeyboard keyboardDevice;
 
     public enum Cmd {
         QUIT("quit") {
@@ -121,7 +107,7 @@ public class CliDCPU {
                 return formatHelp(name, "reset dcpu");
             }
         },
-        
+
         MEM("mem") {
             @Override
             public void execute(String[] args) {
@@ -253,24 +239,29 @@ public class CliDCPU {
         },
 
         DISPLAY("display") {
-            @SuppressWarnings("deprecation")
             @Override
             public void execute(String[] args) {
-                if (showingDisplay == false) {
-                    VirtualMonitor display = new VirtualMonitor(dcpu.mem, 0x8000);
-                    VirtualKeyboard keyboard = new VirtualKeyboard(dcpu.mem, 0x9000, new AWTKeyMapping());
-                    panelPeripheral = new PanelPeripheral(display, keyboard);
-                    dcpu.attach(panelPeripheral, -1);
-                    panelPeripheral.addWindowListener(new WindowAdapter() {
-                        public void windowClosing(WindowEvent event) {
+                if (!showingDisplay) {
+                    keyboardDevice = new GenericKeyboard(MonitorLEM1802.MANUFACTURER_ID, 16);
+                    monitorDevice = new MonitorLEM1802();
+                    monitorWindow = new MonitorWindow(dcpu, monitorDevice, false);
+                    monitorWindow.addKeyListener(keyboardDevice);
+                    dcpu.attach(keyboardDevice);
+                    dcpu.attach(monitorDevice);
+                    monitorWindow.getFrame().addWindowListener(new WindowAdapter() {
+                        @Override
+                        public void windowClosing(WindowEvent e) {
                             showingDisplay = false;
+                            monitorWindow.close();
                         }
                     });
+                    monitorWindow.show();
                     showingDisplay = true;
                 } else {
-                    panelPeripheral.killPanel();
-                    dcpu.detach(panelPeripheral);
-                    panelPeripheral = null;
+                    monitorWindow.close();
+                    dcpu.detach(keyboardDevice);
+                    dcpu.detach(monitorDevice);
+                    monitorWindow = null;
                     showingDisplay = false;
                 }
             }
