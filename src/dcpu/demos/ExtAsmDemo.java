@@ -4,11 +4,15 @@ import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Disassembler;
 import dcpu.Tracer;
-import dcpu.io.InstreamPeripheral;
-import dcpu.io.OutstreamPeripheral;
+import dcpu.hw.GenericClock;
+import dcpu.hw.GenericKeyboard;
+import dcpu.hw.MonitorLEM1802;
+import dcpu.hw.MonitorWindow;
 
 import java.io.*;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Assembles and executes external asm file
@@ -25,6 +29,9 @@ public class ExtAsmDemo {
         boolean traceregs = false;
         boolean tracemem = false;
         boolean tracestack = false;
+        boolean hw_lem1802 = true;
+        boolean hw_kbd = true;
+        boolean hw_clk = true;
         int ai = 0;
         while (ai < args.length) {
             String arg = args[ai++];
@@ -61,6 +68,18 @@ public class ExtAsmDemo {
                                 break;
                         }
                     }
+                } else if (arg.startsWith("-hw:")) {
+                    Matcher matcher = Pattern.compile("^-hw:(\\p{Alnum}+)=(y|n)$").matcher(arg);
+                    if (!matcher.matches()) fail("Bad hardware key");
+                    String hw = matcher.group(1);
+                    boolean yes = matcher.group(2).equals("y");
+                    if (hw.equals("lem1802")) {
+                        hw_lem1802 = yes;
+                    } else if (hw.equals("kbd")) {
+                        hw_kbd = yes;
+                    } else if (hw.equals("clk")) {
+                        hw_clk = yes;
+                    } else fail("Bad hardware %s", hw);
                 } else {
                     // TODO options: run some cycles
                     fail("Unrecognized option `%s` . Aborting\n", arg);
@@ -88,10 +107,13 @@ public class ExtAsmDemo {
                     "\t\tm              print memory at registers addresses\n" +
                     "\t\ts              print stack (8 words)\n" +
                     "\t-M MAPOUT        print compilation map to file (requires SOURCE)\n" +
+                    "\t-hw:DEVICE=y/n   enable (y) or disable (n) hardware DEVICE\n" +
                     "\n" +
-                    "Hard-coded peripherals:\n" +
-                    "\t0x8000-0x8fff    Stdout. Anything written comes to stdout\n" +
-                    "\t0x9000-0x9fff    Stdin. Reading returns character typed, or 0xffff if no input yet\n");
+                    "Devices:\n" +
+                    "\tlem1802          LEM1802 Monitor\n" +
+                    "\tkbd              Generic Keyboard (manufacturer = Nya Elektriska)\n" +
+                    "\tclk              Generic Clock (manufacturer = Nya Elektriska)\n" +
+                    "lem1802, kbd, clk are enabled by default\n");
         }
         ////////////////////////////////
         try {
@@ -179,10 +201,25 @@ public class ExtAsmDemo {
             if (exec) {
                 Dcpu cpu = new Dcpu();
                 cpu.upload(bytecode);
-                OutstreamPeripheral stdout = new OutstreamPeripheral(System.out);
-                cpu.attach(stdout, 0x8);
-                InstreamPeripheral stdin = new InstreamPeripheral(System.in, 100);
-                cpu.attach(stdin, 0x9);
+
+                GenericKeyboard keyboard = null;
+                if (hw_kbd) {
+                    keyboard = new GenericKeyboard(MonitorLEM1802.MANUFACTURER_ID, 16);
+                    cpu.attach(keyboard);
+                }
+
+                if (hw_lem1802) {
+                    MonitorLEM1802 monitor = new MonitorLEM1802();
+                    cpu.attach(monitor);
+                    MonitorWindow monitorWindow = new MonitorWindow(cpu, monitor, true);
+                    monitorWindow.addKeyListener(keyboard);
+                    monitorWindow.show();
+                }
+
+                if (hw_clk) {
+                    GenericClock clock = new GenericClock(MonitorLEM1802.MANUFACTURER_ID);//Nya Elektriska
+                    cpu.attach(clock);
+                }
 
                 if (trace) {
                     Tracer tracer = new Tracer(System.err);
