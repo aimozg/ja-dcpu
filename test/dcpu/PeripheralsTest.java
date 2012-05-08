@@ -12,12 +12,12 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class PeripheralsTest {
-    private Assembler assembler;
+    private AntlrAssembler assembler;
     private Dcpu dcpu;
 
     @Before
     public void setUp() {
-        assembler = new Assembler();
+        assembler = new AntlrAssembler();
         dcpu = new Dcpu();
     }
 

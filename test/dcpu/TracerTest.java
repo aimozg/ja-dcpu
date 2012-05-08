@@ -9,13 +9,13 @@ import java.io.PrintStream;
 import static org.junit.Assert.assertEquals;
 
 public class TracerTest {
-    private Assembler assembler;
+    private AntlrAssembler assembler;
     private Dcpu dcpu;
     private Tracer tracer;
 
     @Before
     public void setUp() {
-        assembler = new Assembler();
+        assembler = new AntlrAssembler();
         dcpu = new Dcpu();
     }
 

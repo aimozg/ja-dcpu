@@ -8,14 +8,14 @@ import static org.junit.Assert.assertEquals;
 
 public class InterruptTest {
     private Dcpu cpu;
-    private Assembler assembler;
+    private AntlrAssembler assembler;
     private AsmMap map;
 
     @Before
     public void setUp() {
         cpu = new Dcpu();
-        assembler = new Assembler();
-        assembler.genMap = true;
+        assembler = new AntlrAssembler();
+        assembler.setGenerateMap(true);
     }
 
     @Test
@@ -108,7 +108,7 @@ public class InterruptTest {
         assembler.reset();
         cpu.upload(assembler.assemble(src));
         cpu.reset();
-        map = assembler.asmmap;
+        map = assembler.getAsmMap();
     }
 
 }

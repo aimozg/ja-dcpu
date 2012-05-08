@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 
 public class AssemblerTest {
 
-    private Assembler assembler;
+    private AntlrAssembler assembler;
 
     private static String[] REGISTERS = new String[]{"A", "B", "C", "X", "Y", "Z", "I", "J"};
     private static String[] VAL_COMMANDS = new String[]{"PUSHPOP", "PEEK", "PICK", "SP", "PC", "EX"};
@@ -62,7 +62,7 @@ public class AssemblerTest {
 
     @Before
     public void setUp() {
-        assembler = new Assembler();
+        assembler = new AntlrAssembler();
     }
 
     @Test
@@ -76,7 +76,7 @@ public class AssemblerTest {
         // Test assembling [REG-LITERAL] to same opcode as [REG+0x10000-LITERAL]
         char[] bin = assembler.assemble(
                 "SET A,[A-0x10]\n" +
-                        "SET A,[A+0xfff0]\n"
+                "SET A,[A+0xfff0]\n"
         );
         char[] expected = new char[]{0x4001, (char) 0xfff0, 0x4001, (char) 0xfff0};
         assertArrayEquals(TestUtils.displayExpected(expected, bin), expected, bin);
@@ -126,7 +126,6 @@ public class AssemblerTest {
         assertArrayEquals(expected, bin2);
     }
 
-    @Ignore("Needs support for parsing maths")
     @Test
     public void testMathsInOps() throws Exception {
         char[] bin2 = assembler.assemble(
@@ -145,7 +144,7 @@ public class AssemblerTest {
         char[] bin = assembler.assemble(
                 "        SET A, 0\n" +
                         "        SET PC, jump\n" +
-                        ":area   reserve 2 dat 0x00aa\n" +
+                        ":area   reserve 2, 0x00aa\n" +
                         ":jump   SET A, PC"
         );
         char[] expected = new char[]{

@@ -1,5 +1,6 @@
 package dcpu.demos;
 
+import dcpu.AntlrAssembler;
 import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Disassembler;
@@ -122,8 +123,8 @@ public class ExtAsmDemo {
                 FileInputStream insrcf = new FileInputStream(srcin);
                 char[] csources = new char[insrcf.available()];
                 new InputStreamReader(insrcf).read(csources, 0, csources.length);
-                Assembler assembler = new Assembler();
-                if (mapout != null) assembler.genMap = true;
+                AntlrAssembler assembler = new AntlrAssembler();
+                if (mapout != null) assembler.setGenerateMap(true);
                 String ssources = new String(csources);
                 bytecode = assembler.assemble(ssources);
 
@@ -138,22 +139,22 @@ public class ExtAsmDemo {
                     PrintStream mapoutf = new PrintStream(mapout);
                     mapoutf.println(";;;;MAPSTART");
                     mapoutf.println(";;;;SYMBOLS");
-                    for (Map.Entry<String, Character> symbol : assembler.asmmap.symbolMap.entrySet()) {
+                    for (Map.Entry<String, Character> symbol : assembler.getAsmMap().symbolMap.entrySet()) {
                         mapoutf.printf(";; \"%s\"=0x%04x", symbol.getKey(), (int) symbol.getValue());
                         mapoutf.println();
                     }
                     mapoutf.println(";;;;SRCMAP");
-                    for (Map.Entry<Integer, Character> line : assembler.asmmap.srcMap.entrySet()) {
+                    for (Map.Entry<Integer, Character> line : assembler.getAsmMap().srcMap.entrySet()) {
                         mapoutf.printf(";; %d=0x%04x", line.getKey(), (int) line.getValue());
                         mapoutf.println();
                     }
                     mapoutf.println(";;;;CODE");
-                    int one = assembler.asmmap.code.nextSetBit(0);
+                    int one = assembler.getAsmMap().code.nextSetBit(0);
                     while (one != -1) {
-                        int zero = assembler.asmmap.code.nextClearBit(one);
+                        int zero = assembler.getAsmMap().code.nextClearBit(one);
                         mapoutf.printf(";; code 0x%04x-0x%04x", one, zero - 1);
                         mapoutf.println();
-                        one = assembler.asmmap.code.nextSetBit(zero);
+                        one = assembler.getAsmMap().code.nextSetBit(zero);
                     }
                     mapoutf.println(";;;;MAPEND");
                 }

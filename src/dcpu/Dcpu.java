@@ -112,6 +112,10 @@ public final class Dcpu {
         public static BasicOp byName(String name) {
             return NAME_LOOKUP.get(name);
         }
+        
+        public String toString() {
+            return super.toString() + "[name: " + name + ", code: " + code + ", cycles: " + cycles + ", modb: " + modb + "]";
+        }
     }
 
     public enum SpecialOp {

@@ -1,17 +1,17 @@
 package dcpu;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Before;
+import org.junit.Test;
+
 public class Assembler17Test {
-    private Assembler assembler;
+    private AntlrAssembler assembler;
 
     @Before
     public void setUp() {
-        assembler = new Assembler();
+        assembler = new AntlrAssembler();
     }
 
     @Test
@@ -38,7 +38,7 @@ public class Assembler17Test {
     }
 
     @Test
-    public void testSetSmallMemoryAddressUsesExtraWord() {
+    public void testSetBLiteralUsesExtraWord() {
         char[] bin = assembler.assemble(
                 "SET 0, A\n"
         );
@@ -47,14 +47,15 @@ public class Assembler17Test {
     }
 
     @Test
-    public void testSetNegativeBValueFails() {
-        boolean threwIAE = false;
-        try {
-            assembler.assemble("SET -1, A\n");
-        } catch (IllegalArgumentException iae) {
-            threwIAE = true;
-        }
-        assertEquals("throws exception", true, threwIAE);
+    public void testSetNegativeBValuesConvertToChar() {
+        char[] exp, bin;
+        bin = assembler.assemble("SET -2, A\n");
+        exp = new char[]{0x03e1, 0xfffe};
+        assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
+        
+        bin = assembler.assemble("SET -1, A\n");
+        exp = new char[]{0x03e1, 0xffff};
+        assertArrayEquals(TestUtils.displayExpected(exp, bin), exp, bin);
     }
 
     @Test

@@ -384,14 +384,14 @@ public class IdeMain {
     }
 
     private void assemble() {
-        Assembler assembler = new Assembler();
-        assembler.genMap = true;
+        AntlrAssembler assembler = new AntlrAssembler();
+        assembler.setGenerateMap(true);
         try {
             binary = new char[]{};
             binary = assembler.assemble(sourceTextarea.getText());
             cpu.upload(binary);
             memoryModel.fireUpdate(0, binary.length);
-            asmMap = assembler.asmmap;
+            asmMap = assembler.getAsmMap();
             for (Character addr : debugger.getBreakpoints()) {
                 debugger.setBreakpoint(addr, false);
             }

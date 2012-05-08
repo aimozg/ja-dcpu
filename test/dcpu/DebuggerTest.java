@@ -15,15 +15,15 @@ import static org.junit.Assert.assertTrue;
 public class DebuggerTest {
     private Dcpu cpu;
     private Debugger debugger;
-    private Assembler assembler;
+    private AntlrAssembler assembler;
 
     @Before
     public void setUp() {
         cpu = new Dcpu();
         debugger = new Debugger();
         debugger.attachTo(cpu);
-        assembler = new Assembler();
-        assembler.genMap = true;
+        assembler = new AntlrAssembler();
+        assembler.setGenerateMap(true);
     }
 
     @Test
@@ -38,8 +38,8 @@ public class DebuggerTest {
                         "       SET A,6\n" +
                         "       DAT 0\n"));
 
-        char nobrk = assembler.asmmap.symbol("nobrk");
-        final char brk = assembler.asmmap.symbol("brk");
+        char nobrk = assembler.getAsmMap().symbol("nobrk");
+        final char brk = assembler.getAsmMap().symbol("brk");
         debugger.setBreakpoint(nobrk, true);
         debugger.setBreakpoint(brk, true);
         // sanity check
@@ -71,8 +71,8 @@ public class DebuggerTest {
                         ":brk2 SET C,3\n" +
                         "      SET Y,POP\n" +
                         "      DAT 0\n"));
-        Character brk1 = assembler.asmmap.symbol("brk1");
-        Character brk2 = assembler.asmmap.symbol("brk2");
+        Character brk1 = assembler.getAsmMap().symbol("brk1");
+        Character brk2 = assembler.getAsmMap().symbol("brk2");
         final LinkedList<BitSet> modregs_list = new LinkedList<BitSet>();
 
         debugger.setBreakpoint(brk1, true);
