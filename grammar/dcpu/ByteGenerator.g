@@ -12,7 +12,6 @@ options {
 	import java.util.HashMap;
 	import java.util.Arrays;
 	import java.util.LinkedList;
-	import dcpu.AntlrAssembler.AssemblerContext;
 }
 
 @members {
@@ -134,8 +133,23 @@ op_command
 	;
 
 data
-	:	^(OP_DATA 	
-			(v=expression { append((char) (v & 0xffff), $OP_DATA.line, false); } )+
+//	:	^(OP_DATA
+//			(v=expression { append((char) (v & 0xffff), $OP_DATA.line, false); } )+
+//		)
+		
+	:	^(OP_DATA (d=(STRING|CHAR) | v=expression)+
+			{
+				// loop through the string data adding chars for each
+				if (d != null) {
+					String s = d.getText();
+					for (int i=0; i<s.length(); i++) {
+						append((char) (s.charAt(i) & 0xffff), $OP_DATA.line, false);
+					}
+				} else {
+					append((char) (v & 0xffff), $OP_DATA.line, false);
+				}
+				
+			}
 		)
 	;
 
@@ -175,6 +189,22 @@ label_ref returns [int value]
 			references.add(newRef);
 			// System.out.printf("Adding reference \%s for '\%s' at \%d\n", newRef, $IDENT.text, counter + 1);
 			value = Dcpu.A_NW;
+		}
+	;
+
+br_label_ref returns [int value]
+	:	^(BR_IDENT IDENT r=register?)
+		{
+			// [ label (+register:r) ]
+			// This can never be short, push a reference at current spot and add a NextWord to be filled in
+			$instruction::nextWords.add(0, 0);
+			Reference newRef = new Reference($IDENT.text.toLowerCase(), (char) (counter + 1), $IDENT.line);
+			references.add(newRef);
+			if (r == null) {
+				value = Dcpu.A_M_NW;
+			} else {
+				value = Dcpu.A_M_NW_REG | Dcpu.Reg.byName(r.name.toUpperCase()).offset;
+			}
 		}
 	;
 
@@ -220,7 +250,8 @@ operand returns [int value]
 			$instruction::nextWords.add(0, e);
 			value = Dcpu.A_M_NW;
 		}
-
+	
+	|	v=br_label_ref { value = v; }
 
 	|	^(PICK e=expression)
 		{

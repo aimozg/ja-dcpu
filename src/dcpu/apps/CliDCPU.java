@@ -1,5 +1,25 @@
 package dcpu.apps;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import jline.ArgumentCompletor;
+import jline.Completor;
+import jline.ConsoleReader;
+import jline.FileNameCompletor;
+import jline.History;
+import jline.SimpleCompletor;
+import dcpu.AntlrAssembler;
 import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Dcpu.Reg;
@@ -8,23 +28,18 @@ import dcpu.Tracer;
 import dcpu.hw.GenericKeyboard;
 import dcpu.hw.MonitorLEM1802;
 import dcpu.hw.MonitorWindow;
-import jline.*;
-
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class CliDCPU {
+
+    private static final Pattern hexPattern = Pattern.compile("0x[0-9a-fA-F]+");
+    private static final Pattern binPattern = Pattern.compile("0b\\d+");
+    private static final Pattern decPattern = Pattern.compile("\\d+");
+    private static final Pattern numPattern = Pattern.compile("(" + hexPattern.pattern() + ")|(" + binPattern.pattern() + ")|(" + decPattern.pattern() + ")");
 
     private static final Pattern commandParser = Pattern.compile("\\s*([^\\s]+)\\s*(.*)"); // capture a word followed by its args 
 
     // is there a better way to do this? All static else the ENUMs can't access them.
-    private static Assembler assembler;
+    private static AntlrAssembler assembler;
     private static Dcpu dcpu;
     private static Disassembler disassembler;
     private static Tracer tracer;
@@ -59,7 +74,7 @@ public class CliDCPU {
                     return;
                 }
                 try {
-                    assembler = new Assembler();
+                    assembler = new AntlrAssembler();
                     char[] bin = assembler.assemble(new FileReader(in));
                     dcpu.reset();
                     dcpu.memzero();
@@ -311,7 +326,7 @@ public class CliDCPU {
         private static int getNextArgAsNumber(String numToTest) {
             int num = 1;
             if (!"".equals(numToTest)) {
-                if (Assembler.numPattern.matcher(numToTest).matches()) {
+                if (numPattern.matcher(numToTest).matches()) {
                     num = numberToInt(numToTest);
                 }
             }
@@ -387,7 +402,7 @@ public class CliDCPU {
         tracer.install(dcpu);
         disassembler = new Disassembler();
         disassembler.init(dcpu.mem);
-        assembler = new Assembler();
+        assembler = new AntlrAssembler();
 
         List<Completor> completors = new LinkedList<Completor>();
         completors.add(new SimpleCompletor(Cmd.getCmds()));

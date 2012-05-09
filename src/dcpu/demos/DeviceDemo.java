@@ -1,6 +1,6 @@
 package dcpu.demos;
 
-import dcpu.Assembler;
+import dcpu.AntlrAssembler;
 import dcpu.Dcpu;
 import dcpu.hw.GenericClock;
 import dcpu.hw.GenericKeyboard;
@@ -22,7 +22,7 @@ public class DeviceDemo {
         cpu.attach(clock);
         cpu.attach(keyboard);
         
-        cpu.upload(new Assembler().assemble(DemoUtils.getDemoAsmReader(DeviceDemo.class)));
+        cpu.upload(new AntlrAssembler().assemble(DemoUtils.getDemoAsmReader(DeviceDemo.class)));
 
         MonitorWindow monitorWindow = new MonitorWindow(cpu, monitor, true);
         monitorWindow.addKeyListener(keyboard);

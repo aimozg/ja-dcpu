@@ -8,7 +8,7 @@ import computer.AWTKeyMapping;
 import computer.VirtualKeyboard;
 import computer.VirtualMonitor;
 
-import dcpu.Assembler;
+import dcpu.AntlrAssembler;
 import dcpu.Dcpu;
 import dcpu.io.PanelPeripheral;
 
@@ -33,7 +33,7 @@ public class HelloWorldPanel {
         });
         dcpu.attach(panelPeripheral, -1); // don't care about the line, just want it to render the screen from cpu memory
         
-        dcpu.upload(new Assembler().assemble(DemoUtils.getDemoAsmReader(HelloWorldPanel.class)));
+        dcpu.upload(new AntlrAssembler().assemble(DemoUtils.getDemoAsmReader(HelloWorldPanel.class)));
         
         dcpu.reset();
         dcpu.run();

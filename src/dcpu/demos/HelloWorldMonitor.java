@@ -1,6 +1,6 @@
 package dcpu.demos;
 
-import dcpu.Assembler;
+import dcpu.AntlrAssembler;
 import dcpu.Dcpu;
 import dcpu.hw.MonitorLEM1802;
 import dcpu.hw.MonitorWindow;
@@ -12,7 +12,7 @@ public class HelloWorldMonitor {
         cpu.attach(monitor);
         MonitorWindow window = new MonitorWindow(cpu, monitor, true);
 
-        cpu.upload(new Assembler().assemble(DemoUtils.getDemoAsmReader(HelloWorldMonitor.class)));
+        cpu.upload(new AntlrAssembler().assemble(DemoUtils.getDemoAsmReader(HelloWorldMonitor.class)));
 
         window.show();
         cpu.run();

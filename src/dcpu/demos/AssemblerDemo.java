@@ -1,6 +1,6 @@
 package dcpu.demos;
 
-import dcpu.Assembler;
+import dcpu.AntlrAssembler;
 import dcpu.Dcpu;
 
 /**
@@ -11,8 +11,8 @@ import dcpu.Dcpu;
  */
 public class AssemblerDemo {
     public static void main(String[] args) {
-        Assembler assembler = new Assembler();
-        assembler.genMap = true;
+        AntlrAssembler assembler = new AntlrAssembler();
+        assembler.setGenerateMap(true);
         //////////////////////////////////
         // Hello World test
         System.out.println("\nHello World demo\n");

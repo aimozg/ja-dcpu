@@ -85,6 +85,7 @@ tokens {
 	BR_SP_WITH_EXP;
 	BR_SP;
 	BR_EXP;
+	BR_IDENT;
 	SP_DEC;
 	SP_INC;
 }
@@ -125,6 +126,11 @@ operand
 			-> { r != null }? ^(BR_REG_WITH_EXP PLUS $r $e)
 			-> { s != null }? ^(BR_SP_WITH_EXP $e)
 			-> ^(BR_EXP $e)
+	|	LBRA IDENT ( PLUS r=register )? RBRA
+			-> { r != null }? ^(BR_IDENT IDENT $r)
+			-> ^(BR_IDENT IDENT)
+	|	LBRA r=register PLUS IDENT RBRA
+			-> ^(BR_IDENT IDENT $r)
 	|	PICK^ expression
 	|	expression
 	;
@@ -147,7 +153,12 @@ src_operand
 	;
 
 data_values
-	:	expression (','! expression)*
+	:	data_item (','! data_item)*
+	;
+
+data_item
+	:	expression
+	|	STRING
 	;
 
 ///////////////////////////////////////////////////
@@ -176,7 +187,6 @@ expression
 
 literal
 	:	number
-	|	STRING
 	|	CHAR
 	;
 

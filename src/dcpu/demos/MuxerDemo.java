@@ -1,6 +1,6 @@
 package dcpu.demos;
 
-import dcpu.Assembler;
+import dcpu.AntlrAssembler;
 import dcpu.Dcpu;
 import dcpu.io.InstreamPeripheral;
 import dcpu.io.Muxer;
@@ -14,7 +14,7 @@ import dcpu.io.OutstreamPeripheral;
 public class MuxerDemo {
     public static void main(String[] args) {
         Dcpu cpu = new Dcpu();
-        cpu.upload(new Assembler().assemble("" +
+        cpu.upload(new AntlrAssembler().assemble("" +
                 "; Read character from stdin (0x9000) and write to stdout (0x9100)\n" +
                 ":read\n" +
                 "     SET A,[0x9000]\n" +
