@@ -2,3 +2,5 @@
 build
 out
 DCPU.iws
+*.tokens
+antlr-generated/
