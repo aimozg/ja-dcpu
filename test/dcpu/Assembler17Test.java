@@ -1,7 +1,6 @@
 package dcpu;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -74,6 +73,27 @@ public class Assembler17Test {
         char[] expected = new char[]{
                 0x6801, 0x0001,
                 0x84e0
+        };
+        assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
+    }
+    
+    @Test
+    public void testShortBackReference() throws Exception {
+        assembler.setUseShortLiterals(true);
+        char[] bin = assembler.assemble(
+            "   JSR f1\n" +  // this one is forward reference so doesn't know about f1 => uses NW
+            "    SET A, 0\n" +
+            "    RESERVE 1\n" +
+            ":f1\n" +
+            "    SET B, 0\n" +
+            "    JSR f1"
+        );
+        char[] expected = new char[]{
+                0x7c20, 0x0004,
+                0x8401,
+                0x0000,
+                0x8421,
+                0x9420
         };
         assertArrayEquals("bin: " + TestUtils.displayExpected(expected, bin), expected, bin);
     }

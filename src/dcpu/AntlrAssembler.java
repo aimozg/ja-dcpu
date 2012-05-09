@@ -17,11 +17,15 @@ public class AntlrAssembler {
     
     public AntlrAssembler() {
         context = new AssemblerContext();
+        setUseShortLiterals(Boolean.getBoolean("dcpu.assembler.useShortLiterals"));
+        setGenerateRelocatableCode(Boolean.getBoolean("dcpu.assembler.generateRelocatableCode"));
     }
     
     public static class AssemblerContext {
         public boolean genMap = false;
         public AsmMap asmmap = new AsmMap();
+        public boolean useShortLiterals;
+        public boolean generateRelocatableCode;
     }
 
     public void reset() {
@@ -61,6 +65,14 @@ public class AntlrAssembler {
 
     public void setGenerateMap(boolean generate) {
         context.genMap = generate;
+    }
+    
+    public void setUseShortLiterals(boolean useShortLiterals) {
+        context.useShortLiterals = useShortLiterals;
+    }
+
+    public void setGenerateRelocatableCode(boolean generateRelocatableCode) {
+        context.generateRelocatableCode = generateRelocatableCode;
     }
 
     public AsmMap getAsmMap() {

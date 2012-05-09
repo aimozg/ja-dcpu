@@ -561,6 +561,8 @@ public class DcpuTest {
 
     @Test
     public void testJSR() throws Exception {
+        // use the long word version
+        assembler.setUseShortLiterals(false);
         char[] bin = assembler.assemble(
                 "           SET X, 1\n" +
                         "           SET PC, go\n" +

@@ -16,7 +16,7 @@ options {
 
 @members {
 	private AntlrAssembler.AssemblerContext _context;
-	private Map<String, Character> labels = new HashMap<String, Character>();
+	private Map<String, Integer> labels = new HashMap<String, Integer>();
 	private char[] bin = new char[128];
 	private int counter = 0;
 	private void append(char c, int line, boolean code) {
@@ -61,12 +61,12 @@ program[AntlrAssembler.AssemblerContext context] returns [char[\] array]
 		{
 			// back fill the references from the labels
 			for (Reference reference : references) {
-				Character value = labels.get(reference.name.toLowerCase());
+				Integer value = labels.get(reference.name.toLowerCase());
 				if (value == null) {
 					System.err.println("Unresolved reference name: " + reference.name + " at line: " + reference.lineat);
 				} else {
 					// System.out.println("setting back ref for value " + (int) value + " at " + reference.position);
-					bin[reference.position] = value;
+					bin[reference.position] = (char) (value.intValue());
 				}
 			}
 			if (bin.length > counter) {
@@ -172,7 +172,7 @@ label_def
 			// TODO: If the reference already exists, throw an Exception
 			if (!labels.containsKey($IDENT.text.toLowerCase())) {
 				// System.out.println("creating label " + $IDENT.text.toLowerCase() + " at " + counter); 
-				labels.put($IDENT.text.toLowerCase(), (char) (counter & 0xffff));
+				labels.put($IDENT.text.toLowerCase(), (int) ((char) (counter & 0xffff)));
 				
 				if (_context.genMap) {
 					_context.asmmap.symbolMap.put($IDENT.text.toLowerCase(), (char) (counter & 0xffff));
@@ -186,13 +186,19 @@ label_def
 label_ref returns [int value]
 	:	^(LABEL_REF IDENT)
 		{
-			// TODO: This area is part of the optimising logic
-			// First version - just use all NW references when doing labels
-			$instruction::nextWords.add(0, 0);
-			Reference newRef = new Reference($IDENT.text.toLowerCase(), (char) (counter + 1), $IDENT.line);
-			references.add(newRef);
-			// System.out.printf("Adding reference \%s for '\%s' at \%d\n", newRef, $IDENT.text, counter + 1);
-			value = Dcpu.A_NW;
+			// if the label for this ref already exists, then we can see if it's a under 31 to use a short
+			Integer position = labels.get($IDENT.text.toLowerCase());
+			if (_context.useShortLiterals && position != null && position >=0 && position <= 30) {
+				// no need to push a reference, we're resolved
+				value = Dcpu.A_CONST + 1 + position;
+			} else {
+				// forward reference, we can't deal with this yet
+				$instruction::nextWords.add(0, 0);
+				Reference newRef = new Reference($IDENT.text.toLowerCase(), (char) (counter + 1), $IDENT.line);
+				references.add(newRef);
+				// System.out.printf("Adding reference \%s for '\%s' at \%d\n", newRef, $IDENT.text, counter + 1);
+				value = Dcpu.A_NW;
+			}
 		}
 	;
 
