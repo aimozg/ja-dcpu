@@ -86,8 +86,8 @@ scope {
 	:	op_basic
 	|	op_special
 	|	op_command
-	|	data
 	|	reserve
+	|	data
 	|	label_def
 	;
 
@@ -133,23 +133,27 @@ op_command
 	;
 
 data
-//	:	^(OP_DATA
-//			(v=expression { append((char) (v & 0xffff), $OP_DATA.line, false); } )+
-//		)
-		
-	:	^(OP_DATA (d=(STRING|CHAR) | v=expression)+
-			{
-				// loop through the string data adding chars for each
-				if (d != null) {
-					String s = d.getText();
-					for (int i=0; i<s.length(); i++) {
-						append((char) (s.charAt(i) & 0xffff), $OP_DATA.line, false);
+	:	^(OP_DATA
+			(
+				d=(STRING|CHAR)
+					{
+						String s = d.getText();
+						for (int i=0; i<s.length(); i++) {
+							append((char) (s.charAt(i) & 0xffff), $OP_DATA.line, false);
+						}
 					}
-				} else {
-					append((char) (v & 0xffff), $OP_DATA.line, false);
-				}
-				
-			}
+				| v=expression
+					{
+						append((char) (v & 0xffff), $OP_DATA.line, false);
+					}
+				| ^(LABEL_REF IDENT)
+					{
+						// same tag as a normal label, but as part of data so doesn't add to NextWords, just injects a value straight in
+						Reference newRef = new Reference($IDENT.text.toLowerCase(), (char) counter, $IDENT.line);
+						references.add(newRef);
+						append((char) 0, $OP_DATA.line, false);
+					}
+			)+
 		)
 	;
 

@@ -159,6 +159,7 @@ data_values
 data_item
 	:	expression
 	|	STRING
+	|	IDENT				-> ^(LABEL_REF IDENT)
 	;
 
 ///////////////////////////////////////////////////
