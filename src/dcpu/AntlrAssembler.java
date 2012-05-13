@@ -3,6 +3,7 @@ package dcpu;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.antlr.runtime.ANTLRReaderStream;
 import org.antlr.runtime.CharStream;
 import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.TokenStream;
@@ -10,7 +11,6 @@ import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.CommonTreeNodeStream;
 
 import dcpu.DCPUParser.program_return;
-import dcpu.antlr.ANTLRNoCaseReaderStream;
 
 public class AntlrAssembler {
     private AssemblerContext context;
@@ -41,7 +41,7 @@ public class AntlrAssembler {
         
         char[] bin = new char[] {};
         try {
-            CharStream charStream = new ANTLRNoCaseReaderStream(r);
+            CharStream charStream = new ANTLRReaderStream(r);
             DCPULexer lexer = new DCPULexer(charStream);
             
             TokenStream tokenStream = new CommonTokenStream(lexer);
@@ -77,6 +77,6 @@ public class AntlrAssembler {
 
     public AsmMap getAsmMap() {
         return context.asmmap;
-    }    
-
+    }
+    
 }

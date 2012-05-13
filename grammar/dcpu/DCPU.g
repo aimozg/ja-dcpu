@@ -4,98 +4,45 @@ options {
 	language = Java;
 	output = AST;
 	ASTLabelType = CommonTree;
+	backtrack = true;
 }
 
 tokens {
-	LBRA		= '[';
-	RBRA		= ']';
-	PLUS		= '+';
-	MULTIPLY	= '*';
-	DIVIDE		= '/';
-	MINUS		= '-';
-	LPARENS		= '(';
-	RPARENS		= ')';
-	DAT			= 'DAT';
-	RESERVE		= 'RESERVE';
-	SET			= 'SET';
-	ADD			= 'ADD';
-	SUB			= 'SUB';
-	MUL			= 'MUL';
-	MLI			= 'MLI';
-	DIV			= 'DIV';
-	DVI			= 'DVI';
-	MOD			= 'MOD';
-	MDI			= 'MDI';
-	AND			= 'AND';
-	BOR			= 'BOR';
-	XOR			= 'XOR';
-	SHR			= 'SHR';
-	ASR			= 'ASR';
-	SHL			= 'SHL';
-	IFB			= 'IFB';
-	IFC			= 'IFC';
-	IFE			= 'IFE';
-	IFN			= 'IFN';
-	IFG			= 'IFG';
-	IFA			= 'IFA';
-	IFL			= 'IFL';
-	IFU			= 'IFU';
-	ADX			= 'ADX';
-	SBX			= 'SBX';
-	STI			= 'STI';
-	STD			= 'STD';
-	JSR			= 'JSR';
-	INT			= 'INT';
-	IAG			= 'IAG';
-	IAS			= 'IAS';
-	RFI			= 'RFI';
-	IAQ			= 'IAQ';
-	HWN			= 'HWN';
-	HWQ			= 'HWQ';
-	HWI			= 'HWI';
-	RFI			= 'RFI';
-	PUSH		= 'PUSH';
-	PEEK		= 'PEEK';
-	POP			= 'POP';
-	SP			= 'SP';
-	PC			= 'PC';
-	EX			= 'EX';
-	PICK		= 'PICK';
-	HCF			= 'HCF';
-	REG_A		= 'A';
-	REG_B		= 'B';
-	REG_C		= 'C';
-	REG_I		= 'I';
-	REG_J		= 'J';
-	REG_X		= 'X';
-	REG_Y		= 'Y';
-	REG_Z		= 'Z';
-	
-	// marker tokens
+	// marker tokens for tree
 	NEGATION;
-	LABEL_DEF;
-	LABEL_REF;
-	OP_BASIC;
-	OP_SPECIAL;
-	OP_COMMAND;
-	OP_DATA;
-	OP_RESERVE;
-	BR_REG_WITH_EXP;
-	BR_REG;
-	BR_SP_WITH_EXP;
-	BR_SP;
-	BR_EXP;
-	BR_IDENT;
+	DEF;
+	REF;
+	OP_BAS;
+	OP_SPE;
+	OP_CMD;
+	OP_DAT;
+	OTHER_OP;
 	SP_DEC;
 	SP_INC;
+	BR_REG;
+	BR_SP;
+	BR_EXP;
+	BR_LBL;
 }
 
 @header {
 	package dcpu;
+	import dcpu.antlr.*;
 }
 
 @lexer::header {
 	package dcpu;
+}
+
+@members {
+	public Map<String, Label> labels = new HashMap<String, Label>();
+	public void defineLabel(String name) {
+		if (labels.containsKey(name.toUpperCase())) {
+			System.err.printf("ERROR: label \%s defined already\n", name);
+		} else {
+			labels.put(name.toUpperCase(), new Label(name.toUpperCase(), -1));
+		}
+	}
 }
 
 
@@ -104,52 +51,54 @@ program
 	;
 
 instruction
-	:	':' IDENT									-> ^(LABEL_DEF IDENT)
-	|	basic_opcode dst_operand ',' src_operand	-> ^(OP_BASIC basic_opcode dst_operand src_operand)
-	|	special_opcode src_operand 					-> ^(OP_SPECIAL special_opcode src_operand)
-	|	command_opcode								-> ^(OP_COMMAND command_opcode)
-	|	RESERVE n=expression (',' v=expression)?
-			-> { v == null }?	^(OP_RESERVE $n)
-			-> 					^(OP_RESERVE $n $v)
-	|	DAT data_values								-> ^(OP_DATA data_values)
+	:	LABELDEF						{defineLabel($LABELDEF.text);}
+									-> ^(DEF LABELDEF)
+	|	OPCODE dst_op ',' src_op	-> ^(OP_BAS OPCODE dst_op src_op)
+	|	OPCODE src_op 				-> ^(OP_SPE OPCODE src_op)
+	|	OPCODE						-> ^(OP_CMD OPCODE)
+	|	DAT data_values				-> ^(OP_DAT data_values)
 	;
 
 operand
-	:	register
-	|	IDENT				-> ^(LABEL_REF IDENT)
-	|	LBRA ( r=register | s=SP ) ( sgn=sign e=expression )? RBRA
-			-> { r != null && e != null }? ^(BR_REG_WITH_EXP $sgn $r $e)
-			-> { r != null && e == null }? ^(BR_REG $r)
-			-> { s != null && e != null }? ^(BR_SP_WITH_EXP $sgn $e)
-			-> ^(BR_SP) 
-	|	LBRA e=expression ( PLUS ( r=register | s=SP ) )? RBRA
-			-> { r != null }? ^(BR_REG_WITH_EXP PLUS $r $e)
-			-> { s != null }? ^(BR_SP_WITH_EXP $e)
-			-> ^(BR_EXP $e)
-	|	LBRA IDENT ( PLUS r=register )? RBRA
-			-> { r != null }? ^(BR_IDENT IDENT $r)
-			-> ^(BR_IDENT IDENT)
-	|	LBRA r=register PLUS IDENT RBRA
-			-> ^(BR_IDENT IDENT $r)
-	|	PICK^ expression
-	|	expression
+	:	REG
+	|	PICK^ expr
+	|	other_op					-> ^(OTHER_OP other_op)
+	|	label						-> ^(REF label)
+	|	'[' REG ']'					-> ^(BR_REG REG)
+	|	'[' REG sgn expr ']'		-> ^(BR_REG REG sgn expr)
+	|	'[' expr '+' REG ']'		-> ^(BR_REG REG '+' expr)
+	|	'[' REG '+' label ']'		-> ^(BR_REG REG ^(REF label))
+	|	'[' label '+' REG ']'		-> ^(BR_REG REG ^(REF label))
+	|	'[' SP sgn expr ']'			-> ^(BR_SP sgn expr)
+	|	'[' expr '+' SP ']'			-> ^(BR_SP '+' expr)
+	|	'[' SP ']'					-> ^(BR_SP)
+	|	'[' expr ']'				-> ^(BR_EXP expr)
+	|	'[' label ']'				-> ^(BR_LBL label)
+	|	expr
 	;
 
-sign
-	:	PLUS
-	|	MINUS
+sgn
+	:	'+'
+	|	'-'
 	;
 
-dst_operand
-	:	LBRA DEC SP RBRA	-> ^(SP_DEC)
-	|	dst_code
+dst_op
+	:	'[' SP_MINMIN ']'					-> ^(SP_DEC)
+	|	PUSH
 	|	operand
 	;
 
-src_operand
-	:	LBRA SP INC RBRA	-> ^(SP_INC)
-	|	src_code
+src_op
+	:	'[' SP_PLUSPLUS ']'					-> ^(SP_INC)
+	|	POP
 	|	operand
+	;
+
+other_op
+	:	PEEK
+	|	SP
+	|	PC
+	|	EX
 	;
 
 data_values
@@ -157,21 +106,28 @@ data_values
 	;
 
 data_item
-	:	expression
+	:	expr
 	|	STRING
-	|	IDENT				-> ^(LABEL_REF IDENT)
+	|	label							-> ^(REF LABEL)
+	;
+
+
+label
+	:	LABEL
+	|	t=OPCODE {$t.setType(LABEL);}
 	;
 
 ///////////////////////////////////////////////////
 // expressions
+///////////////////////////////////////////////////
 
 term
-	:	LPARENS! expression RPARENS!
+	:	'('! expr ')'!
 	|	literal
 	;
 
 unary
-	:	(PLUS! | negation^ )* term
+	:	('+'! | negation^ )* term
 	;
 
 negation
@@ -179,11 +135,11 @@ negation
 	;
 
 mult
-	:  unary ( ( MULTIPLY^ | DIVIDE^ ) unary )*
+	:  unary ( ( '*'^ | '/'^ ) unary )*
 	;
 
-expression
-	:  mult ( ( PLUS^ | MINUS^ ) mult )*
+expr
+	:  mult ( ( '+'^ | '-'^ ) mult )*
 	;
 
 literal
@@ -197,128 +153,37 @@ number
 	|	DECIMAL
 	;
 
-basic_opcode
-	:	SET
-	|	ADD
-	|	SUB
-	|	MUL
-	|	MLI
-	|	DIV
-	|	DVI
-	|	MOD
-	|	MDI
-	|	AND
-	|	BOR
-	|	XOR
-	|	SHR
-	|	ASR
-	|	SHL
-	|	IFB
-	|	IFC
-	|	IFE
-	|	IFN
-	|	IFG
-	|	IFA
-	|	IFL
-	|	IFU
-	|	ADX
-	|	SBX
-	|	STI
-	|	STD
-	;
 
-special_opcode
-	:	JSR
-	|	INT
-	|	IAG
-	|	IAS
-	|	RFI
-	|	IAQ
-	|	HWN
-	|	HWQ
-	|	HWI
-	|	HCF
-	;
+///////////////////////////////////////////////////
+// lex tokens
+///////////////////////////////////////////////////
 
-command_opcode
-	:	HCF
-	|	RFI
-	;
+REG: ('A'..'C'|'I'..'J'|'X'..'Z'|'a'..'c'|'i'..'j'|'x'..'z') ;
+PUSH: ('P'|'p')('U'|'u')('S'|'s')('H'|'h');
+POP: ('P'|'p')('O'|'o')('P'|'p');
+PEEK: ('P'|'p')('E'|'e')('E'|'e')('K'|'k');
+PICK: ('P'|'p')('I'|'i')('C'|'c')('K'|'k');
+SP: ('S'|'s')('P'|'p');
+PC: ('P'|'p')('C'|'c');
+EX: ('E'|'e')('X'|'x');
+DAT: ('D'|'d')('A'|'a')('T'|'t');
+OPCODE: LETTER LETTER LETTER;
 
-dst_code
-	:	PUSH
-	|	PEEK
-	|	SP
-	|	PC
-	|	EX
-	;
+HEX: '0x' ( 'a'..'f' | 'A'..'F' | DIGIT )+ ;
+BIN: '0b' ('0'|'1')+;
+DECIMAL: DIGIT+ ;
 
-src_code
-	:	POP
-	|	PEEK
-	|	SP
-	|	PC
-	|	EX
-	;
+LABEL: ( '.' | LETTER | DIGIT | '_' )+ ;
+LABELDEF: ':' ( '.' | LETTER | DIGIT | '_' )+ {setText(getText().substring(1));} ;
 
-register
-	:	REG_A
-	|	REG_B
-	|	REG_C
-	|	REG_I
-	|	REG_J
-	|	REG_X
-	|	REG_Y
-	|	REG_Z
-	;
+STRING: '\"' .* '\"' {setText(getText().substring(1, getText().length()-1));} ;
+CHAR: '\'' . '\'' {setText(getText().substring(1, 2));} ;
 
-// ------------------------------------------------------------------
+COMMENT: ';' ~('\r' | '\n')* { $channel=HIDDEN; } ;
+WS: (' ' | '\n' | '\r' | '\t' | '\f')+ { $channel = HIDDEN; } ;
 
+fragment LETTER: ('a'..'z'|'A'..'Z') ;
+fragment DIGIT:	'0'..'9' ;
+fragment SP_PLUSPLUS: ('S'|'s')('P'|'p')'++';
+fragment SP_MINMIN: '--'('S'|'s')('P'|'p');
 
-INC
-	:	'++'
-	;
-
-DEC
-	:	'--'
-	;
-
-HEX
-	:	'0' ('x' | 'X') ( 'a'..'f' | 'A'..'F' | DIGIT )+ 
-	;
-
-BIN
-	:	'0' ('b' | 'B') ('0'|'1')+
-	;
-
-DECIMAL
-	:	DIGIT+
-	;
-
-fragment LETTER
-	:	('a'..'z'|'A'..'Z')
-	;
-
-fragment DIGIT
-	:	'0'..'9'
-	;
-
-IDENT
-	:	( '.' | LETTER | DIGIT | '_' )+
-	;
-
-STRING
-	:	'\"' .* '\"' {setText(getText().substring(1, getText().length()-1));}
-	;
-
-CHAR
-	:	'\'' . '\'' {setText(getText().substring(1, 2));}
-	;
-
-COMMENT
-    :   ';' ~('\r' | '\n')* { $channel=HIDDEN; }
-    ;
-   
-WS
-	:	(' ' | '\n' | '\r' | '\t' | '\f')+ { $channel = HIDDEN; }
-	;

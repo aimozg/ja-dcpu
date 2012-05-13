@@ -43,7 +43,7 @@ public final class Dcpu {
         }
 
         public static Reg byName(String name) {
-            return NAME_LOOKUP.get(name);
+            return NAME_LOOKUP.get(name.toUpperCase());
         }
 
         static {
@@ -110,7 +110,7 @@ public final class Dcpu {
         }
 
         public static BasicOp byName(String name) {
-            return NAME_LOOKUP.get(name);
+            return NAME_LOOKUP.get(name.toUpperCase());
         }
         
         public String toString() {

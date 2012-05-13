@@ -1,8 +1,10 @@
-:data
-			dat newlabel
-:newlabel	SET A,0
-			dat 0xffff, "Hello world!", 0xbeef
-			dat 1, 0
-			dat (3+4)*1
-			dat 'A'
-
+set a, label1
+set b, abc
+set c, 1
+:label1
+set push, pop
+:abc
+:test
+set a, [0x8000+I]
+:test2
+set [J+0x9000 + 3*4], peek
