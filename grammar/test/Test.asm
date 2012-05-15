@@ -1,10 +1,9 @@
-set a, label1
-set b, abc
-set c, 1
-:label1
-set push, pop
-:abc
-:test
-set a, [0x8000+I]
-:test2
-set [J+0x9000 + 3*4], peek
+SET A, 0
+:start
+set b,0x8000
+jsr 0x1000
+jsr start
+jsr end
+SET C,0
+:end
+add a,1

@@ -40,6 +40,7 @@ public class AntlrAssembler {
         reset();
         
         char[] bin = new char[] {};
+        /*
         try {
             CharStream charStream = new ANTLRReaderStream(r);
             DCPULexer lexer = new DCPULexer(charStream);
@@ -60,6 +61,7 @@ public class AntlrAssembler {
         } catch (Exception e) {
             System.err.println("Failed to assemble given input: " + e.getMessage());
         }
+        */
         return bin;
     }
 

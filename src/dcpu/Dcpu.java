@@ -137,7 +137,7 @@ public final class Dcpu {
         }
 
         public static SpecialOp byName(String name) {
-            return NAME_LOOKUP.get(name);
+            return NAME_LOOKUP.get(name.toUpperCase());
         }
 
         static {

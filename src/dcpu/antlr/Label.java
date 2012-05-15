@@ -4,9 +4,9 @@ public class Label {
     public String name;
     public int instructionIndex;
     
-    public Label(String name, int index) {
+    public Label(String name) {
         this.name = name;
-        this.instructionIndex = index;
+        this.instructionIndex = -1;
     }
     
     @Override

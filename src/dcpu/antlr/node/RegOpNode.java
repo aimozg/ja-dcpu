@@ -6,14 +6,12 @@ import dcpu.Dcpu;
 import dcpu.antlr.OpNode;
 
 public class RegOpNode implements OpNode {
-    // Deals with all following cases of register access: Register, [Register], [Register + NW], [Register + label]
+    // Deals with all following cases of register access: Register, [Register], [Register + NW], but NOT [Register + label]
     
     private String register;
     private boolean hasNW;
     private boolean isMem;
     private int nextWord;
-    private String reference;
-    private boolean isResolved;
 
     public RegOpNode(String register) {
         // Register
@@ -36,21 +34,9 @@ public class RegOpNode implements OpNode {
         hasNW = true;
     }
     
-    public RegOpNode(String register, String reference) {
-        // [Register + label]
-        this(register);
-        this.reference = reference;
-        hasNW = true;
-    }
-
     @Override
     public int evaluate(List<Integer> nextWords) {
-        if (reference != null) {
-            if (!isResolved) throw new UnsupportedOperationException(String.format("Cannot evaluate yet, reference %s is unresolved", reference));
-            nextWords.add(0, nextWord);
-            return (Dcpu.Reg.byName(register).offset | Dcpu.A_M_NW_REG);
-        }
-        else if (hasNW) {
+        if (hasNW) {
             nextWords.add(0, nextWord);
             return (Dcpu.Reg.byName(register).offset | Dcpu.A_M_NW_REG); 
         } else if (isMem) {
@@ -62,7 +48,6 @@ public class RegOpNode implements OpNode {
     
     public void setNextWord(int nextWord) {
         this.nextWord = nextWord;
-        isResolved = true;
         hasNW = true;
     }
 
@@ -77,10 +62,6 @@ public class RegOpNode implements OpNode {
           .append(isMem)
           .append(", nextWord: ")
           .append(nextWord)
-          .append(", reference: ")
-          .append(reference == null ? "<none>" : reference)
-          .append(", isResolved: ")
-          .append(isResolved)
           .append("]");
         return sb.toString();
     }

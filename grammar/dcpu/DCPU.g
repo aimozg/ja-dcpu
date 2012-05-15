@@ -35,23 +35,20 @@ tokens {
 }
 
 @members {
-	public Map<String, Label> labels = new HashMap<String, Label>();
-	public void defineLabel(String name) {
-		if (labels.containsKey(name.toUpperCase())) {
-			System.err.printf("ERROR: label \%s defined already\n", name);
-		} else {
-			labels.put(name.toUpperCase(), new Label(name.toUpperCase(), -1));
-		}
-	}
+	LabelTable labelTable;
 }
 
+//////////////////////////////////////
+// start
+//////////////////////////////////////
 
-program
+program[LabelTable labelTable]
+@init{this.labelTable = labelTable;}
 	:	instruction* EOF!
 	;
 
 instruction
-	:	LABELDEF						{defineLabel($LABELDEF.text);}
+	:	LABELDEF						{labelTable.define($LABELDEF.text);}
 									-> ^(DEF LABELDEF)
 	|	OPCODE dst_op ',' src_op	-> ^(OP_BAS OPCODE dst_op src_op)
 	|	OPCODE src_op 				-> ^(OP_SPE OPCODE src_op)
