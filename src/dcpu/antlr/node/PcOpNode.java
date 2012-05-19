@@ -17,4 +17,9 @@ public class PcOpNode implements OpNode {
         return "PC";
     }
 
+    @Override
+    public int getLength() {
+        return 0;
+    }
+    
 }

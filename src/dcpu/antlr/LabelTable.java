@@ -39,4 +39,14 @@ public class LabelTable {
         return newRef;
     }
 
+    public void fillReferenceIndexes() {
+        for (ReferenceOpNode reference : references) {
+            Label label = resolve(reference.labelName);
+            if (label == null) {
+                System.err.printf("ERROR: Did not find a label for reference %s\n", reference.labelName);
+            } else {
+                reference.resolve(label.instructionIndex); 
+            }
+        }
+    }
 }

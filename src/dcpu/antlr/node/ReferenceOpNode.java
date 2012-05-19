@@ -13,16 +13,17 @@ public class ReferenceOpNode extends ValueOpNode {
     public String labelName;
     public String register;
     public boolean isResolved;
+    public int instructionIndex = -1;
 
     public ReferenceOpNode(String labelName, boolean isMem) {
         // isMem ? [label] : label
-        super(-1, isMem);
+        super(isMem);
         this.labelName = labelName;
     }
     
     public ReferenceOpNode(String labelName, String register) {
         // [X + label]
-        super(-1, true);
+        super(true);
         this.labelName = labelName;
         this.register = register;
     }
@@ -32,10 +33,19 @@ public class ReferenceOpNode extends ValueOpNode {
         if (!isResolved) throw new UnsupportedOperationException(String.format("Cannot evaluate yet, reference %s is unresolved", labelName));
     	return super.evaluate(nextWords);
     }
-    
-    public void resolve(int value) {
-        this.value = value;
+
+    public void resolve(int index) {
+        // still don't know if this is short or not yet
+        instructionIndex = index;
         isResolved = true;
+    }
+    
+    public void resolve(int index, int value) {
+        this.value = value;
+        instructionIndex = index;
+        checkShort();
+        isResolved = true;
+        needsValue = false;
     }
 
     @Override
@@ -45,6 +55,8 @@ public class ReferenceOpNode extends ValueOpNode {
           .append(labelName)
           .append(", isResolved: ")
           .append(isResolved)
+          .append(", instructionIndex: ")
+          .append(instructionIndex)
           .append(", register: ")
           .append(register == null ? "<none>" : register)
           .append(", valueOp: ")

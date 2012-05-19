@@ -16,5 +16,10 @@ public class ExOpNode implements OpNode {
     public String toString() {
         return "EX";
     }
+
+    @Override
+    public int getLength() {
+        return 0;
+    }
     
 }

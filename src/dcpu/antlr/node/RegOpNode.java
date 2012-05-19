@@ -52,6 +52,11 @@ public class RegOpNode implements OpNode {
     }
 
     @Override
+    public int getLength() {
+        return hasNW ? 1 : 0;
+    }
+    
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(128);
         sb.append("Register[name: ")

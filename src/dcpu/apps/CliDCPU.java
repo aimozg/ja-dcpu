@@ -20,7 +20,6 @@ import jline.FileNameCompletor;
 import jline.History;
 import jline.SimpleCompletor;
 import dcpu.AntlrAssembler;
-import dcpu.Assembler;
 import dcpu.Dcpu;
 import dcpu.Dcpu.Reg;
 import dcpu.Disassembler;

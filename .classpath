@@ -4,8 +4,8 @@
 	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="src" path="resource"/>
 	<classpathentry kind="src" path="grammar"/>
-	<classpathentry kind="src" path="build/antlr-generated"/>
 	<classpathentry kind="src" path="resource-test"/>
+	<classpathentry kind="src" path="build/generated-sources/antlr"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/forms_rt.jar"/>
 	<classpathentry kind="lib" path="lib/jline-1.0.jar" sourcepath="lib/jline-1.0-src.zip"/>

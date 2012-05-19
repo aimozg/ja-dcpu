@@ -16,4 +16,10 @@ public class PushPopOpNode implements OpNode {
     public String toString() {
         return "PUSH|POP";
     }
+
+    @Override
+    public int getLength() {
+        return 0;
+    }
+    
 }
