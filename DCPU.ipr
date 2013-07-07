@@ -17,8 +17,8 @@
           <element id="file-copy" path="$PROJECT_DIR$/IdeMain.META-INF/META-INF/MANIFEST.MF" />
         </element>
         <element id="module-output" name="DCPU" />
-        <element id="extracted-dir" path="$APPLICATION_HOME_DIR$/lib/junit-4.8.jar" path-in-jar="/" />
         <element id="extracted-dir" path="$APPLICATION_HOME_DIR$/redist/forms_rt.jar" path-in-jar="/" />
+        <element id="file-copy" path="$APPLICATION_HOME_DIR$/lib/junit-4.10.jar" />
       </root>
     </artifact>
     <artifact type="jar" name="CliDCPU:jar">
@@ -53,6 +53,7 @@
       <entry name="?*.dtd" />
       <entry name="?*.tld" />
       <entry name="?*.ftl" />
+      <entry name="?*.asm" />
     </wildcardResourcePatterns>
     <annotationProcessing>
       <profile default="true" name="Default" enabled="false">

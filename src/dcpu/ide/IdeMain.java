@@ -3,11 +3,9 @@ package dcpu.ide;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
-import computer.AWTKeyMapping;
-import computer.VirtualKeyboard;
-import computer.VirtualMonitor;
 import dcpu.*;
-import dcpu.io.PanelPeripheral;
+import dcpu.hw.MonitorLEM1802;
+import dcpu.hw.MonitorWindow;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -15,8 +13,6 @@ import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -60,10 +56,6 @@ public class IdeMain {
     private Set<Integer> srcBreakpoints = new HashSet<Integer>(); // Line starts from 1
     private Thread cpuThread;
 
-    private PanelPeripheral panelPeripheral;
-    private VirtualKeyboard virtualKeyboard;
-    private VirtualMonitor virtualMonitor;
-
     private RegistersModel registersModel;
     private MemoryModel memoryModel;
 
@@ -93,12 +85,11 @@ public class IdeMain {
         debugger.attachTo(cpu);
         asmMap = new AsmMap();
 
-        VirtualMonitor display = new VirtualMonitor(cpu.mem, 0x8000);
-        VirtualKeyboard keyboard = new VirtualKeyboard(cpu.mem, 0x9000, new AWTKeyMapping());
-        PanelPeripheral panelPeripheral = new PanelPeripheral(display, keyboard);
-        // TODO PanelPeripheral's frame kills whole app on window close. Should do nothing instead. Something like pP.getFrame().setDCO(code_for_do_nothing).
-        cpu.attach(panelPeripheral, -1); // don't care about the line, just want it to render the screen from cpu memory
-
+        MonitorLEM1802 monitor = new MonitorLEM1802();
+        cpu.attach(monitor);
+        MonitorWindow window = new MonitorWindow(cpu, monitor, true);
+        window.show();
+        window.getFrame().setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
         fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File("."));
@@ -161,23 +152,6 @@ public class IdeMain {
             public void actionPerformed(ActionEvent e) {
                 step();
             }
-        });
-        consoleTextarea.addKeyListener(new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-                virtualKeyboard.keyTyped(e.getKeyChar());
-            }
-
-            @Override
-            public void keyPressed(KeyEvent e) {
-                virtualKeyboard.keyPressed(e.getKeyCode());
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-                virtualKeyboard.keyReleased(e.getKeyCode());
-            }
-
         });
         breakpointButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
