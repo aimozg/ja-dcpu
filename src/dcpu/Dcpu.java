@@ -380,9 +380,8 @@ public final class Dcpu {
     public static final int A_30 = A_CONST + 31;
 
     public static final int RAM_SIZE = 0x10000;
-    public static final long CPU_FREQUENCY = 100 * 1000;
-    public static final int CYCLES_PER_FRAME = (int) (CPU_FREQUENCY / 60);
-    public static final long NANOS_PER_PRAME = CPU_FREQUENCY * 10000 / 60;
+    public static final long DEFAULT_CPU_FREQUENCY = 100 * 1000;
+    public static final int FRAMES_PER_SECOND = 60;
     //////
     // Register addresses
     public static final int M_A = Reg.BASE_ADDRESS;
@@ -408,6 +407,9 @@ public final class Dcpu {
     public boolean reserved = false; // true if reserved operation executed
     public volatile boolean halt = false;// halt execution
     public long cycles = 0;
+    private long frequency = DEFAULT_CPU_FREQUENCY;
+    private long cyclesPerFrame = frequency / FRAMES_PER_SECOND;
+    private long nanosPerFrame = 1000L * 1000L * 1000L / FRAMES_PER_SECOND;
     private boolean turboMode = false;
 
     /**
@@ -416,14 +418,14 @@ public final class Dcpu {
     public void run() {
         long nextTime = System.nanoTime();
         halt = false;
-        long nextCyclesFrame = CYCLES_PER_FRAME;
+        long nextCyclesFrame = cyclesPerFrame;
         while (!halt) {
             sleepUntil(nextTime);
             while (!halt && (cycles < nextCyclesFrame)) {
                 step(false);
             }
-            nextCyclesFrame += CYCLES_PER_FRAME;
-            nextTime += NANOS_PER_PRAME;
+            nextCyclesFrame += cyclesPerFrame;
+            nextTime += nanosPerFrame;
         }
     }
 
@@ -929,6 +931,16 @@ public final class Dcpu {
 
     public boolean getTurboMode() {
         return turboMode;
+    }
+
+    public void setFrequency(long frequency) {
+        this.frequency = frequency;
+        this.cyclesPerFrame = frequency / 60;
+        this.nanosPerFrame = frequency * 10000 / 60;
+    }
+
+    public long getFrequency() {
+        return frequency;
     }
 
     // Placeholder interrupt handler (no queueing).

@@ -36,14 +36,12 @@ public class GenericClock extends Dcpu.Device {
     protected int period = 0;
     protected char intMsg = 0;
 
-    // Same as Dcpu.CYCLES_PER_FRAME, but don't want to rely on that
-    protected static final long CYCLES_PER_SHOT = Dcpu.CPU_FREQUENCY / 60;
-
     @Override
     public void tick() {
         if (period == 0) return;
-        if (cpu.cycles - lastShot > period * CYCLES_PER_SHOT) {
-            lastShot += period * CYCLES_PER_SHOT;
+        long cyclesPerShot = cpu.getFrequency() / Dcpu.FRAMES_PER_SECOND;
+        if (cpu.cycles - lastShot > period * cyclesPerShot) {
+            lastShot += period * cyclesPerShot;
             timerTicks++;
             if (intMsg != 0) cpu.interrupt(intMsg);
         }
