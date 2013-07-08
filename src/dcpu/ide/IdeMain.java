@@ -4,10 +4,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import dcpu.*;
-import dcpu.hw.GenericClock;
-import dcpu.hw.GenericKeyboard;
-import dcpu.hw.MonitorLEM1802;
-import dcpu.hw.MonitorWindow;
+import dcpu.hw.*;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -89,9 +86,14 @@ public class IdeMain {
 
         MonitorLEM1802 monitor = new MonitorLEM1802();
         cpu.attach(monitor);
-        MonitorWindow window = new MonitorWindow(cpu, monitor, true);
+        MonitorWindow window = new MonitorWindow(cpu, monitor, false);
         window.show();
-        window.getFrame().setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+        Sped3 sped = new Sped3();
+        cpu.attach(sped);
+        SpedWindow spedWindow = new SpedWindow(cpu, sped, false);
+        spedWindow.show();
+        spedWindow.getFrame().setSize(600, 600);
 
         GenericClock clock = new GenericClock(MonitorLEM1802.MANUFACTURER_ID);//Nya Elektriska
         GenericKeyboard keyboard = new GenericKeyboard(MonitorLEM1802.MANUFACTURER_ID, 16);

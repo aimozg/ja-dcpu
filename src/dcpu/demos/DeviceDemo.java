@@ -2,10 +2,9 @@ package dcpu.demos;
 
 import dcpu.Assembler;
 import dcpu.Dcpu;
-import dcpu.hw.GenericClock;
-import dcpu.hw.GenericKeyboard;
-import dcpu.hw.MonitorLEM1802;
-import dcpu.hw.MonitorWindow;
+import dcpu.hw.*;
+
+import java.awt.*;
 
 /**
  * Demo for testing display, clock, and keyboard
@@ -18,15 +17,22 @@ public class DeviceDemo {
         MonitorLEM1802 monitor = new MonitorLEM1802();
         GenericClock clock = new GenericClock(MonitorLEM1802.MANUFACTURER_ID);//Nya Elektriska
         GenericKeyboard keyboard = new GenericKeyboard(MonitorLEM1802.MANUFACTURER_ID, 16);
+        Sped3 sped = new Sped3();
         cpu.attach(monitor);
         cpu.attach(clock);
         cpu.attach(keyboard);
-        
+        cpu.attach(sped);
+
         cpu.upload(new Assembler().assemble(DemoUtils.getDemoAsmReader(DeviceDemo.class)));
 
         MonitorWindow monitorWindow = new MonitorWindow(cpu, monitor, true);
         monitorWindow.addKeyListener(keyboard);
         monitorWindow.show();
+
+        SpedWindow spedWindow = new SpedWindow(cpu, sped, true);
+        spedWindow.getCanvas().setPreferredSize(new Dimension(600, 600));
+        spedWindow.getFrame().pack();
+        spedWindow.show();
 
         cpu.run();
     }

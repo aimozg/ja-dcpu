@@ -11,6 +11,8 @@
 		JSR keyboard_setup
 	IFE A, 0xb402
 		JSR clock_setup
+    IFE A, 0xbf3c
+        JSR sped_setup
 	IFN Z, 0
   		SET PC, device_set_loop
 
@@ -62,6 +64,17 @@
 	SET [I], 0x0
 	;; remove cursor
 	SET PC, console_end
+
+:sped_setup
+    SET [sped_address],Z
+    SET A,1
+    SET X,sped_vertices
+    SET Y,16
+    HWI Z
+    SET A,2
+    SET X,180
+    HWI Z
+    SET PC,POP
 
 :monitor_setup
 	SET [monitor_address],Z
@@ -140,3 +153,40 @@
 
 :clock_address
 	DAT 0
+
+:sped_address
+    DAT 0
+
+:sped_vertices
+    DAT 0XFFFF  ;110
+    DAT 0X0500
+    DAT 0XFF00  ;010
+    DAT 0X0500
+    DAT 0XFF00  ;011
+    DAT 0X07FF
+    DAT 0XFFFF  ;111
+    DAT 0X07FF
+    DAT 0XFFFF  ;110
+    DAT 0X0500
+    DAT 0X00FF  ;100
+    DAT 0X0500
+    DAT 0X00FF  ;101
+    DAT 0X07FF
+    DAT 0XFFFF  ;111
+    DAT 0X07FF
+    DAT 0X00FF  ;101
+    DAT 0X07FF
+    DAT 0X0000  ;001
+    DAT 0X07FF
+    DAT 0XFF00  ;011
+    DAT 0X07FF
+    DAT 0X0000  ;001
+    DAT 0X07FF
+    DAT 0X0000  ;000
+    DAT 0X0500
+    DAT 0X00FF  ;100
+    DAT 0X0500
+    DAT 0X0000  ;000
+    DAT 0X0500
+    DAT 0XFF00  ;010
+    DAT 0X0500
