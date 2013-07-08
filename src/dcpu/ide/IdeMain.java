@@ -4,6 +4,8 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import dcpu.*;
+import dcpu.hw.GenericClock;
+import dcpu.hw.GenericKeyboard;
 import dcpu.hw.MonitorLEM1802;
 import dcpu.hw.MonitorWindow;
 
@@ -90,6 +92,12 @@ public class IdeMain {
         MonitorWindow window = new MonitorWindow(cpu, monitor, true);
         window.show();
         window.getFrame().setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+        GenericClock clock = new GenericClock(MonitorLEM1802.MANUFACTURER_ID);//Nya Elektriska
+        GenericKeyboard keyboard = new GenericKeyboard(MonitorLEM1802.MANUFACTURER_ID, 16);
+        cpu.attach(clock);
+        cpu.attach(keyboard);
+        window.addKeyListener(keyboard);
 
         fileChooser = new JFileChooser();
         fileChooser.setCurrentDirectory(new File("."));
