@@ -320,8 +320,8 @@ public class Assembler {
 
     private int tokenToInt() {
         int val;
-        if (token.startsWith("0x")) val = Integer.parseInt(token.substring(2), 16);
-        else if (token.startsWith("0b")) val = Integer.parseInt(token.substring(2, 2));
+        if (token.startsWith("0x") || token.startsWith("0X")) val = Integer.parseInt(token.substring(2), 16);
+        else if (token.startsWith("0b") || token.startsWith("0B")) val = Integer.parseInt(token.substring(2, 2));
         else val = Integer.parseInt(token);
         return val;
     }
