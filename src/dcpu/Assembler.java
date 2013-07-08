@@ -83,7 +83,7 @@ public class Assembler {
 
     private static final Pattern strPattern = Pattern.compile("(\'[^\']*\')|(\"[^\"]*\")");
     private static final Pattern idPattern = Pattern.compile("[a-zA-Z_\\.][a-zA-Z_0-9\\.]*");
-    private static final Pattern hexPattern = Pattern.compile("0x[0-9a-fA-F]+");
+    private static final Pattern hexPattern = Pattern.compile("0[xX][0-9a-fA-F]+");
     private static final Pattern binPattern = Pattern.compile("0b\\d+");
     private static final Pattern decPattern = Pattern.compile("\\d+");
     public static final Pattern numPattern = Pattern.compile("(" + hexPattern.pattern() + ")|(" + binPattern.pattern() + ")|(" + decPattern.pattern() + ")");
