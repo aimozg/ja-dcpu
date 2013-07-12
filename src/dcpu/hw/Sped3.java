@@ -127,7 +127,7 @@ public class Sped3 extends Dcpu.Device {
     }
 
     public void renderTo(IVertexRenderer renderer) {
-        renderer.reset();
+        renderer.start();
         int offset = vertexOffset;
         double cos = Math.cos(Math.toRadians(angle));
         double sin = Math.sin(Math.toRadians(angle));
@@ -148,5 +148,6 @@ public class Sped3 extends Dcpu.Device {
             renderer.drawVertex(x, y, z, colors[ic]);
             offset += 2;
         }
+        renderer.finish();
     }
 }

@@ -9,7 +9,9 @@ import java.awt.*;
  * Time: 18:32
  */
 public interface IVertexRenderer {
-    public void reset();
+    public void start();
 
     public void drawVertex(double x, double y, double z, Color color);
+
+    public void finish();
 }

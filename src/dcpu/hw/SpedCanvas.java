@@ -34,14 +34,17 @@ public class SpedCanvas extends JComponent {
         sped.renderTo(new IVertexRenderer() {
 
             boolean first = true;
-            int prevx
-                    ,
-                    prevy;
+            int prevx;
+            int prevy;
 
             @Override
-            public void reset() {
+            public void start() {
                 g.setColor(Color.BLACK);
                 g.fillRect(0, 0, pixw, pixh);
+            }
+
+            @Override
+            public void finish() {
             }
 
             @Override
