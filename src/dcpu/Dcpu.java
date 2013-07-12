@@ -418,7 +418,7 @@ public final class Dcpu {
     public void run() {
         long nextTime = System.nanoTime();
         halt = false;
-        long nextCyclesFrame = cyclesPerFrame;
+        long nextCyclesFrame = cycles + cyclesPerFrame;
         while (!halt) {
             sleepUntil(nextTime);
             while (!halt && (cycles < nextCyclesFrame)) {
